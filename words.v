@@ -1,9 +1,220 @@
-Require Import ssreflect ssrfun ssrbool eqtype ssrnat.
+Require Import ssreflect ssrfun ssrbool eqtype ssrnat choice fintype seq tuple.
 Require Import BinNums.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+
+Module Bare.
+
+Fixpoint add b (w1 w2 : seq bool) : seq bool :=
+  match w1, w2 with
+  | [::], [::] => [::]
+  | b1 :: w1, b2 :: w2 =>
+    b (+) b1 (+) b2 :: add (2 <= b + b1 + b2) w1 w2
+  | [::], w | w, [::] => w
+  end.
+
+
+
+
+
+Section Def.
+
+Variable n : nat.
+
+CoInductive word := Word of n.-tuple bool.
+
+Bind Scope word_scope with word.
+Delimit Scope word_scope with w.
+
+Local Open Scope word_scope.
+
+Definition bits (w : word) := let: Word w := w in w.
+
+Local Coercion bits : word >-> tuple_of.
+
+Lemma bitsK : cancel bits Word.
+Proof. by case. Qed.
+
+Lemma bits_inj : injective bits.
+Proof. exact: can_inj bitsK. Qed.
+
+Definition word_eqMixin := CanEqMixin bitsK.
+Canonical word_eqType := Eval hnf in EqType word word_eqMixin.
+
+Definition word_choiceMixin := CanChoiceMixin bitsK.
+Canonical word_choiceType := Eval hnf in ChoiceType _ word_choiceMixin.
+
+Definition word_countMixin := CanCountMixin bitsK.
+Canonical word_countType := Eval hnf in CountType _ word_countMixin.
+
+Definition word_finMixin := CanFinMixin bitsK.
+Canonical word_finType := Eval hnf in FinType _ word_finMixin.
+
+Fixpoint add_aux b (w1 w2 : seq bool) : seq bool :=
+  match w1, w2 with
+  | [::], [::] => [::]
+  | b1 :: w1, b2 :: w2 =>
+    b (+) b1 (+) b2 :: add_aux (2 <= b + b1 + b2) w1 w2
+  | _, _ => [::]
+  end.
+
+Lemma size_add_aux c (w1 w2 : word) : size (add_aux c w1 w2) == n.
+Proof.
+  suff -> : size (add_aux c w1 w2) = minn (size w1) (size w2).
+    by rewrite !size_tuple minnn.
+  elim: {w1 w2} (w1 : seq bool) (w2 : seq bool) c
+        => [|b1 w1 IH] [|b2 w2] c //=.
+  by rewrite minnSS IH.
+Qed.
+
+Definition addw (w1 w2 : word) := Word (Tuple (size_add_aux false w1 w2)).
+
+Notation "x + y" := (addw x y) : word_scope.
+
+Lemma addwC : commutative addw.
+Proof.
+  move=> w1 w2.
+  apply: bits_inj. apply: val_inj => //=.
+  elim: {w1 w2} (w1 : seq bool) (w2 : seq bool) false => [|b1 w1 IH] [|b2 w2] b //=.
+  by rewrite -addbA (addbC b1) addbA
+             -addnA (addnC b1) addnA IH.
+Qed.
+
+Lemma addwA : associative addw.
+Proof.
+  move=> w1 w2 w3.
+  apply: bits_inj; apply: val_inj=> //=.
+  elim: {w1 w2 w3} (w1 : seq bool) (w2 : seq bool) (w3 : seq bool)
+        false {1 3}false {1 4}false {1 5}false
+        (erefl (false + false)%nat)
+        => [|b1 w1 IH] [|b2 w2] [|b3 w3] c4 c3 c2 c1 Hc //=.
+  rewrite 2!addbA -(addbA c1 b1) (addbC b1) ![in X in X :: _ = _]addbA
+          ![in X in _ = X :: _]addbA.
+  have -> : c1 (+) c2 = c3 (+) c4.
+    by case: c1 c2 c3 c4 Hc => [] [] [] [].
+  congr cons.
+  apply: IH.
+  move: b1 b2 b3 c1 c2 c3 c4 Hc.
+  by do !case=> //.
+Qed.
+
+Definition zerow := Word [tuple of nseq n false].
+Definition onew := Word [tuple of mkseq (pred1 0) n].
+Definition minusonew := Word [tuple of nseq n true].
+
+Lemma eqw01 : (zerow == onew) = (n == 0).
+Proof.
+  rewrite -(inj_eq bits_inj) -val_eqE /=.
+  by case: n => [|n'] //.
+Qed.
+
+Lemma add0w : left_id zerow addw.
+Proof.
+  move=> w.
+  apply: bits_inj; apply: val_inj=> /=.
+  elim: {w} (w : seq bool) {2 3}n (size_tuple w) => [|b w IH] [|n'] //= [H].
+  have E : 1 < b = false by case: b.
+  by rewrite !add0n {}E IH.
+Qed.
+
+Lemma addw0 : right_id zerow addw.
+Proof. by move=> w; rewrite addwC add0w. Qed.
+
+Definition oppw (w : word) :=
+  addw onew (Word [tuple of map negb w]).
+
+Lemma addNw : left_inverse zerow oppw addw.
+Proof.
+  move=> w.
+  apply: bits_inj; apply: val_inj => /=.
+  case: n (w : seq bool) (size_tuple w) => {w} [|n'] [|b w] //= [E].
+  rewrite negbK addbb !add0n addnn; congr cons.
+  have -> : 1 < b.*2 = b by case: b.
+  have -> : 1 < 1 + ~~ b = ~~ b by case: b.
+  elim: w {2}0 b n' E => [|b' w IH] n0 b [|n'] //= [/IH E] {IH}.
+  rewrite eqE /= addbF !addbA (addbN b) addbb /= negbK addbb addn0; congr cons.
+  have -> : 1 < ~~ b + ~~ b' = ~~ (b || b') by case: b b' => [] [].
+  have -> : 1 < b + (~~ b (+) ~~ b') + b' = b || b' by case: b b' => [] [].
+  by rewrite E.
+Qed.
+
+Lemma addwN : right_inverse zerow oppw addw.
+Proof. by move=> w; rewrite addwC addNw. Qed.
+
+Definition subw w1 w2 := w1 + oppw w2.
+
+Definition bitwise op (w1 w2 : word) :=
+  Word [tuple of map (fun p => op p.1 p.2) (zip w1 w2)].
+
+Lemma bitwiseC op : commutative op -> commutative (bitwise op).
+Proof.
+  move=> opC w1 w2.
+  apply: bits_inj; apply: val_inj => //=.
+  elim: {w1 w2} (w1 : seq bool) (w2 : seq bool) => [|b1 w1 IH] [|b2 w2] //=.
+  by rewrite IH opC.
+Qed.
+
+Lemma bitwiseA op : associative op -> associative (bitwise op).
+Proof.
+  move=> opA w1 w2 w3.
+  apply: bits_inj; apply: val_inj => /=.
+  elim: {w1 w2 w3} (w1 : seq bool) (w2 : seq bool) (w3 : seq bool)
+        => [|b1 w1 IH] [|b2 w2] [|b3 w3] //=.
+  by rewrite IH opA.
+Qed.
+
+Definition andw := bitwise andb.
+Lemma andwC : commutative andw.
+Proof. exact: bitwiseC andbC. Qed.
+Lemma andwA : associative andw.
+Proof. exact: bitwiseA andbA. Qed.
+
+Definition orw := bitwise orb.
+Lemma orwC : commutative orw.
+Proof. exact: bitwiseC orbC. Qed.
+Lemma orwA : associative orw.
+Proof. exact: bitwiseA orbA. Qed.
+
+Definition xorw := bitwise addb.
+Lemma xorwC : commutative xorw.
+Proof. exact: bitwiseC addbC. Qed.
+Lemma xorwA : associative xorw.
+Proof. exact: bitwiseA addbA. Qed.
+
+Definition shr1 (w : word) : word :=
+  Word [tuple of belast false w].
+
+Fixpoint mul_aux w1 w2 acc :=
+  if w1 is b1 :: w1 then
+    mul_aux w1 (shr1 w2)
+            (if b1 then addw w2 acc else acc)
+  else acc.
+
+Definition mulw w1 w2 :=
+  mul_aux w1 w2 zerow.
+
+Definition
+
+
+
+End Def.
+
+Section Pos.
+
+Variable n : nat.
+
+Local Coercion bits : word >-> tuple_of.
+
+Definition onew : word n.+1 := Word [tuple of true :: nseq n false].
+
+Definition oppw (w : word n.+1) :=
+  addw onew (Word [tuple of map negb w]).
+
+Lemma oppwK : left_inverse zerow oppw addw
+
+
 
 Definition casen (n : N) : option (bool * N) :=
   if n is Npos p then
