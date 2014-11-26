@@ -1,23 +1,40 @@
-Require Import ssreflect ssrfun ssrbool eqtype ssrnat choice fintype seq tuple.
+Require Import ssreflect ssrfun ssrbool eqtype ssrnat choice fintype seq.
+Require Import div bigop tuple.
 Require Import BinNums.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Module Bare.
+Section Bits.
 
-Fixpoint add b (w1 w2 : seq bool) : seq bool :=
-  match w1, w2 with
-  | [::], [::] => [::]
-  | b1 :: w1, b2 :: w2 =>
-    b (+) b1 (+) b2 :: add (2 <= b + b1 + b2) w1 w2
-  | [::], w | w, [::] => w
-  end.
+Definition test_bit n k : bool :=
+  n %% 2 ^ k != n %% 2 ^ k.+1.
 
+Definition bits n k := mkseq (test_bit n) k.
 
+Definition nat_of_bits bs :=
+  \sum_(i < size bs) nth false bs i * 2 ^ i.
 
-
+Lemma bitsK n k : nat_of_bits (bits n k) = n %% 2 ^ k.
+Proof.
+  rewrite /nat_of_bits /bits size_mkseq
+          (eq_big_seq (fun i : 'I_k => test_bit n i * 2^i)); last first.
+    by move=> i _; rewrite /= nth_mkseq.
+  elim: k => [|k IH] //=.
+    by rewrite big_ord0 modn1.
+  rewrite big_ord_recr {}IH /test_bit /=.
+  rewrite {1 2}(divn_eq n (2 ^ k.+1)) {2 5}expnS mulnA modnMDl.
+  have : n %% 2 ^ k.+1 < 2 ^ k.+1.
+    by apply: ltn_pmod; rewrite expn_gt0 //.
+  move: (n %% _) => m Hl.
+  rewrite eqn_leq leq_mod /= -subn_eq0 {2 4}(divn_eq m (2 ^ k)) addnK
+          muln_eq0 expn_eq0 orbF [in RHS]addnC.
+  suff -> // : (m %/ 2 ^ k != 0 : nat) = m %/ 2 ^ k by [].
+  rewrite -lt0n.
+  suff : m %/ 2 ^ k < 2 by case: (_ %/ _) => [|[|]] //.
+  by rewrite ltn_divLR ?expn_gt0 // expnS in Hl *.
+Qed.
 
 Section Def.
 
@@ -183,19 +200,36 @@ Proof. exact: bitwiseC addbC. Qed.
 Lemma xorwA : associative xorw.
 Proof. exact: bitwiseA addbA. Qed.
 
-Definition shr1 (w : word) : word :=
-  Word [tuple of belast false w].
+Definition nat_of_word (w : word) :=
+  \sum_(i < n) tnth w i * 2 ^ i.
 
-Fixpoint mul_aux w1 w2 acc :=
-  if w1 is b1 :: w1 then
-    mul_aux w1 (shr1 w2)
-            (if b1 then addw w2 acc else acc)
-  else acc.
+Fixpoint word_of_nat (n : nat) :=
+  if n is n.+1 then onew + word_of_nat n
+  else zerow.
 
-Definition mulw w1 w2 :=
+Lemma addw_addn : morphism_2 nat_of_word addw addn.
+Proof.
+  move=> w1 w2.
+  rewrite /addw /nat_of_word /= -big_split /=.
+
+  have : forall t, tnth
+  have := (eq_big_seq _ (fun x _ => tnth_nth false w1 x)).
+
+Lemma nat_of_wordK : cancel nat_of_word word_of_nat.
+Proof. move=> w.
+
+
+
+End Def.
+
+Section Mul.
+
+
+
+Definition mulw (w1 w2 : word) :=
   mul_aux w1 w2 zerow.
 
-Definition
+Lemma mulwC : commutative mulw.
 
 
 
