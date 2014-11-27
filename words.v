@@ -1,12 +1,40 @@
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat choice fintype seq.
-Require Import div bigop tuple.
+Require Import div zmodp bigop tuple.
 Require Import BinNums.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Section Bits.
+Section Digits.
+
+Definition digit_of b n k :=
+  n %/ b ^ k %% b.
+
+Definition digits_of b n k :=
+  mkseq (digit_of b n) k.
+
+Definition nat_of_digits b ds :=
+  \sum_(i < size ds) nth 0 ds i * b ^ i.
+
+Lemma digits_ofK b n k :
+  0 < b ->
+  nat_of_digits b (digits_of b n k) = n %% b ^ k.
+Proof.
+  move=> Hb.
+  rewrite /nat_of_digits /digits_of size_mkseq
+          (eq_big_seq (fun i : 'I_k => digit_of b n i * b ^ i)); last first.
+    by move=> i _; rewrite /= nth_mkseq.
+  elim: k => [|k IH] /=.
+    by rewrite big_ord0 expn0 modn1.
+  rewrite big_ord_recr {}IH /digit_of /=.
+  rewrite {1}(divn_eq n (b ^ k.+1)) {2}expnS mulnA modnMDl.
+  suff -> : (n %/ b ^ k) %% b = (n %% b ^ k.+1) %/ b ^ k.
+    by rewrite addnC -divn_eq.
+  by rewrite {1}(divn_eq n (b ^ k.+1)) {2}expnS mulnA divnMDl ?expn_gt0 ?Hb //
+             modnMDl modn_small // ltn_divLR ?expn_gt0 ?Hb // -expnS ltn_mod
+             expn_gt0 Hb.
+Qed.
 
 Definition test_bit n k : bool :=
   n %% 2 ^ k != n %% 2 ^ k.+1.
