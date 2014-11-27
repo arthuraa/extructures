@@ -8,32 +8,30 @@ Unset Printing Implicit Defensive.
 
 Section Digits.
 
-Definition digit_of b n k :=
-  n %/ b ^ k %% b.
+Definition digit_of b n k : 'I_b.+1:=
+  inZp (n %/ b.+1 ^ k).
 
 Definition digits_of b n k :=
-  mkseq (digit_of b n) k.
+  [tuple of mkseq (digit_of b n) k].
 
 Definition nat_of_digits b ds :=
-  \sum_(i < size ds) nth 0 ds i * b ^ i.
+  \sum_(i < size ds) nth 0 ds i * b.+1 ^ i.
 
 Lemma digits_ofK b n k :
-  0 < b ->
-  nat_of_digits b (digits_of b n k) = n %% b ^ k.
+  nat_of_digits b [seq val i | i <- digits_of b n k] = n %% b.+1 ^ k.
 Proof.
-  move=> Hb.
-  rewrite /nat_of_digits /digits_of size_mkseq
-          (eq_big_seq (fun i : 'I_k => digit_of b n i * b ^ i)); last first.
-    by move=> i _; rewrite /= nth_mkseq.
+  rewrite /nat_of_digits /digits_of size_map /= size_mkseq
+          (eq_big_seq (fun i : 'I_k => digit_of b n i * b.+1 ^ i)); last first.
+    by move=> i _ /=; rewrite (nth_map ord0) ?size_mkseq //= nth_mkseq /=.
   elim: k => [|k IH] /=.
     by rewrite big_ord0 expn0 modn1.
   rewrite big_ord_recr {}IH /digit_of /=.
-  rewrite {1}(divn_eq n (b ^ k.+1)) {2}expnS mulnA modnMDl.
-  suff -> : (n %/ b ^ k) %% b = (n %% b ^ k.+1) %/ b ^ k.
+  rewrite {1}(divn_eq n (b.+1 ^ k.+1)) {2}expnS mulnA modnMDl.
+  suff -> : (n %/ b.+1 ^ k) %% b.+1 = (n %% b.+1 ^ k.+1) %/ b.+1 ^ k.
     by rewrite addnC -divn_eq.
-  by rewrite {1}(divn_eq n (b ^ k.+1)) {2}expnS mulnA divnMDl ?expn_gt0 ?Hb //
-             modnMDl modn_small // ltn_divLR ?expn_gt0 ?Hb // -expnS ltn_mod
-             expn_gt0 Hb.
+  by rewrite {1}(divn_eq n (b.+1 ^ k.+1)) {2}expnS mulnA divnMDl ?expn_gt0 //
+             modnMDl modn_small // ltn_divLR ?expn_gt0 // -expnS ltn_mod
+             expn_gt0.
 Qed.
 
 Definition test_bit n k : bool :=
