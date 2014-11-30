@@ -17,7 +17,7 @@ Definition digits_of b n k :=
 Definition nat_of_digits b ds :=
   \sum_(i < size ds) nth 0 ds i * b.+1 ^ i.
 
-Lemma digits_ofK b n k :
+Lemma digits_ofK' b n k :
   nat_of_digits b [seq val i | i <- digits_of b n k] = n %% b.+1 ^ k.
 Proof.
   rewrite /nat_of_digits /digits_of size_map /= size_mkseq
@@ -34,11 +34,14 @@ Proof.
              expn_gt0.
 Qed.
 
-Lemma digits_of_bij b k : bijective (fun n : 'I_(b.+1 ^ k) => digits_of b n k).
+Definition digits_of_ord b k (n : 'I_(b.+1 ^ k)) := digits_of b n k.
+
+Lemma digits_of_ord_bij b k : bijective (@digits_of_ord b k).
 Proof.
   apply: inj_card_bij.
     move=> n1 n2 /= H.
-    move: (digits_ofK b n1 k) (digits_ofK b n2 k).
+    move: (digits_ofK' b n1 k) (digits_ofK' b n2 k).
+    rewrite /digits_of_ord in H.
     rewrite {}H !modn_small //= => ->.
     by apply val_inj.
   by rewrite card_tuple !card_ord.
@@ -49,8 +52,8 @@ Lemma nat_of_digits_bounds b (ds : seq 'I_b.+1) :
 Proof.
   rewrite -{1}[ds]/(val (@Tuple _ _ ds (eqxx (size ds)))).
   move: (size ds) (Tuple _) => {ds} k ds.
-  have [inv H1 H2] := digits_of_bij b k.
-  by rewrite -(H2 ds) digits_ofK ltn_mod expn_gt0.
+  have [inv H1 H2] := digits_of_ord_bij b k.
+  by rewrite -(H2 ds) digits_ofK' ltn_mod expn_gt0.
 Qed.
 
 Lemma ord_of_digits_proof b k (ds : k.-tuple 'I_b.+1) :
@@ -61,32 +64,19 @@ Qed.
 
 Definition ord_of_digits b k ds := Ordinal (@ord_of_digits_proof b k ds).
 
-Definition test_bit n k : bool :=
-  n %% 2 ^ k != n %% 2 ^ k.+1.
-
-Definition bits n k := mkseq (test_bit n) k.
-
-Definition nat_of_bits bs :=
-  \sum_(i < size bs) nth false bs i * 2 ^ i.
-
-Lemma bitsK n k : nat_of_bits (bits n k) = n %% 2 ^ k.
+Lemma digits_of_ordK b k : cancel (@digits_of_ord b k) (@ord_of_digits b k).
 Proof.
-  rewrite /nat_of_bits /bits size_mkseq
-          (eq_big_seq (fun i : 'I_k => test_bit n i * 2^i)); last first.
-    by move=> i _; rewrite /= nth_mkseq.
-  elim: k => [|k IH] //=.
-    by rewrite big_ord0 modn1.
-  rewrite big_ord_recr {}IH /test_bit /=.
-  rewrite {1 2}(divn_eq n (2 ^ k.+1)) {2 5}expnS mulnA modnMDl.
-  have : n %% 2 ^ k.+1 < 2 ^ k.+1.
-    by apply: ltn_pmod; rewrite expn_gt0 //.
-  move: (n %% _) => m Hl.
-  rewrite eqn_leq leq_mod /= -subn_eq0 {2 4}(divn_eq m (2 ^ k)) addnK
-          muln_eq0 expn_eq0 orbF [in RHS]addnC.
-  suff -> // : (m %/ 2 ^ k != 0 : nat) = m %/ 2 ^ k by [].
-  rewrite -lt0n.
-  suff : m %/ 2 ^ k < 2 by case: (_ %/ _) => [|[|]] //.
-  by rewrite ltn_divLR ?expn_gt0 // expnS in Hl *.
+  move=> n.
+  apply: val_inj.
+  by rewrite /ord_of_digits /digits_of_ord /= digits_ofK' modn_small.
+Qed.
+
+Lemma ord_of_digitsK b k : cancel (@ord_of_digits b k) (@digits_of_ord b k).
+Proof.
+  have Hbij := digits_of_ord_bij b k.
+  have [inv H1 H2] := Hbij.
+  have Heq := bij_can_eq Hbij (@digits_of_ordK b k) H1.
+  by apply: eq_can H2 (fsym Heq) (frefl _).
 Qed.
 
 Section Def.
