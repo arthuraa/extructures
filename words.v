@@ -34,6 +34,33 @@ Proof.
              expn_gt0.
 Qed.
 
+Lemma digits_of_bij b k : bijective (fun n : 'I_(b.+1 ^ k) => digits_of b n k).
+Proof.
+  apply: inj_card_bij.
+    move=> n1 n2 /= H.
+    move: (digits_ofK b n1 k) (digits_ofK b n2 k).
+    rewrite {}H !modn_small //= => ->.
+    by apply val_inj.
+  by rewrite card_tuple !card_ord.
+Qed.
+
+Lemma nat_of_digits_bounds b (ds : seq 'I_b.+1) :
+  nat_of_digits b [seq val i | i <- ds] < b.+1 ^ size ds.
+Proof.
+  rewrite -{1}[ds]/(val (@Tuple _ _ ds (eqxx (size ds)))).
+  move: (size ds) (Tuple _) => {ds} k ds.
+  have [inv H1 H2] := digits_of_bij b k.
+  by rewrite -(H2 ds) digits_ofK ltn_mod expn_gt0.
+Qed.
+
+Lemma ord_of_digits_proof b k (ds : k.-tuple 'I_b.+1) :
+  nat_of_digits b [seq val i | i <- ds] < b.+1 ^ k.
+Proof.
+  move: (nat_of_digits_bounds ds). by rewrite size_tuple.
+Qed.
+
+Definition ord_of_digits b k ds := Ordinal (@ord_of_digits_proof b k ds).
+
 Definition test_bit n k : bool :=
   n %% 2 ^ k != n %% 2 ^ k.+1.
 
