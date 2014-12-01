@@ -10,43 +10,24 @@ Section Def.
 
 Variable k : nat.
 
-CoInductive word : Type := Word of 'I_(2 ^ k).
+CoInductive word : predArgType := Word of 'I_(2 ^ k).
 
 Definition ord_of_word (w : word) := let: Word i := w in i.
 
-Lemma ord_of_wordK : cancel ord_of_word Word.
-Proof. by case. Qed.
-
-Definition word_eqMixin := CanEqMixin ord_of_wordK.
+Canonical word_subType := [newType for ord_of_word].
+Definition word_eqMixin := [eqMixin of word by <:].
 Canonical word_eqType := Eval hnf in EqType word word_eqMixin.
-
-Definition word_choiceMixin := CanChoiceMixin ord_of_wordK.
+Definition word_choiceMixin := [choiceMixin of word by <:].
 Canonical word_choiceType := Eval hnf in ChoiceType word word_choiceMixin.
-
-Definition word_countMixin := CanCountMixin ord_of_wordK.
+Definition word_countMixin := [countMixin of word by <:].
 Canonical word_countType := Eval hnf in CountType word word_countMixin.
-
-Definition word_enum := map Word (enum 'I_(2 ^ k)).
-
-Lemma word_enum_uniq : uniq word_enum.
-Proof.
-  rewrite map_inj_uniq ?enum_uniq //.
-  by move=> n1 n2 [].
-Qed.
-
-Lemma mem_word_enum w : w \in word_enum.
-Proof.
-  rewrite -(ord_of_wordK w) mem_map ?mem_enum //.
-  by move=> n1 n2 [].
-Qed.
-
-Definition word_finMixin := UniqFinMixin word_enum_uniq mem_word_enum.
+Canonical word_subCountType := Eval hnf in [subCountType of word].
+Definition word_finMixin := [finMixin of word by <:].
 Canonical word_finType := Eval hnf in FinType word word_finMixin.
+Canonical word_subFinType := Eval hnf in [subFinType of word].
 
 Lemma card_word : #|{: word}| = 2 ^ k.
-Proof.
-  by rewrite cardT enumT unlock /= size_map -cardT card_ord.
-Qed.
+Proof. by rewrite card_sub eq_cardT // -cardT card_ord. Qed.
 
 Definition digit_of_nat b k n : 'I_b.+1:=
   inZp (n %/ b.+1 ^ k).
