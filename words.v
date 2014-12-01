@@ -1,5 +1,5 @@
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat choice fintype seq.
-Require Import div zmodp bigop tuple.
+Require Import div ssralg finalg zmodp bigop tuple.
 Require Import BinNums.
 
 Set Implicit Arguments.
@@ -28,6 +28,72 @@ Canonical word_subFinType := Eval hnf in [subFinType of word].
 
 Lemma card_word : #|{: word}| = 2 ^ k.
 Proof. by rewrite card_sub eq_cardT // -cardT card_ord. Qed.
+
+Lemma exp2_gt0 : 0 < 2 ^ k.
+Proof. by rewrite expn_gt0. Qed.
+
+Definition as_word (n : nat) := Word (Ordinal (ltn_pmod n exp2_gt0)).
+
+Definition addw (w1 w2 : word) := as_word (val w1 + val w2).
+Definition oppw (w : word) := as_word (2 ^ k - val w).
+Definition mulw (w1 w2 : word) := as_word (val w1 * val w2).
+
+Definition zerow := as_word 0.
+Definition onew := as_word 1.
+
+Lemma valwK (w : word) : as_word (val w) = w.
+Proof. by apply: val_inj; apply: val_inj; rewrite /= modn_small. Qed.
+
+Lemma add0w : left_id zerow addw.
+Proof. by move=> w; rewrite /addw /= mod0n valwK. Qed.
+
+Lemma addNw : left_inverse zerow oppw addw.
+Proof.
+  by move=> w; do 2!apply: val_inj;
+  rewrite /= modnDml subnK ?modnn ?mod0n // ltnW.
+Qed.
+
+Lemma addwA : associative addw.
+Proof.
+by move=> x y z; do 2!apply: val_inj; rewrite /= modnDml modnDmr addnA.
+Qed.
+
+Lemma addwC : commutative addw.
+Proof. by move=> x y; do 2!apply: val_inj; rewrite /= addnC. Qed.
+
+Definition word_zmodMixin := ZmodMixin addwA addwC add0w addNw.
+Canonical word_zmodType := ZmodType word word_zmodMixin.
+Canonical word_finZmodType := Eval hnf in [finZmodType of word].
+Canonical word_baseFinGroupType := Eval hnf in [baseFinGroupType of word for +%R].
+Canonical word_finGroupType := Eval hnf in [finGroupType of word for +%R].
+
+Lemma mul1w : left_id onew mulw.
+Proof.
+  by move=> w; do 2!apply: val_inj; rewrite /= /mulw modnMml mul1n modn_small.
+Qed.
+
+Lemma mulwC : commutative mulw.
+Proof. by move=> w1 w2; rewrite /mulw mulnC. Qed.
+
+Lemma mulw1 : right_id onew mulw.
+Proof. by move=> w; rewrite mulwC mul1w. Qed.
+
+Lemma mulwA : associative mulw.
+Proof.
+  move=> w1 w2 w3; do 2!apply: val_inj.
+  by rewrite /= /mulw modnMml modnMmr mulnA.
+Qed.
+
+Lemma mulw_addr : right_distributive mulw addw.
+Proof.
+  move=> w1 w2 w3; do 2!apply: val_inj.
+  by rewrite /= /mulw modnMmr modnDm mulnDr.
+Qed.
+
+Lemma mulw_addl : left_distributive mulw addw.
+Proof.
+  by move=> w1 w2 w3; rewrite -!(mulwC w3) mulw_addr.
+Qed.
 
 Definition digit_of_nat b k n : 'I_b.+1:=
   inZp (n %/ b.+1 ^ k).
