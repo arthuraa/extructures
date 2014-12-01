@@ -6,26 +6,66 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Section Digits.
+Section Def.
 
-Definition digit_of b n k : 'I_b.+1:=
+Variable k : nat.
+
+CoInductive word : Type := Word of 'I_(2 ^ k).
+
+Definition ord_of_word (w : word) := let: Word i := w in i.
+
+Lemma ord_of_wordK : cancel ord_of_word Word.
+Proof. by case. Qed.
+
+Definition word_eqMixin := CanEqMixin ord_of_wordK.
+Canonical word_eqType := Eval hnf in EqType word word_eqMixin.
+
+Definition word_choiceMixin := CanChoiceMixin ord_of_wordK.
+Canonical word_choiceType := Eval hnf in ChoiceType word word_choiceMixin.
+
+Definition word_countMixin := CanCountMixin ord_of_wordK.
+Canonical word_countType := Eval hnf in CountType word word_countMixin.
+
+Definition word_enum := map Word (enum 'I_(2 ^ k)).
+
+Lemma word_enum_uniq : uniq word_enum.
+Proof.
+  rewrite map_inj_uniq ?enum_uniq //.
+  by move=> n1 n2 [].
+Qed.
+
+Lemma mem_word_enum w : w \in word_enum.
+Proof.
+  rewrite -(ord_of_wordK w) mem_map ?mem_enum //.
+  by move=> n1 n2 [].
+Qed.
+
+Definition word_finMixin := UniqFinMixin word_enum_uniq mem_word_enum.
+Canonical word_finType := Eval hnf in FinType word word_finMixin.
+
+Lemma card_word : #|{: word}| = 2 ^ k.
+Proof.
+  by rewrite cardT enumT unlock /= size_map -cardT card_ord.
+Qed.
+
+Definition digit_of_nat b k n : 'I_b.+1:=
   inZp (n %/ b.+1 ^ k).
 
-Definition digits_of b n k :=
-  [tuple of mkseq (digit_of b n) k].
+Definition digits_of_nat b k n :=
+  [tuple of mkseq (fun i => digit_of_nat b i n) k].
 
 Definition nat_of_digits b ds :=
   \sum_(i < size ds) nth 0 ds i * b.+1 ^ i.
 
-Lemma digits_ofK' b n k :
-  nat_of_digits b [seq val i | i <- digits_of b n k] = n %% b.+1 ^ k.
+Lemma nat_of_digits_digits_of_nat b n k :
+  nat_of_digits b [seq val i | i <- digits_of_nat b k n] = n %% b.+1 ^ k.
 Proof.
-  rewrite /nat_of_digits /digits_of size_map /= size_mkseq
-          (eq_big_seq (fun i : 'I_k => digit_of b n i * b.+1 ^ i)); last first.
+  rewrite /nat_of_digits /digits_of_nat size_map /= size_mkseq
+          (eq_big_seq (fun i : 'I_k => digit_of_nat b i n * b.+1 ^ i)); last first.
     by move=> i _ /=; rewrite (nth_map ord0) ?size_mkseq //= nth_mkseq /=.
   elim: k => [|k IH] /=.
     by rewrite big_ord0 expn0 modn1.
-  rewrite big_ord_recr {}IH /digit_of /=.
+  rewrite big_ord_recr {}IH /digit_of_nat /=.
   rewrite {1}(divn_eq n (b.+1 ^ k.+1)) {2}expnS mulnA modnMDl.
   suff -> : (n %/ b.+1 ^ k) %% b.+1 = (n %% b.+1 ^ k.+1) %/ b.+1 ^ k.
     by rewrite addnC -divn_eq.
@@ -34,13 +74,14 @@ Proof.
              expn_gt0.
 Qed.
 
-Definition digits_of_ord b k (n : 'I_(b.+1 ^ k)) := digits_of b n k.
+Definition digits_of_ord b k (n : 'I_(b.+1 ^ k)) := digits_of_nat b k n.
 
 Lemma digits_of_ord_bij b k : bijective (@digits_of_ord b k).
 Proof.
   apply: inj_card_bij.
     move=> n1 n2 /= H.
-    move: (digits_ofK' b n1 k) (digits_ofK' b n2 k).
+    move: (nat_of_digits_digits_of_nat b n1 k)
+          (nat_of_digits_digits_of_nat b n2 k).
     rewrite /digits_of_ord in H.
     rewrite {}H !modn_small //= => ->.
     by apply val_inj.
@@ -53,7 +94,7 @@ Proof.
   rewrite -{1}[ds]/(val (@Tuple _ _ ds (eqxx (size ds)))).
   move: (size ds) (Tuple _) => {ds} k ds.
   have [inv H1 H2] := digits_of_ord_bij b k.
-  by rewrite -(H2 ds) digits_ofK' ltn_mod expn_gt0.
+  by rewrite -(H2 ds) nat_of_digits_digits_of_nat ltn_mod expn_gt0.
 Qed.
 
 Lemma ord_of_digits_proof b k (ds : k.-tuple 'I_b.+1) :
@@ -66,9 +107,9 @@ Definition ord_of_digits b k ds := Ordinal (@ord_of_digits_proof b k ds).
 
 Lemma digits_of_ordK b k : cancel (@digits_of_ord b k) (@ord_of_digits b k).
 Proof.
-  move=> n.
-  apply: val_inj.
-  by rewrite /ord_of_digits /digits_of_ord /= digits_ofK' modn_small.
+  move=> n; apply: val_inj.
+  by rewrite /ord_of_digits /digits_of_ord /=
+             nat_of_digits_digits_of_nat modn_small.
 Qed.
 
 Lemma ord_of_digitsK b k : cancel (@ord_of_digits b k) (@digits_of_ord b k).
@@ -77,6 +118,31 @@ Proof.
   have [inv H1 H2] := Hbij.
   have Heq := bij_can_eq Hbij (@digits_of_ordK b k) H1.
   by apply: eq_can H2 (fsym Heq) (frefl _).
+Qed.
+
+
+
+
+
+Definition bits_of_ord k (n : 'I_(2 ^ k)) :=
+  [tuple of [seq 0 < val d | d <- digits_of_ord n]].
+
+Definition ord_of_bits k (bs : k.-tuple bool) : 'I_(2 ^ k) :=
+  ord_of_digits [tuple of [seq inZp b | b : bool <- bs]].
+
+Lemma bits_of_ordK k : cancel (@bits_of_ord k) (@ord_of_bits k).
+Proof.
+  have Hcan : cancel (fun n : 'I_2 => 0 < n) (fun b : bool => inZp b).
+    by move=> n; apply: val_inj; move: n => [[|[|]]].
+  move=> n. apply: val_inj => /=.
+  by rewrite (mapK Hcan) -{2}(digits_of_ordK n).
+Qed.
+
+Lemma ord_of_bitsK k : cancel (@ord_of_bits k) (@bits_of_ord k).
+Proof.
+  have Hcan : cancel (fun b : bool => inZp b) (fun n : 'I_2 => 0 < n) by case.
+  move=> n. apply: val_inj.
+  by rewrite /bits_of_ord /ord_of_bits ord_of_digitsK /= (mapK Hcan).
 Qed.
 
 Section Def.
@@ -99,18 +165,6 @@ Proof. by case. Qed.
 
 Lemma bits_inj : injective bits.
 Proof. exact: can_inj bitsK. Qed.
-
-Definition word_eqMixin := CanEqMixin bitsK.
-Canonical word_eqType := Eval hnf in EqType word word_eqMixin.
-
-Definition word_choiceMixin := CanChoiceMixin bitsK.
-Canonical word_choiceType := Eval hnf in ChoiceType _ word_choiceMixin.
-
-Definition word_countMixin := CanCountMixin bitsK.
-Canonical word_countType := Eval hnf in CountType _ word_countMixin.
-
-Definition word_finMixin := CanFinMixin bitsK.
-Canonical word_finType := Eval hnf in FinType _ word_finMixin.
 
 Fixpoint add_aux b (w1 w2 : seq bool) : seq bool :=
   match w1, w2 with
