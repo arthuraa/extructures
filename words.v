@@ -40,6 +40,7 @@ Definition mulw (w1 w2 : word) := as_word (val w1 * val w2).
 
 Definition zerow := as_word 0.
 Definition onew := as_word 1.
+Definition monew := oppw onew.
 
 Lemma valwK (w : word) : as_word (val w) = w.
 Proof. by apply: val_inj; apply: val_inj; rewrite /= modn_small. Qed.
@@ -96,7 +97,7 @@ Proof.
 Qed.
 
 Definition bits_of_word (w : word) :=
-  [ffun i : 'I_k => odd (val w %/ 2 ^ i)].
+  locked [ffun i : 'I_k => odd (val w %/ 2 ^ i)].
 
 Definition word_of_bits (bs : {ffun pred 'I_k}) :=
   as_word (\sum_(i < k) bs i * 2 ^ i).
@@ -108,7 +109,7 @@ have Hsum2 : forall N (f : pred 'I_N), \sum_(i < N) f i * 2 ^ i < 2 ^ N.
   rewrite -[2 ^ N]prednK ?expn_gt0 // predn_exp mul1n ltnS leq_sum // => i _.
   by case: (f i); rewrite // ?mul1n ?mul0n leqnn.
 move=> bs; apply/ffunP=> - [i Hi].
-rewrite /bits_of_word /word_of_bits ffunE /= modn_small; last by apply: Hsum2.
+rewrite /bits_of_word /word_of_bits -lock ffunE /= modn_small; last by apply: Hsum2.
 have Hl : k = i.+1 + (k - i.+1) by rewrite subnKC //.
 rewrite {}Hl in bs Hi *.
 rewrite big_split_ord big_ord_recr /=.
@@ -120,14 +121,79 @@ rewrite add0n odd_add odd_mul andbF addbF oddb.
 by apply: f_equal; apply: val_inj.
 Qed.
 
+Lemma word_of_bits_inj : injective word_of_bits.
+Proof. exact: can_inj word_of_bitsK. Qed.
+
 Lemma bits_of_wordK : cancel bits_of_word word_of_bits.
 Proof.
-have := (inj_card_bij (can_inj word_of_bitsK)).
+have := (inj_card_bij word_of_bits_inj).
 rewrite card_word card_ffun card_bool card_ord=> /(_ erefl) Hbij.
 have [inv Hinv Hinv'] := (Hbij).
 move: (bij_can_eq Hbij word_of_bitsK Hinv) => H w.
 by rewrite H Hinv'.
 Qed.
+
+Lemma bits_of_word_inj : injective bits_of_word.
+Proof. exact: can_inj bits_of_wordK. Qed.
+
+Definition negw w := word_of_bits [ffun i => ~~ bits_of_word w i].
+
+Lemma negwK : involutive negw.
+Proof.
+move=> w; rewrite /negw word_of_bitsK.
+by apply: (canLR bits_of_wordK); apply/ffunP=> i; rewrite !ffunE negbK.
+Qed.
+
+Section Bitwise2.
+
+Variable op : bool -> bool -> bool.
+
+Definition bitwise2 w1 w2 :=
+  word_of_bits [ffun i => op (bits_of_word w1 i) (bits_of_word w2 i)].
+
+Lemma bitwise2C : commutative op -> commutative bitwise2.
+Proof.
+move=> opC w1 w2; congr word_of_bits; apply/ffunP=> i.
+by rewrite 2!ffunE opC.
+Qed.
+
+Lemma bitwise2A : associative op -> associative bitwise2.
+Proof.
+move=> opA w1 w2 w3; congr word_of_bits; apply/ffunP=> i.
+by rewrite /bitwise2 !word_of_bitsK !ffunE /= opA.
+Qed.
+
+Lemma idem_bitwise2 : idempotent op -> idempotent bitwise2.
+Proof.
+move=> opbb w; apply: bits_of_word_inj; apply/ffunP=> i.
+by rewrite /bitwise2 /= word_of_bitsK ffunE opbb.
+Qed.
+
+End Bitwise2.
+
+Definition andw := bitwise2 andb.
+Definition orw := bitwise2 orb.
+Definition xorw := bitwise2 addb.
+
+Lemma andwC : commutative andw.
+Proof. exact: bitwise2C andbC. Qed.
+
+Lemma andwA : associative andw.
+Proof. exact: bitwise2A andbA. Qed.
+
+Lemma andww : idempotent andw.
+Proof. exact: idem_bitwise2 andbb. Qed.
+
+Lemma orwC : commutative orw.
+Proof. exact: bitwise2C orbC. Qed.
+
+Lemma orwA : associative orw.
+Proof. exact: bitwise2A orbA. Qed.
+
+Lemma orww : idempotent orw.
+Proof. exact: idem_bitwise2 orbb. Qed.
+
+
 
 Section Def.
 
