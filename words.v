@@ -1,5 +1,5 @@
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat choice fintype seq.
-Require Import div ssralg finalg zmodp bigop tuple.
+Require Import div ssralg finalg zmodp bigop tuple finfun binomial.
 Require Import BinNums.
 
 Set Implicit Arguments.
@@ -95,101 +95,38 @@ Proof.
   by move=> w1 w2 w3; rewrite -!(mulwC w3) mulw_addr.
 Qed.
 
-Definition digit_of_nat b k n : 'I_b.+1:=
-  inZp (n %/ b.+1 ^ k).
+Definition bits_of_word (w : word) :=
+  [ffun i : 'I_k => odd (val w %/ 2 ^ i)].
 
-Definition digits_of_nat b k n :=
-  [tuple of mkseq (fun i => digit_of_nat b i n) k].
+Definition word_of_bits (bs : {ffun pred 'I_k}) :=
+  as_word (\sum_(i < k) bs i * 2 ^ i).
 
-Definition nat_of_digits b ds :=
-  \sum_(i < size ds) nth 0 ds i * b.+1 ^ i.
-
-Lemma nat_of_digits_digits_of_nat b n k :
-  nat_of_digits b [seq val i | i <- digits_of_nat b k n] = n %% b.+1 ^ k.
+Lemma word_of_bitsK : cancel word_of_bits bits_of_word.
 Proof.
-  rewrite /nat_of_digits /digits_of_nat size_map /= size_mkseq
-          (eq_big_seq (fun i : 'I_k => digit_of_nat b i n * b.+1 ^ i)); last first.
-    by move=> i _ /=; rewrite (nth_map ord0) ?size_mkseq //= nth_mkseq /=.
-  elim: k => [|k IH] /=.
-    by rewrite big_ord0 expn0 modn1.
-  rewrite big_ord_recr {}IH /digit_of_nat /=.
-  rewrite {1}(divn_eq n (b.+1 ^ k.+1)) {2}expnS mulnA modnMDl.
-  suff -> : (n %/ b.+1 ^ k) %% b.+1 = (n %% b.+1 ^ k.+1) %/ b.+1 ^ k.
-    by rewrite addnC -divn_eq.
-  by rewrite {1}(divn_eq n (b.+1 ^ k.+1)) {2}expnS mulnA divnMDl ?expn_gt0 //
-             modnMDl modn_small // ltn_divLR ?expn_gt0 // -expnS ltn_mod
-             expn_gt0.
+have Hsum2 : forall N (f : pred 'I_N), \sum_(i < N) f i * 2 ^ i < 2 ^ N.
+  move=> N f.
+  rewrite -[2 ^ N]prednK ?expn_gt0 // predn_exp mul1n ltnS leq_sum // => i _.
+  by case: (f i); rewrite // ?mul1n ?mul0n leqnn.
+move=> bs; apply/ffunP=> - [i Hi].
+rewrite /bits_of_word /word_of_bits ffunE /= modn_small; last by apply: Hsum2.
+have Hl : k = i.+1 + (k - i.+1) by rewrite subnKC //.
+rewrite {}Hl in bs Hi *.
+rewrite big_split_ord big_ord_recr /=.
+rewrite [in X in _ + _ + X](eq_big_seq (fun i' => bs (rshift i.+1 i') * 2 ^ i' * 2 ^ i.+1)); last first.
+  by move=> i' _; rewrite /= expnD [in X in _ * X]mulnC mulnA.
+rewrite -big_distrl /= expnS mulnA !divnDr ?mulnK ?dvdn_mull ?dvdnn ?expn_gt0 //.
+rewrite divn_small; last by apply: Hsum2.
+rewrite add0n odd_add odd_mul andbF addbF oddb.
+by apply: f_equal; apply: val_inj.
 Qed.
 
-Definition digits_of_ord b k (n : 'I_(b.+1 ^ k)) := digits_of_nat b k n.
-
-Lemma digits_of_ord_bij b k : bijective (@digits_of_ord b k).
+Lemma bits_of_wordK : cancel bits_of_word word_of_bits.
 Proof.
-  apply: inj_card_bij.
-    move=> n1 n2 /= H.
-    move: (nat_of_digits_digits_of_nat b n1 k)
-          (nat_of_digits_digits_of_nat b n2 k).
-    rewrite /digits_of_ord in H.
-    rewrite {}H !modn_small //= => ->.
-    by apply val_inj.
-  by rewrite card_tuple !card_ord.
-Qed.
-
-Lemma nat_of_digits_bounds b (ds : seq 'I_b.+1) :
-  nat_of_digits b [seq val i | i <- ds] < b.+1 ^ size ds.
-Proof.
-  rewrite -{1}[ds]/(val (@Tuple _ _ ds (eqxx (size ds)))).
-  move: (size ds) (Tuple _) => {ds} k ds.
-  have [inv H1 H2] := digits_of_ord_bij b k.
-  by rewrite -(H2 ds) nat_of_digits_digits_of_nat ltn_mod expn_gt0.
-Qed.
-
-Lemma ord_of_digits_proof b k (ds : k.-tuple 'I_b.+1) :
-  nat_of_digits b [seq val i | i <- ds] < b.+1 ^ k.
-Proof.
-  move: (nat_of_digits_bounds ds). by rewrite size_tuple.
-Qed.
-
-Definition ord_of_digits b k ds := Ordinal (@ord_of_digits_proof b k ds).
-
-Lemma digits_of_ordK b k : cancel (@digits_of_ord b k) (@ord_of_digits b k).
-Proof.
-  move=> n; apply: val_inj.
-  by rewrite /ord_of_digits /digits_of_ord /=
-             nat_of_digits_digits_of_nat modn_small.
-Qed.
-
-Lemma ord_of_digitsK b k : cancel (@ord_of_digits b k) (@digits_of_ord b k).
-Proof.
-  have Hbij := digits_of_ord_bij b k.
-  have [inv H1 H2] := Hbij.
-  have Heq := bij_can_eq Hbij (@digits_of_ordK b k) H1.
-  by apply: eq_can H2 (fsym Heq) (frefl _).
-Qed.
-
-
-
-
-
-Definition bits_of_ord k (n : 'I_(2 ^ k)) :=
-  [tuple of [seq 0 < val d | d <- digits_of_ord n]].
-
-Definition ord_of_bits k (bs : k.-tuple bool) : 'I_(2 ^ k) :=
-  ord_of_digits [tuple of [seq inZp b | b : bool <- bs]].
-
-Lemma bits_of_ordK k : cancel (@bits_of_ord k) (@ord_of_bits k).
-Proof.
-  have Hcan : cancel (fun n : 'I_2 => 0 < n) (fun b : bool => inZp b).
-    by move=> n; apply: val_inj; move: n => [[|[|]]].
-  move=> n. apply: val_inj => /=.
-  by rewrite (mapK Hcan) -{2}(digits_of_ordK n).
-Qed.
-
-Lemma ord_of_bitsK k : cancel (@ord_of_bits k) (@bits_of_ord k).
-Proof.
-  have Hcan : cancel (fun b : bool => inZp b) (fun n : 'I_2 => 0 < n) by case.
-  move=> n. apply: val_inj.
-  by rewrite /bits_of_ord /ord_of_bits ord_of_digitsK /= (mapK Hcan).
+have := (inj_card_bij (can_inj word_of_bitsK)).
+rewrite card_word card_ffun card_bool card_ord=> /(_ erefl) Hbij.
+have [inv Hinv Hinv'] := (Hbij).
+move: (bij_can_eq Hbij word_of_bitsK Hinv) => H w.
+by rewrite H Hinv'.
 Qed.
 
 Section Def.
