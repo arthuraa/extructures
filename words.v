@@ -144,6 +144,43 @@ move=> w; rewrite /negw word_of_bitsK.
 by apply: (canLR bits_of_wordK); apply/ffunP=> i; rewrite !ffunE negbK.
 Qed.
 
+Lemma bits_zero : bits_of_word zerow = [ffun _ => false].
+Proof.
+apply: (canLR word_of_bitsK); do 2!apply: val_inj=> /=.
+rewrite (eq_big_seq (fun i : 'I_k => 0)); last by move=> i; rewrite /= ffunE.
+by rewrite sum_nat_const muln0.
+Qed.
+
+Lemma bits_one : bits_of_word onew = [ffun i : 'I_k => 0 == i].
+Proof.
+apply: (canLR word_of_bitsK); do 2!apply: val_inj=> /=.
+case: k=> [|k']; first by rewrite big_ord0 expn0 modn1.
+rewrite big_ord_recl (eq_big_seq (fun i : 'I_(k') => 0)).
+  by rewrite sum_nat_const muln0 addn0 ffunE.
+by move=> i _; rewrite /= ffunE.
+Qed.
+
+Lemma bits_mone : bits_of_word monew = [ffun _ => true].
+Proof.
+apply: (canLR word_of_bitsK).
+rewrite -(GRing.add0r monew) /monew; apply: (canLR (GRing.subrK (oppw onew))).
+rewrite GRing.opprK.
+do 2!apply: val_inj=> /=.
+rewrite (eq_big_seq (fun i : 'I_k => 2 ^ i)); last by move=> i _; rewrite /= ffunE mul1n.
+have -> : (\sum_(i < k) 2 ^ i) = (2 ^ k).-1 by rewrite predn_exp /= mul1n.
+rewrite [in _ + _]modn_small ?prednK ?expn_gt0 //.
+have [->|Hn0] := altP (k =P 0); first by rewrite !expn0 /= modn1.
+rewrite [in _ + _]modn_small -1?[in X in X < _](expn0 2) ?ltn_exp2l // ?lt0n //.
+by rewrite addn1 prednK ?expn_gt0 // modnn mod0n.
+Qed.
+
+Lemma negw_zero : negw zerow = monew.
+Proof.
+rewrite /negw; apply: (canLR bits_of_wordK).
+rewrite bits_mone bits_zero.
+by apply/ffunP=> i; rewrite !ffunE.
+Qed.
+
 Section Bitwise2.
 
 Variable op : bool -> bool -> bool.
@@ -169,6 +206,15 @@ move=> opbb w; apply: bits_of_word_inj; apply/ffunP=> i.
 by rewrite /bitwise2 /= word_of_bitsK ffunE opbb.
 Qed.
 
+Lemma id_bitwise2 b w :
+  left_id b op ->
+  bits_of_word w = [ffun=> b] ->
+  left_id w bitwise2.
+Proof.
+move=> Hid /(canRL bits_of_wordK) -> {w} w; rewrite /bitwise2 word_of_bitsK.
+by apply: (canLR bits_of_wordK); apply/ffunP=> i; rewrite /= !ffunE Hid.
+Qed.
+
 End Bitwise2.
 
 Definition andw := bitwise2 andb.
@@ -184,6 +230,12 @@ Proof. exact: bitwise2A andbA. Qed.
 Lemma andww : idempotent andw.
 Proof. exact: idem_bitwise2 andbb. Qed.
 
+Lemma andM1w : left_id monew andw.
+Proof. exact: id_bitwise2 andTb bits_mone. Qed.
+
+Lemma andwM1 : right_id monew andw.
+Proof. by move=> w; rewrite andwC andM1w. Qed.
+
 Lemma orwC : commutative orw.
 Proof. exact: bitwise2C orbC. Qed.
 
@@ -193,6 +245,23 @@ Proof. exact: bitwise2A orbA. Qed.
 Lemma orww : idempotent orw.
 Proof. exact: idem_bitwise2 orbb. Qed.
 
+Lemma or0w : left_id zerow orw.
+Proof. exact: id_bitwise2 orFb bits_zero. Qed.
+
+Lemma orw0 : right_id zerow orw.
+Proof. by move=> w; rewrite orwC or0w. Qed.
+
+Lemma xorwC : commutative xorw.
+Proof. exact: bitwise2C addbC. Qed.
+
+Lemma xorwA : associative xorw.
+Proof. exact: bitwise2A addbA. Qed.
+
+Lemma xor0w : left_id zerow xorw.
+Proof. exact: id_bitwise2 addFb bits_zero. Qed.
+
+Lemma xorw0 : right_id zerow xorw.
+Proof. by move=> w; rewrite xorwC xor0w. Qed.
 
 
 Section Def.
