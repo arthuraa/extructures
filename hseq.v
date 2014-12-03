@@ -27,6 +27,9 @@ Definition hseq_eqMixin (T_ : I -> eqType) idx :=
 Canonical hseq_eqType (T_ : I -> eqType) idx :=
   EqType (hseq T_ idx) (hseq_eqMixin T_ idx).
 
+Lemma tags_hseq T_ idx (hs : hseq T_ idx) : map tag hs = idx.
+Proof. exact: (eqP (valP hs)). Qed.
+
 End Def.
 
 Definition hseq_choiceMixin (I : choiceType) (T_ : I -> choiceType) idx :=
@@ -73,7 +76,16 @@ have -> : (x, t) = f [tuple of x :: t].
 by rewrite mem_image.
 Qed.
 
+(* FIXME: find a better name for this *)
+Definition mkhseq (I : eqType) T_ (idx : seq I) (hs : hseq T_ idx)
+                  (mkHs : map tag hs == idx -> hseq T_ idx) :=
+  mkHs (let: HSeq _ hsP := hs return map tag hs == idx in hsP).
+
 End HSeq.
+
+Notation "[ 'hseq' 'of' hs ]" :=
+  (mkhseq (fun hsP => @HSeq _ _ _ hs hsP))
+  (at level 0, format "[ 'hseq'  'of'  hs ]") : form_scope.
 
 Section HIdx.
 
@@ -115,3 +127,18 @@ Definition hnth T_ (hs : hseq T_ idx) (n : hidx) : T_ i :=
 End Def.
 
 End HIdx.
+
+Section SeqHSeq.
+
+Variables (I : eqType) (T_ : I -> Type) (idx : seq I).
+
+Lemma cons_hseqP i (x : T_ i) (hs : hseq T_ idx) :
+  map tag [tuple of Tagged T_ x :: hs] == i :: idx.
+Proof. by rewrite /= tags_hseq. Qed.
+Canonical cons_hseq i (x : T_ i) (hs : hseq T_ idx) :=
+  @HSeq _ _ (i :: idx) _ (cons_hseqP x hs).
+
+Check (fun i (x : T_ i) (hs : hseq T_ idx) =>
+         [hseq of [tuple of Tagged T_ x :: hs] : (size (i :: _)).-tuple _]).
+
+End SeqHSeq.
