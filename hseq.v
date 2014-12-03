@@ -95,6 +95,16 @@ Definition hidx_finMixin := [finMixin of hidx by <:].
 Canonical hidx_finType := FinType hidx hidx_finMixin.
 Canonical hidx_subFinType := [subFinType of hidx].
 
+Lemma hnth_proof T_ (hs : hseq T_ idx) (n : hidx) : tag (tnth hs n) = i.
+Proof.
+case: hs n => [t /= /eqP Ht] [n /= /eqP <-] /=.
+rewrite -{2}Ht -(@tnth_nth _ _ _ [tuple of [seq tag i | i <- t]]).
+by rewrite tnth_map.
+Qed.
+
+Definition hnth T_ (hs : hseq T_ idx) (n : hidx) : T_ i :=
+  eq_rect _ T_ (tagged (tnth hs n)) _ (hnth_proof hs n).
+
 End Def.
 
 End HIdx.
