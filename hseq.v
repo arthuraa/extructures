@@ -95,6 +95,13 @@ Definition hidx_finMixin := [finMixin of hidx by <:].
 Canonical hidx_finType := FinType hidx hidx_finMixin.
 Canonical hidx_subFinType := [subFinType of hidx].
 
+Lemma card_hidx : #|{: hidx}| = count (pred1 i) idx.
+Proof.
+rewrite card_sub -sum1_card.
+elim: idx => /= [|i' idx' <-]; first by rewrite big_ord0.
+by rewrite big_mkcond /= big_ord_recl /= !inE /= -big_mkcond /=.
+Qed.
+
 Lemma hnth_proof T_ (hs : hseq T_ idx) (n : hidx) : tag (tnth hs n) = i.
 Proof.
 case: hs n => [t /= /eqP Ht] [n /= /eqP <-] /=.
