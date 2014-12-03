@@ -230,11 +230,11 @@ Proof. exact: bitwise2A andbA. Qed.
 Lemma andww : idempotent andw.
 Proof. exact: idem_bitwise2 andbb. Qed.
 
-Lemma andM1w : left_id monew andw.
+Lemma andN1w : left_id monew andw.
 Proof. exact: id_bitwise2 andTb bits_mone. Qed.
 
-Lemma andwM1 : right_id monew andw.
-Proof. by move=> w; rewrite andwC andM1w. Qed.
+Lemma andwN1 : right_id monew andw.
+Proof. by move=> w; rewrite andwC andN1w. Qed.
 
 Lemma orwC : commutative orw.
 Proof. exact: bitwise2C orbC. Qed.
@@ -262,6 +262,9 @@ Proof. exact: id_bitwise2 addFb bits_zero. Qed.
 
 Lemma xorw0 : right_id zerow xorw.
 Proof. by move=> w; rewrite xorwC xor0w. Qed.
+
+End Def.
+
 
 Section Pos.
 
