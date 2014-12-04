@@ -156,11 +156,13 @@ Variables (I : eqType) (T_ : I -> Type) (idx : seq I).
 Lemma cons_hseqP i (x : T_ i) (hs : hseq T_ idx) :
   map tag (Tagged T_ x :: hs) == i :: idx.
 Proof. by rewrite /= tags_hseq. Qed.
-
 Canonical cons_hseq i (x : T_ i) (hs : hseq T_ idx) :=
   @HSeq _ _ (i :: idx) _ (cons_hseqP x hs).
 
-Check (fun i (x : T_ i) (hs : hseq T_ idx) =>
-         [hseq of Tagged T_ x :: hs]).
+Lemma cat_hseqP idx' (hs : hseq T_ idx) (hs' : hseq T_ idx') :
+  map tag (hs ++ hs') == idx ++ idx'.
+Proof. by rewrite map_cat !tags_hseq. Qed.
+Canonical cat_hseq idx' hs (hs' : hseq T_ idx') :=
+  HSeq (cat_hseqP hs hs').
 
 End SeqHSeq.
