@@ -16,6 +16,8 @@ Variables (T_ : I -> Type) (idx : seq I).
 Record hseq : predArgType :=
   HSeq {hsval :> seq {i : I & T_ i}; _ : map tag hsval == idx}.
 
+Definition hstags of hseq := idx.
+
 Canonical hseq_subType := [subType for hsval].
 
 End Basic.
@@ -114,7 +116,10 @@ Section Def.
 
 Variable (I : eqType) (i : I) (idx : seq I).
 
-Record hidx := HIdx {hival :> 'I_(size idx); _ : nth i idx hival == i}.
+Record hidx := HIdx {
+  hival :> 'I_(size idx);
+  _ : tnth (in_tuple idx) hival == i
+}.
 
 Canonical hidx_subType := [subType for hival].
 Definition hidx_eqMixin := [eqMixin of hidx by <:].
@@ -130,9 +135,12 @@ Canonical hidx_subFinType := [subFinType of hidx].
 
 Lemma card_hidx : #|{: hidx}| = count (pred1 i) idx.
 Proof.
-rewrite card_sub -sum1_card.
+rewrite card_sub -sum1_card big_mkcond /=.
+pose f (x : 'I_(size idx)) := nth i idx x == i : nat.
+rewrite (eq_big_seq f) /= {}/f; last first.
+  by move=> i' _; rewrite /= inE (tnth_nth i).
 elim: idx => /= [|i' idx' <-]; first by rewrite big_ord0.
-by rewrite big_mkcond /= big_ord_recl /= !inE /= -big_mkcond /=.
+by rewrite big_mkcond /= big_ord_recl /= -big_mkcond /=.
 Qed.
 
 Lemma tuple_of_hseq_proof T_ (hs : hseq T_ idx) : size hs == size idx.
@@ -142,7 +150,7 @@ Canonical tuple_of_hseq T_ (hs : hseq T_ idx) := Tuple (tuple_of_hseq_proof hs).
 Lemma hnth_proof T_ (hs : hseq T_ idx) (n : hidx) : tag (tnth [tuple of hs] n) = i.
 Proof.
 case: hs n => [t /= Ht] [n /= /eqP <-] /=.
-rewrite -[in X in nth _ X _](eqP Ht).
+rewrite (tnth_nth i) -[in X in nth _ X _](eqP Ht).
 by rewrite -tnth_map /= (tnth_nth i).
 Qed.
 
@@ -152,13 +160,18 @@ Definition hnth T_ (hs : hseq T_ idx) (n : hidx) : T_ i :=
 End Def.
 
 Definition hidx0 {I : eqType} {i : I} {idx : seq I} : hidx i (i :: idx) :=
-  HIdx (eqxx _ : nth i (i :: idx) (ord0 : 'I_(size idx).+1) == i).
+  HIdx (eqxx _ : tnth (in_tuple (i :: idx)) (ord0 : 'I_(size idx).+1) == i).
 
 Definition hshead (I : eqType) (T_ : I -> Type) i idx (hs : hseq T_ (i :: idx))
                   : T_ i :=
   hnth hs hidx0.
 
 End HIdx.
+
+Notation "[ 'hnth' hs i ]" :=
+  (let i' := @Ordinal (size (hstags hs)) i (erefl true) in
+   hnth hs (@HIdx _ _ (hstags hs) i' (eqxx (tnth (in_tuple (hstags hs)) i'))))
+  (at level 0, hs, i at level 8, format "[ 'hnth'  hs  i ]") : form_scope.
 
 Section SeqHSeq.
 
