@@ -1,6 +1,6 @@
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat choice fintype seq.
 Require Import div ssralg finalg zmodp bigop tuple finfun binomial.
-Require Import BinNums.
+Require Import hseq.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -264,3 +264,36 @@ Lemma xorw0 : right_id zerow xorw.
 Proof. by move=> w; rewrite xorwC xor0w. Qed.
 
 End Def.
+
+Section Splitting.
+
+Variable ks : seq nat.
+
+Definition split_word (w : word (sumn ks)) : hseq word ks :=
+  let t := tcast (card_ord (sumn ks)) (val (bits_of_word w)) in
+  let word_of_tuple k t' :=
+      word_of_bits (Finfun (tcast (esym (card_ord k)) t')) in
+  hmap word_of_tuple (split_tuple t).
+
+Definition merge_word (ws : hseq word ks) : word (sumn ks) :=
+  let tuple_of_word k w :=
+      tcast (card_ord k) (val (bits_of_word w)) in
+  let t := tcast (esym (card_ord (sumn ks)))
+                 (merge_tuple (hmap tuple_of_word ws)) in
+  word_of_bits (Finfun t).
+
+Lemma merge_wordK : cancel merge_word split_word.
+Proof.
+move=> ws; rewrite /split_word /merge_word /= word_of_bitsK /= tcastKV.
+rewrite merge_tupleK hmapK // => i w; rewrite tcastK /=.
+by apply: (canLR (@bits_of_wordK i)); case: (bits_of_word _).
+Qed.
+
+Lemma split_wordK : cancel split_word merge_word.
+Proof.
+move=> w; rewrite /split_word /merge_word /= hmapK ?split_tupleK ?tcastK.
+  by apply: (canLR (@bits_of_wordK _)); case: (bits_of_word _).
+by move=> i w'; rewrite word_of_bitsK /= tcastKV.
+Qed.
+
+End Splitting.
