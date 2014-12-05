@@ -65,7 +65,8 @@ Proof. by move=> x y; do 2!apply: val_inj; rewrite /= addnC. Qed.
 Definition word_zmodMixin := ZmodMixin addwA addwC add0w addNw.
 Canonical word_zmodType := ZmodType word word_zmodMixin.
 Canonical word_finZmodType := Eval hnf in [finZmodType of word].
-Canonical word_baseFinGroupType := Eval hnf in [baseFinGroupType of word for +%R].
+Canonical word_baseFinGroupType :=
+  Eval hnf in [baseFinGroupType of word for +%R].
 Canonical word_finGroupType := Eval hnf in [finGroupType of word for +%R].
 
 Lemma mul1w : left_id onew mulw.
@@ -109,13 +110,16 @@ have Hsum2 : forall N (f : pred 'I_N), \sum_(i < N) f i * 2 ^ i < 2 ^ N.
   rewrite -[2 ^ N]prednK ?expn_gt0 // predn_exp mul1n ltnS leq_sum // => i _.
   by case: (f i); rewrite // ?mul1n ?mul0n leqnn.
 move=> bs; apply/ffunP=> - [i Hi].
-rewrite /bits_of_word /word_of_bits -lock ffunE /= modn_small; last by apply: Hsum2.
+rewrite /bits_of_word /word_of_bits -lock ffunE /= modn_small; last first.
+  by apply: Hsum2.
 have Hl : k = i.+1 + (k - i.+1) by rewrite subnKC //.
 rewrite {}Hl in bs Hi *.
 rewrite big_split_ord big_ord_recr /=.
-rewrite [in X in _ + _ + X](eq_big_seq (fun i' => bs (rshift i.+1 i') * 2 ^ i' * 2 ^ i.+1)); last first.
+pose f i' := bs (rshift i.+1 i') * 2 ^ i' * 2 ^ i.+1.
+rewrite [in X in _ + _ + X](eq_big_seq f); last first.
   by move=> i' _; rewrite /= expnD [in X in _ * X]mulnC mulnA.
-rewrite -big_distrl /= expnS mulnA !divnDr ?mulnK ?dvdn_mull ?dvdnn ?expn_gt0 //.
+rewrite -big_distrl /= expnS mulnA.
+rewrite !divnDr ?mulnK ?dvdn_mull ?dvdnn ?expn_gt0 //.
 rewrite divn_small; last by apply: Hsum2.
 rewrite add0n odd_add odd_mul andbF addbF oddb.
 by apply: f_equal; apply: val_inj.
@@ -166,11 +170,12 @@ apply: (canLR word_of_bitsK).
 rewrite -(GRing.add0r monew) /monew; apply: (canLR (GRing.subrK (oppw onew))).
 rewrite GRing.opprK.
 do 2!apply: val_inj=> /=.
-rewrite (eq_big_seq (fun i : 'I_k => 2 ^ i)); last by move=> i _; rewrite /= ffunE mul1n.
+rewrite (eq_big_seq (fun i : 'I_k => 2 ^ i)); last first.
+  by move=> i _; rewrite /= ffunE mul1n.
 have -> : (\sum_(i < k) 2 ^ i) = (2 ^ k).-1 by rewrite predn_exp /= mul1n.
 rewrite [in _ + _]modn_small ?prednK ?expn_gt0 //.
 have [->|Hn0] := altP (k =P 0); first by rewrite !expn0 /= modn1.
-rewrite [in _ + _]modn_small -1?[in X in X < _](expn0 2) ?ltn_exp2l // ?lt0n //.
+rewrite [in _ + _]modn_small -1?[in X in X < _](expn0 2) ?ltn_exp2l ?lt0n //.
 by rewrite addn1 prednK ?expn_gt0 // modnn mod0n.
 Qed.
 

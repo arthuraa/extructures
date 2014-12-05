@@ -57,12 +57,14 @@ Section FinHSeq.
 Variables (I : finType) (T_ : I -> finType) (idx : seq I).
 
 Definition enum : seq (hseq T_ idx) :=
-  let extend i e := flatten (codom (fun x : T_ i => map (cons (Tagged T_ x)) e)) in
+  let extend i e :=
+      flatten (codom (fun x : T_ i => map (cons (Tagged T_ x)) e)) in
   pmap insub (foldr extend [::[::]] idx).
 
 Lemma enumP : Finite.axiom enum.
 Proof.
-case=> /= hs Phs; rewrite -(count_map _ (pred1 hs)) (pmap_filter (@insubK _ _ _)).
+case=> /= hs Phs.
+rewrite -(count_map _ (pred1 hs)) (pmap_filter (@insubK _ _ _)).
 rewrite count_filter -(@eq_count _ (pred1 hs)) => [|s /=]; last first.
   by rewrite isSome_insub; case: eqP=> // ->.
 elim: idx hs Phs => [|i idx' IH] [|[i' x] s] //= /eqP [Hi {IH}/eqP/IH].
@@ -147,7 +149,8 @@ Lemma tuple_of_hseq_proof T_ (hs : hseq T_ idx) : size hs == size idx.
 Proof. by rewrite -[in X in _ == X](eqP (valP hs)) size_map. Qed.
 Canonical tuple_of_hseq T_ (hs : hseq T_ idx) := Tuple (tuple_of_hseq_proof hs).
 
-Lemma hnth_proof T_ (hs : hseq T_ idx) (n : hidx) : tag (tnth [tuple of hs] n) = i.
+Lemma hnth_proof T_ (hs : hseq T_ idx) (n : hidx) :
+  tag (tnth [tuple of hs] n) = i.
 Proof.
 case: hs n => [t /= Ht] [n /= /eqP <-] /=.
 rewrite (tnth_nth i) -[in X in nth _ X _](eqP Ht).
@@ -267,8 +270,10 @@ Fixpoint split_tuple T ns :
 Fixpoint merge_tuple T ns :
   hseq (fun n => n.-tuple T) ns -> (sumn ns).-tuple T :=
   match ns with
-  | [::] => fun hs => [tuple]
-  | n :: ns' => fun hs => [tuple of hshead hs ++ merge_tuple [hseq of behead hs]]
+  | [::] =>
+    fun hs => [tuple]
+  | n :: ns' =>
+    fun hs => [tuple of hshead hs ++ merge_tuple [hseq of behead hs]]
   end.
 
 Lemma merge_tupleK T ns : cancel (@merge_tuple T ns) (@split_tuple T ns).
