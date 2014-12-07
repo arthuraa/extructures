@@ -147,6 +147,9 @@ Qed.
 Definition pmrem (m : partmap T S) k :=
   PartMap.PMap (pmrem_proof k (valP m)).
 
+Definition pmempty : partmap T S :=
+  @PartMap.PMap T S [::] erefl.
+
 End Operations.
 
 Coercion pmget : partmap >-> Funclass.
@@ -172,6 +175,9 @@ rewrite ![in LHS](fun_if, if_arg) /= {}IH.
 have [->{k'}|Hne] := altP (k' =P k); case: (Ord.ltgtP k) => //.
 by move=> <-; rewrite (negbTE Hne).
 Qed.
+
+Lemma pmemptyP : @pmempty T S =1 [fun : T => None].
+Proof. by []. Qed.
 
 Lemma pmget_map S' (f : S -> S') (m : partmap T S) : pmmap f m =1 omap f \o m.
 Proof.
