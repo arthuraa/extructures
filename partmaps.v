@@ -10,34 +10,30 @@ Section Def.
 
 Variables (T : countType) (S : Type).
 
-Fixpoint axiom (s : seq (T * S)) : bool :=
-  if s is p :: s then
-    all [pred p' | pickle p.1 < pickle p'.1] s && axiom s
+Fixpoint axiom (s : seq T) : bool :=
+  if s is k :: s then
+    all [pred k' | pickle k < pickle k'] s && axiom s
   else true.
 
-Fixpoint loc_axiom' k (s : seq (T * S)) : bool :=
-  if s is p' :: s then (pickle k < pickle p'.1) && loc_axiom' p'.1 s
+Fixpoint loc_axiom' k (s : seq T) : bool :=
+  if s is k' :: s then (pickle k < pickle k') && loc_axiom' k' s
   else true.
 
 Definition loc_axiom s :=
-  if s is p :: s then loc_axiom' p.1 s
+  if s is k :: s then loc_axiom' k s
   else true.
 
 Lemma axiomE : axiom =1 loc_axiom.
 Proof.
-case=> // p s /=; elim: s p=> //= p' s <- p.
-have [p_p'|] //= := boolP (_ < _).
-pose is_lb k := all [pred p | k < pickle p] [seq p.1 | p <- s].
-have E : forall k, all [pred p | k < pickle p.1] s = is_lb k.
-  by move=> lb; rewrite /is_lb all_map //.
-rewrite !{}E.
-suff <- : is_lb (pickle p.1) && is_lb (pickle p'.1) = is_lb (pickle p'.1)
-  by bool_congr.
-have [/allP /= H|] //= := boolP (is_lb (pickle p'.1)); last by rewrite andbF.
-by rewrite andbT; apply/allP=> k /H /=; apply: ltn_trans.
+case=> // k s /=; elim: s k=> //= k' s <- k.
+have [k_k'|] //= := boolP (_ < _).
+rewrite andbA; congr andb.
+have [/allP /= H|] //= := boolP (all [pred k'' | pickle k' < pickle k''] s);
+  last by rewrite andbF.
+by rewrite andbT; apply/allP=> k'' /H /=; apply: ltn_trans.
 Qed.
 
-Record type := PMap {pmval :> seq _; _ : axiom pmval}.
+Record type := PMap {pmval :> seq (T * S); _ : axiom [seq p.1 | p <- pmval]}.
 
 End Def.
 
@@ -86,8 +82,8 @@ Fixpoint set' (s : seq (T * S)) (k : T) (v : S) : seq (T * S) :=
     else p :: set' s' k v
   else [:: (k, v)].
 
-Lemma set_proof (s : seq (T * S)) k v (Ps : PartMap.axiom s) :
-  PartMap.axiom (set' s k v).
+Lemma set_proof (s : seq (T * S)) k v (Ps : PartMap.axiom [seq p.1 | p <- s]) :
+  PartMap.axiom [seq p.1 | p <- set' s k v].
 Proof.
 move: s Ps.
 have E: forall s, [seq p.1 | p <- set' s k v] =i k :: [seq p.1 | p <- s].
@@ -98,7 +94,6 @@ have E: forall s, [seq p.1 | p <- set' s k v] =i k :: [seq p.1 | p <- s].
 elim=> // p s /= IH /andP [lb Ps].
 rewrite -(inj_eq (pcan_inj (@pickleK T)) k) ![in X in is_true X]fun_if /=.
 rewrite {}IH // Ps !andbT.
-rewrite -!(all_map (fun p => p.1) [pred p' | _ < pickle p']) in lb *.
 rewrite !(eq_all_r (E s)) {E} /= lb andbT; case: ltngtP=> //=.
   by move=> k_p; move/allP in lb; apply/allP=> p' /lb /=; apply: ltn_trans.
 by move=> /(pcan_inj (@pickleK T)) ->.
@@ -137,7 +132,6 @@ elim: s1 Ps1 s2 Ps2 s1_s2
          [_|[k2 v2] s2 /= /andP [lb2 Ps2]] //
       => [/(_ k2)|/(_ k1)| ]; try by rewrite eqxx.
 move/IH: Ps2=> {IH} IH s1_s2.
-rewrite -!(all_map (fun p => p.1) [pred p' | _ < pickle p']) in lb1 lb2.
 wlog: k1 k2 v1 v2 s1 s2 lb1 lb2 s1_s2 IH / pickle k1 <= pickle k2.
   move=> H.
   case: (ltngtP (pickle k1) (pickle k2)) => [/ltnW|/ltnW k2_k1|/eq_leq]; eauto.
