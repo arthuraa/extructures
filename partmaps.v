@@ -130,23 +130,26 @@ elim: s1 Ps1 s2 Ps2 s1_s2
       => [/(_ k2)|/(_ k1)| ]; try by rewrite eqxx.
 move/IH: Ps2=> {IH} IH s1_s2.
 rewrite -!(all_map (fun p => p.1) [pred p' | _ < pickle p']) in lb1 lb2.
-have [k1_k2|k1_k2 {IH}] := altP (k1 =P k2).
-  move: (s1_s2 k1); rewrite k1_k2 eqxx=> - [->].
-  rewrite IH // => k; move: (s1_s2 k); rewrite k1_k2.
+wlog: k1 k2 v1 v2 s1 s2 lb1 lb2 s1_s2 IH / pickle k1 <= pickle k2.
+  move=> H.
+  case: (ltngtP (pickle k1) (pickle k2)) => [/ltnW|/ltnW k2_k1|/eq_leq]; eauto.
+  symmetry; apply: H; eauto.
+    by move=> k /=; rewrite s1_s2.
+  by move=> H'; rewrite IH //.
+rewrite leq_eqVlt=> /orP [/eqP/(pcan_inj (@pickleK T)) k1_k2|k1_k2].
+  rewrite -{}k1_k2 {k2} in lb2 s1_s2 *.
+  move: (s1_s2 k1); rewrite eqxx=> - [->].
+  rewrite {}IH // => k; move: {s1_s2} (s1_s2 k).
   have [-> {k} _|ne ?] // := altP (_ =P _).
-  move: (in_seq s1 k2) (in_seq s2 k2); rewrite !inE.
-  case: (get' s1 k2) (get' s2 k2) => [v1'|] [v2'|] //=.
+  move: (in_seq s1 k1) (in_seq s2 k1); rewrite !inE.
+  case: (get' s1 k1) (get' s2 k1) => [v1'|] [v2'|] //=.
   - by move=> _ /esym/(allP lb2) /=; rewrite ltnn.
-  - by move=> /esym/(allP lb1) /=; rewrite k1_k2 ltnn.
+  - by move=> /esym/(allP lb1) /=; rewrite ltnn.
   by move=> _ /esym/(allP lb2) /=; rewrite ltnn.
-wlog k1_k2': k1 k2 k1_k2 v1 v2 s1 s2 lb1 lb2 s1_s2 / pickle k1 < pickle k2.
-  case: (ltngtP (pickle k1) (pickle k2)) k1_k2
-        => [H|H|/(pcan_inj (@pickleK T)) ->]; try by [rewrite eqxx|eauto].
-  rewrite eq_sym=> k2_k1 H'; symmetry; apply: H'; eauto.
-  by move=> k /=; rewrite s1_s2.
-move/(_ k1)/esym in s1_s2; rewrite (negbTE k1_k2) eqxx in s1_s2.
+move/(_ k1)/esym: s1_s2 k1_k2; rewrite eqxx.
+have [->|_ s1_s2] := altP (_ =P _); first by rewrite ltnn.
 move/(_ s2 k1): in_seq; rewrite inE {}s1_s2 /= => /esym/(allP lb2)/ltnW /=.
-by rewrite leqNgt k1_k2'.
+by rewrite ltnNge => ->.
 Qed.
 
 End Operations.
