@@ -1,5 +1,7 @@
 -install none
 -I theories
+
 theories/hseq.v
 theories/word.v
 theories/partmap.v
+theories/ord.v
