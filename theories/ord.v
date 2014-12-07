@@ -87,7 +87,22 @@ Local Open Scope ord_scope.
 
 Variable (T : ordType).
 
-Lemma eq_leq (x y : T) : (x == y) = (x <= y <= x).
+Lemma eq_leq (x y : T) : x = y -> x <= y.
+Proof. by move=> ->; rewrite leqxx. Qed.
+
+Lemma ltW (x y : T) : x < y -> x <= y.
+Proof. by move=> x_y; move: (leq_total y x); rewrite (negbTE x_y). Qed.
+
+Lemma ltxx (x : T) : (x < x) = false.
+Proof. by rewrite leqxx. Qed.
+
+Lemma lt_trans : transitive [rel x y : T | x < y].
+Proof.
+move=> y x z /= /ltW x_y; apply: contra=> z_x.
+exact: leq_trans z_x x_y.
+Qed.
+
+Lemma eq_op_leq (x y : T) : (x == y) = (x <= y <= x).
 Proof.
   apply/(sameP idP)/(iffP idP).
     by move=> /anti_leq ->.
