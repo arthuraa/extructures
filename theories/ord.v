@@ -104,20 +104,18 @@ Qed.
 
 Lemma eq_op_leq (x y : T) : (x == y) = (x <= y <= x).
 Proof.
-  apply/(sameP idP)/(iffP idP).
-    by move=> /anti_leq ->.
-  move=> /eqP ->.
-  by rewrite leqxx.
+apply/(sameP idP)/(iffP idP); first by move=> /anti_leq ->.
+by move=> /eqP ->; rewrite leqxx.
 Qed.
 
 Lemma leq_eqVlt (x y : T) : (x <= y) = (x == y) || (x < y).
 Proof.
-  apply/(sameP idP)/(iffP idP).
-    case/orP=> [/eqP ->|]; first by rewrite leqxx.
-    by apply/implyP; rewrite implyNb leq_total.
-  apply/implyP.
-  rewrite implybE orbA orbC orbA -negb_and -implybE.
-  by apply/implyP=> /anti_leq ->.
+apply/(sameP idP)/(iffP idP).
+  case/orP=> [/eqP ->|]; first by rewrite leqxx.
+  by apply/implyP; rewrite implyNb leq_total.
+apply/implyP.
+rewrite implybE orbA orbC orbA -negb_and -implybE.
+by apply/implyP=> /anti_leq ->.
 Qed.
 
 Lemma lt_neqAle (x y : T) : (x < y) = (x != y) && (x <= y).
@@ -130,11 +128,11 @@ CoInductive compare_ord (x y : T) : bool -> bool -> bool -> Set :=
 
 Lemma ltgtP x y : compare_ord x y (x < y) (y < x) (x == y).
 Proof.
-  rewrite lt_neqAle.
-  have [<- {y}|Hne] //= := altP (_ =P _).
-    by rewrite leqxx; constructor.
-  have [Hl|Hg] := boolP (x <= y); constructor=> //.
-  by rewrite lt_neqAle Hne Hl.
+rewrite lt_neqAle.
+have [<- {y}|Hne] //= := altP (_ =P _).
+  by rewrite leqxx; constructor.
+have [Hl|Hg] := boolP (x <= y); constructor=> //.
+by rewrite lt_neqAle Hne Hl.
 Qed.
 
 End Theory.
@@ -148,9 +146,7 @@ Notation "x < y" := (~~ (Ord.leq y x)) : ord_scope.
 Notation "x <= y <= z" := (Ord.leq x y && Ord.leq y z) : ord_scope.
 
 Lemma nat_ordP : Ord.axioms leq.
-Proof.
-  exact: And4 leqnn leq_trans anti_leq leq_total.
-Qed.
+Proof. exact: And4 leqnn leq_trans anti_leq leq_total. Qed.
 
 Definition nat_ordMixin := OrdMixin nat_ordP.
 Canonical nat_ordType := Eval hnf in OrdType nat nat_ordMixin.
@@ -168,38 +164,32 @@ Definition prod_leq : rel (T * S) :=
    else p1.1 <= p2.1].
 
 Lemma prod_leq_refl : reflexive prod_leq.
-Proof.
-  move=> p.
-  by rewrite /prod_leq /= eqxx Ord.leqxx.
-Qed.
+Proof. by move=> ?; rewrite /prod_leq /= eqxx Ord.leqxx. Qed.
 
 Lemma prod_leq_trans : transitive prod_leq.
 Proof.
-  move=> p1 p2 p3.
-  rewrite /prod_leq /=.
-  have [->|H21] := altP (p2.1 =P _).
-    have [_|//] := altP (_ =P _).
-    by apply Ord.leq_trans.
-  have [<-|H13] := altP (p1.1 =P _).
-    by rewrite (negbTE H21).
-  have [<-|H23] := altP (_ =P _).
-    by rewrite Ord.leq_eqVlt (negbTE H21) /= => /negbTE ->.
+move=> p1 p2 p3; rewrite /prod_leq /=.
+have [->|H21] := altP (p2.1 =P _).
+  have [_|//] := altP (_ =P _).
   by apply Ord.leq_trans.
+have [<-|H13] := altP (p1.1 =P _).
+  by rewrite (negbTE H21).
+have [<-|H23] := altP (_ =P _).
+  by rewrite Ord.leq_eqVlt (negbTE H21) /= => /negbTE ->.
+by apply Ord.leq_trans.
 Qed.
 
 Lemma anti_prod_leq : antisymmetric prod_leq.
 Proof.
-  move=> [x1 y1] [x2 y2].
-  rewrite /prod_leq /= eq_sym.
-  have [-> /Ord.anti_leq -> //|Hne /Ord.anti_leq E] := altP (x2 =P _).
-  by rewrite E eqxx in Hne.
+move=> [x1 y1] [x2 y2]; rewrite /prod_leq /= eq_sym.
+have [-> /Ord.anti_leq -> //|Hne /Ord.anti_leq E] := altP (x2 =P _).
+by rewrite E eqxx in Hne.
 Qed.
 
 Lemma prod_leq_total : total prod_leq.
 Proof.
-  move=> p1 p2.
-  rewrite /prod_leq /= eq_sym.
-  by have [_|Hne] := altP (p2.1 =P _); apply Ord.leq_total.
+move=> p1 p2; rewrite /prod_leq /= eq_sym.
+by have [_|Hne] := altP (p2.1 =P _); apply Ord.leq_total.
 Qed.
 
 Definition prod_ordMixin := OrdMixin (And4 prod_leq_refl prod_leq_trans
@@ -226,30 +216,30 @@ Proof. by elim=> [|x s IH] //=; rewrite eqxx. Qed.
 
 Lemma seq_leq_trans : transitive seq_leq.
 Proof.
-  elim=> [|x1 s1 IH] [|x2 s2] [|x3 s3] //=.
-  have [->|H21] := altP (_ =P _).
-    have [_|//] := altP (_ =P _).
-    by apply IH.
-  have [<-|H13] := altP (_ =P _).
-    by rewrite (negbTE H21).
-  have [<-|H23] := altP (_ =P _).
-    by rewrite Ord.leq_eqVlt (negbTE H21) /= => /negbTE ->.
-  by apply Ord.leq_trans.
+elim=> [|x1 s1 IH] [|x2 s2] [|x3 s3] //=.
+have [->|H21] := altP (_ =P _).
+  have [_|//] := altP (_ =P _).
+  by apply IH.
+have [<-|H13] := altP (_ =P _).
+  by rewrite (negbTE H21).
+have [<-|H23] := altP (_ =P _).
+  by rewrite Ord.leq_eqVlt (negbTE H21) /= => /negbTE ->.
+by apply Ord.leq_trans.
 Qed.
 
 Lemma anti_seq_leq : antisymmetric seq_leq.
 Proof.
-  elim=> [|x1 s1 IH] [|x2 s2] //=.
-  rewrite /= eq_sym.
-  have [-> /IH -> //|Hne /Ord.anti_leq E] := altP (_ =P _).
-  by rewrite E eqxx in Hne.
+elim=> [|x1 s1 IH] [|x2 s2] //=.
+rewrite /= eq_sym.
+have [-> /IH -> //|Hne /Ord.anti_leq E] := altP (_ =P _).
+by rewrite E eqxx in Hne.
 Qed.
 
 Lemma seq_leq_total : total seq_leq.
 Proof.
-  elim=> [|x1 s1 IH] [|x2 s2] //=.
-  rewrite /= eq_sym.
-  by have [_|Hne] := altP (_ =P _); auto; apply Ord.leq_total.
+elim=> [|x1 s1 IH] [|x2 s2] //=.
+rewrite /= eq_sym.
+by have [_|Hne] := altP (_ =P _); auto; apply Ord.leq_total.
 Qed.
 
 Definition seq_ordMixin := OrdMixin (And4 seq_leq_refl seq_leq_trans
@@ -265,12 +255,12 @@ Local Open Scope ord_scope.
 
 Lemma inj_ordAxiom : injective f -> Ord.axioms (fun x y => f x <= f y).
 Proof.
-  move=> f_inj.
-  split.
-  - move=> *; exact: Ord.leqxx.
-  - move=> x y z /=; exact: Ord.leq_trans.
-  - by move=> x y /= /Ord.anti_leq; auto.
-  move=> x y /=; exact: Ord.leq_total.
+move=> f_inj.
+split.
+- move=> *; exact: Ord.leqxx.
+- move=> x y z /=; exact: Ord.leq_trans.
+- by move=> x y /= /Ord.anti_leq; auto.
+move=> x y /=; exact: Ord.leq_total.
 Qed.
 
 Definition InjOrdMixin f_inj := OrdMixin (inj_ordAxiom f_inj).
