@@ -6,6 +6,8 @@ Unset Printing Implicit Defensive.
 
 (* Interface of types with a total order. *)
 
+Delimit Scope ord_scope with ord.
+
 Module Ord.
 
 Section ClassDef.
@@ -75,14 +77,13 @@ Proof. by rewrite /leq; case: T => ? [] ? [] ? []. Qed.
 
 End Projections.
 
-Delimit Scope ord_scope with ord.
-Open Scope ord_scope.
-
-Notation "x <= y" := (leq x y) : ord_scope.
-Notation "x < y" := (~~ (y <= x)) : ord_scope.
-Notation "x <= y <= z" := (leq x y && leq y z) : ord_scope.
+Local Notation "x <= y" := (leq x y) : ord_scope.
+Local Notation "x < y" := (~~ (leq y x)) : ord_scope.
+Local Notation "x <= y <= z" := (leq x y && leq y z) : ord_scope.
 
 Section Theory.
+
+Local Open Scope ord_scope.
 
 Variable (T : ordType).
 
@@ -127,6 +128,10 @@ End Ord.
 
 Export Ord.Exports.
 
+Notation "x <= y" := (Ord.leq x y) : ord_scope.
+Notation "x < y" := (~~ (Ord.leq y x)) : ord_scope.
+Notation "x <= y <= z" := (Ord.leq x y && Ord.leq y z) : ord_scope.
+
 Lemma nat_ordP : Ord.axioms leq.
 Proof.
   exact: And4 leqnn leq_trans anti_leq leq_total.
@@ -138,10 +143,9 @@ Canonical nat_ordType := Eval hnf in OrdType nat nat_ordMixin.
 Section ProdOrd.
 
 Variables T S : ordType.
+Local Open Scope ord_scope.
 
 (* For products, we use lexicographic ordering. *)
-
-Import Ord.
 
 Definition prod_leq : rel (T * S) :=
   [rel p1 p2 |
@@ -151,7 +155,7 @@ Definition prod_leq : rel (T * S) :=
 Lemma prod_leq_refl : reflexive prod_leq.
 Proof.
   move=> p.
-  by rewrite /prod_leq /= eqxx leqxx.
+  by rewrite /prod_leq /= eqxx Ord.leqxx.
 Qed.
 
 Lemma prod_leq_trans : transitive prod_leq.
@@ -160,19 +164,19 @@ Proof.
   rewrite /prod_leq /=.
   have [->|H21] := altP (p2.1 =P _).
     have [_|//] := altP (_ =P _).
-    by apply leq_trans.
+    by apply Ord.leq_trans.
   have [<-|H13] := altP (p1.1 =P _).
     by rewrite (negbTE H21).
   have [<-|H23] := altP (_ =P _).
-    by rewrite leq_eqVlt (negbTE H21) /= => /negbTE ->.
-  by apply leq_trans.
+    by rewrite Ord.leq_eqVlt (negbTE H21) /= => /negbTE ->.
+  by apply Ord.leq_trans.
 Qed.
 
 Lemma anti_prod_leq : antisymmetric prod_leq.
 Proof.
   move=> [x1 y1] [x2 y2].
   rewrite /prod_leq /= eq_sym.
-  have [-> /anti_leq -> //|Hne /anti_leq E] := altP (x2 =P _).
+  have [-> /Ord.anti_leq -> //|Hne /Ord.anti_leq E] := altP (x2 =P _).
   by rewrite E eqxx in Hne.
 Qed.
 
@@ -180,20 +184,19 @@ Lemma prod_leq_total : total prod_leq.
 Proof.
   move=> p1 p2.
   rewrite /prod_leq /= eq_sym.
-  by have [_|Hne] := altP (p2.1 =P _); apply leq_total.
+  by have [_|Hne] := altP (p2.1 =P _); apply Ord.leq_total.
 Qed.
 
 Definition prod_ordMixin := OrdMixin (And4 prod_leq_refl prod_leq_trans
                                            anti_prod_leq prod_leq_total).
-Canonical prod_ordType := Eval hnf in OrdType _ prod_ordMixin.
+Canonical prod_ordType := Eval hnf in OrdType (T * S) prod_ordMixin.
 
 End ProdOrd.
 
 Section SeqOrd.
 
 Variable T : ordType.
-
-Import Ord.
+Local Open Scope ord_scope.
 
 Fixpoint seq_leq (s1 s2 : seq T) :=
   match s1, s2 with
@@ -215,15 +218,15 @@ Proof.
   have [<-|H13] := altP (_ =P _).
     by rewrite (negbTE H21).
   have [<-|H23] := altP (_ =P _).
-    by rewrite leq_eqVlt (negbTE H21) /= => /negbTE ->.
-  by apply leq_trans.
+    by rewrite Ord.leq_eqVlt (negbTE H21) /= => /negbTE ->.
+  by apply Ord.leq_trans.
 Qed.
 
 Lemma anti_seq_leq : antisymmetric seq_leq.
 Proof.
   elim=> [|x1 s1 IH] [|x2 s2] //=.
   rewrite /= eq_sym.
-  have [-> /IH -> //|Hne /anti_leq E] := altP (_ =P _).
+  have [-> /IH -> //|Hne /Ord.anti_leq E] := altP (_ =P _).
   by rewrite E eqxx in Hne.
 Qed.
 
@@ -231,29 +234,28 @@ Lemma seq_leq_total : total seq_leq.
 Proof.
   elim=> [|x1 s1 IH] [|x2 s2] //=.
   rewrite /= eq_sym.
-  by have [_|Hne] := altP (_ =P _); auto; apply leq_total.
+  by have [_|Hne] := altP (_ =P _); auto; apply Ord.leq_total.
 Qed.
 
 Definition seq_ordMixin := OrdMixin (And4 seq_leq_refl seq_leq_trans
                                           anti_seq_leq seq_leq_total).
-Canonical seq_ordType := Eval hnf in OrdType _ seq_ordMixin.
+Canonical seq_ordType := Eval hnf in OrdType (seq T) seq_ordMixin.
 
 End SeqOrd.
 
 Section TransferOrdType.
 
 Variables (T : Type) (eT : ordType) (f : T -> eT).
-
-Import Ord.
+Local Open Scope ord_scope.
 
 Lemma inj_ordAxiom : injective f -> Ord.axioms (fun x y => f x <= f y).
 Proof.
   move=> f_inj.
   split.
-  - move=> *; exact: leqxx.
-  - move=> x y z /=; exact: leq_trans.
-  - by move=> x y /= /anti_leq; auto.
-  move=> x y /=; exact: leq_total.
+  - move=> *; exact: Ord.leqxx.
+  - move=> x y z /=; exact: Ord.leq_trans.
+  - by move=> x y /= /Ord.anti_leq; auto.
+  move=> x y /=; exact: Ord.leq_total.
 Qed.
 
 Definition InjOrdMixin f_inj := OrdMixin (inj_ordAxiom f_inj).
@@ -267,8 +269,7 @@ End TransferOrdType.
 Section SubOrdType.
 
 Variables (T : ordType) (P : pred T) (sT : subType P).
-
-Import Ord.
+Local Open Scope ord_scope.
 
 Local Notation ev_ax := (fun T v => @Ord.axioms T (fun x y => v x <= v y)).
 Lemma val_ordP : ev_ax sT val. Proof. exact: inj_ordAxiom val_inj. Qed.
