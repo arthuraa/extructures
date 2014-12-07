@@ -225,7 +225,7 @@ elim: s1 Ps1 s2 Ps2 s1_s2
 move/IH: Ps2=> {IH} IH s1_s2.
 wlog: k1 k2 v1 v2 s1 s2 lb1 lb2 s1_s2 IH / k1 <= k2.
   move=> H.
-  case: (Ord.ltgtP k1 k2) => [/Ord.ltW|/Ord.ltW k2_k1|/Ord.eq_leq]; eauto.
+  have [|/Ord.ltW k2_k1] := boolP (k1 <= k2); first by eauto.
   symmetry; apply: H; eauto.
     by move=> k /=; rewrite s1_s2.
   by move=> H'; rewrite IH //.
