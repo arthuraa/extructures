@@ -1,3 +1,5 @@
 -install none
-hseq.v
-words.v
+-I theories
+theories/hseq.v
+theories/word.v
+theories/partmap.v
