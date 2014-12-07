@@ -1,4 +1,5 @@
 Require Import ssreflect ssrbool ssrfun ssrnat eqtype seq choice fintype.
+Require Import ord.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -8,15 +9,17 @@ Module PartMap.
 
 Section Def.
 
-Variables (T : countType) (S : Type).
+Variables (T : ordType) (S : Type).
+
+Local Open Scope ord_scope.
 
 Fixpoint axiom (s : seq T) : bool :=
   if s is k :: s then
-    all [pred k' | pickle k < pickle k'] s && axiom s
+    all [pred k' | k < k'] s && axiom s
   else true.
 
 Fixpoint loc_axiom' k (s : seq T) : bool :=
-  if s is k' :: s then (pickle k < pickle k') && loc_axiom' k' s
+  if s is k' :: s then (k < k') && loc_axiom' k' s
   else true.
 
 Definition loc_axiom s :=
@@ -28,9 +31,9 @@ Proof.
 case=> // k s /=; elim: s k=> //= k' s <- k.
 have [k_k'|] //= := boolP (_ < _).
 rewrite andbA; congr andb.
-have [/allP /= H|] //= := boolP (all [pred k'' | pickle k' < pickle k''] s);
+have [/allP /= H|] //= := boolP (all [pred k'' | k' < k''] s);
   last by rewrite andbF.
-by rewrite andbT; apply/allP=> k'' /H /=; apply: ltn_trans.
+by rewrite andbT; apply/allP=> k'' /H /=; apply: Ord.lt_trans.
 Qed.
 
 Record type := PMap {pmval :> seq (T * S); _ : axiom [seq p.1 | p <- pmval]}.
@@ -44,6 +47,11 @@ Canonical partmap_subType T S := [subType for @pmval T S].
 Definition partmap_eqMixin T (S : eqType) := [eqMixin of type T S by <:].
 Canonical partmap_eqType T (S : eqType) :=
   Eval hnf in EqType (type T S) (partmap_eqMixin T S).
+
+(*
+
+Still need to rethink the interface hierarchy to allow this...
+
 Definition partmap_choiceMixin T (S : choiceType) :=
   [choiceMixin of type T S by <:].
 Canonical partmap_choiceType T (S : choiceType) :=
@@ -54,6 +62,7 @@ Canonical partmap_countType T (S : countType) :=
   Eval hnf in CountType (type T S) (partmap_countMixin T S).
 Canonical partmap_subCountType T (S : countType) :=
   [subCountType of type T S].
+*)
 
 End Exports.
 
@@ -63,9 +72,10 @@ Export PartMap.Exports.
 
 Section Operations.
 
-Variables (T : countType) (S : Type).
+Variables (T : ordType) (S : Type).
 
 Local Coercion PartMap.pmval : partmap >-> seq.
+Local Open Scope ord_scope.
 
 Fixpoint pmget' (s : seq (T * S)) (k : T) : option S :=
   if s is p :: s then
@@ -77,7 +87,7 @@ Definition pmget (m : partmap T S) k := pmget' m k.
 
 Fixpoint pmset' (s : seq (T * S)) (k : T) (v : S) : seq (T * S) :=
   if s is p :: s' then
-    if pickle k < pickle p.1 then (k, v) :: s
+    if k < p.1 then (k, v) :: s
     else if k == p.1 then (k, v) :: s'
     else p :: pmset' s' k v
   else [:: (k, v)].
@@ -88,15 +98,14 @@ Proof.
 move: s Ps.
 have E: forall s, [seq p.1 | p <- pmset' s k v] =i k :: [seq p.1 | p <- s].
   elim=> // p s /= IH k'; rewrite ![in X in X = _]fun_if /= !inE.
-  rewrite IH inE -(inj_eq (pcan_inj (@pickleK T)) k).
-  case: ltngtP=> // H; try by bool_congr.
-  by rewrite (pcan_inj (@pickleK T) H) orbA orbb.
+  rewrite IH inE.
+  case: (Ord.ltgtP k p.1) => // H; try by bool_congr.
+  by rewrite H orbA orbb.
 elim=> // p s /= IH /andP [lb Ps].
-rewrite -(inj_eq (pcan_inj (@pickleK T)) k) ![in X in is_true X]fun_if /=.
-rewrite {}IH // Ps !andbT.
-rewrite !(eq_all_r (E s)) {E} /= lb andbT; case: ltngtP=> //=.
-  by move=> k_p; move/allP in lb; apply/allP=> p' /lb /=; apply: ltn_trans.
-by move=> /(pcan_inj (@pickleK T)) ->.
+rewrite ![in X in is_true X]fun_if /= {}IH // Ps !andbT.
+rewrite !(eq_all_r (E s)) {E} /= lb andbT; case: Ord.ltgtP=> //=.
+  by move=> k_p; move/allP in lb; apply/allP=> p' /lb /=; apply: Ord.lt_trans.
+by move=> ->.
 Qed.
 
 Definition pmset (s : partmap T S) k v :=
@@ -144,7 +153,8 @@ Coercion pmget : partmap >-> Funclass.
 
 Section Properties.
 
-Variables (T : countType) (S : Type).
+Variables (T : ordType) (S : Type).
+Local Open Scope ord_scope.
 
 Lemma pmgetE (m : partmap T S) : [pred k | m k] =i [seq p.1 | p <- val m].
 Proof.
@@ -159,9 +169,8 @@ Lemma pmget_set (m : partmap T S) k v k' :
 Proof.
 case: m; rewrite /pmget /pmset /=; elim=> //= p s IH /andP [lb /IH {IH} IH].
 rewrite ![in LHS](fun_if, if_arg) /= {}IH.
-have [->{k'}|Hne] := altP (k' =P k);
-  rewrite -(inj_eq (pcan_inj (@pickleK T)) k p.1); case: ltngtP=> //.
-by move=> /(pcan_inj (@pickleK T)) <-; rewrite (negbTE Hne).
+have [->{k'}|Hne] := altP (k' =P k); case: (Ord.ltgtP k) => //.
+by move=> <-; rewrite (negbTE Hne).
 Qed.
 
 Lemma pmget_map S' (f : S -> S') (m : partmap T S) : pmmap f m =1 omap f \o m.
@@ -178,7 +187,7 @@ elim: s Ps=> [|p s IH /= /andP [lb /IH {IH} IH]] //=.
 rewrite ![in LHS](fun_if, if_arg) /= {}IH.
 have [-> {k}|k_p] //= := altP (_ =P _); case: (a _)=> //.
 elim: s lb => [|p' s IH /andP /= [lb /IH {IH} IH]] //=.
-by move: lb; have [->|//] := altP (_ =P _); rewrite ltnn.
+by move: lb; have [->|//] := altP (_ =P _); rewrite Ord.ltxx.
 Qed.
 
 Lemma pmget_rem (m : partmap T S) k k' :
@@ -191,7 +200,7 @@ rewrite ![in LHS](fun_if, if_arg) /= {}IH //.
 move: {Ps} lb; have [-> lb|ne lb] := altP (_ =P _).
   have [-> {k' p}|ne //] := altP (_ =P _).
   elim: s lb=> [|p s IH /= /andP [lb /IH {IH} ->]] //=.
-  by move: lb; have [->|//] := altP (_ =P _); rewrite ltnn.
+  by move: lb; have [->|//] := altP (_ =P _); rewrite Ord.ltxx.
 have [-> {k'}|ne'] // := altP (k' =P k).
 by rewrite eq_sym (negbTE ne).
 Qed.
@@ -208,26 +217,26 @@ elim: s1 Ps1 s2 Ps2 s1_s2
          [_|[k2 v2] s2 /= /andP [lb2 Ps2]] //
       => [/(_ k2)|/(_ k1)| ]; try by rewrite eqxx.
 move/IH: Ps2=> {IH} IH s1_s2.
-wlog: k1 k2 v1 v2 s1 s2 lb1 lb2 s1_s2 IH / pickle k1 <= pickle k2.
+wlog: k1 k2 v1 v2 s1 s2 lb1 lb2 s1_s2 IH / k1 <= k2.
   move=> H.
-  case: (ltngtP (pickle k1) (pickle k2)) => [/ltnW|/ltnW k2_k1|/eq_leq]; eauto.
+  case: (Ord.ltgtP k1 k2) => [/Ord.ltW|/Ord.ltW k2_k1|/Ord.eq_leq]; eauto.
   symmetry; apply: H; eauto.
     by move=> k /=; rewrite s1_s2.
   by move=> H'; rewrite IH //.
-rewrite leq_eqVlt=> /orP [/eqP/(pcan_inj (@pickleK T)) k1_k2|k1_k2].
+rewrite Ord.leq_eqVlt=> /orP [/eqP k1_k2|k1_k2].
   rewrite -{}k1_k2 {k2} in lb2 s1_s2 *.
   move: (s1_s2 k1); rewrite eqxx=> - [->].
   rewrite {}IH // => k; move: {s1_s2} (s1_s2 k).
   have [-> {k} _|ne ?] // := altP (_ =P _).
   move: (in_seq s1 k1) (in_seq s2 k1); rewrite !inE.
   case: (pmget' s1 k1) (pmget' s2 k1) => [v1'|] [v2'|] //=.
-  - by move=> _ /esym/(allP lb2) /=; rewrite ltnn.
-  - by move=> /esym/(allP lb1) /=; rewrite ltnn.
-  by move=> _ /esym/(allP lb2) /=; rewrite ltnn.
+  - by move=> _ /esym/(allP lb2) /=; rewrite Ord.ltxx.
+  - by move=> /esym/(allP lb1) /=; rewrite Ord.ltxx.
+  by move=> _ /esym/(allP lb2) /=; rewrite Ord.ltxx.
 move/(_ k1)/esym: s1_s2 k1_k2; rewrite eqxx.
-have [->|_ s1_s2] := altP (_ =P _); first by rewrite ltnn.
-move/(_ s2 k1): in_seq; rewrite inE {}s1_s2 /= => /esym/(allP lb2)/ltnW /=.
-by rewrite ltnNge => ->.
+have [->|_ s1_s2] := altP (_ =P _); first by rewrite Ord.ltxx.
+move/(_ s2 k1): in_seq; rewrite inE {}s1_s2 /= => /esym/(allP lb2)/Ord.ltW /=.
+by move=> ->.
 Qed.
 
 End Properties.
