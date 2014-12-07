@@ -106,8 +106,16 @@ Qed.
 
 Definition set (s : partmap T S) k v := PartMap.PMap (set_proof k v (valP s)).
 
-Lemma get_set m k v k' :
-  get (set m k v) k' =
+End Operations.
+
+Coercion get : partmap >-> Funclass.
+
+Section Properties.
+
+Variables (T : countType) (S : Type).
+
+Lemma get_set (m : partmap T S) k v k' :
+  set m k v k' =
   if k' == k then Some v else get m k'.
 Proof.
 case: m; rewrite /get /set /=; elim=> //= p s IH /andP [lb /IH {IH} IH].
@@ -117,9 +125,9 @@ have [->{k'}|Hne] := altP (k' =P k);
 by move=> /(pcan_inj (@pickleK T)) <-; rewrite (negbTE Hne).
 Qed.
 
-Lemma partmap_eq_ext m1 m2 : get m1 =1 get m2 -> m1 = m2.
+Lemma eq_partmap (m1 m2 : partmap T S) : m1 =1 m2 -> m1 = m2.
 Proof.
-have in_seq: forall s, [pred k | get' s k] =i [seq p.1 | p <- s].
+have in_seq: forall s : seq (T * S), [pred k | get' s k] =i [seq p.1 | p <- s].
   elim=> [|p s IH] k; rewrite /= !inE // -IH inE.
   by case: (k == p.1).
 case: m1 m2 => [s1 Ps1] [s2 Ps2]; rewrite /get /= => s1_s2.
@@ -152,4 +160,4 @@ move/(_ s2 k1): in_seq; rewrite inE {}s1_s2 /= => /esym/(allP lb2)/ltnW /=.
 by rewrite ltnNge => ->.
 Qed.
 
-End Operations.
+End Properties.
