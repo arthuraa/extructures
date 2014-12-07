@@ -67,26 +67,26 @@ Variables (T : countType) (S : Type).
 
 Local Coercion PartMap.pmval : partmap >-> seq.
 
-Fixpoint get' (s : seq (T * S)) (k : T) : option S :=
+Fixpoint pmget' (s : seq (T * S)) (k : T) : option S :=
   if s is p :: s then
     if k == p.1 then Some p.2
-    else get' s k
+    else pmget' s k
   else None.
 
-Definition get (m : partmap T S) k := get' m k.
+Definition pmget (m : partmap T S) k := pmget' m k.
 
-Fixpoint set' (s : seq (T * S)) (k : T) (v : S) : seq (T * S) :=
+Fixpoint pmset' (s : seq (T * S)) (k : T) (v : S) : seq (T * S) :=
   if s is p :: s' then
     if pickle k < pickle p.1 then (k, v) :: s
     else if k == p.1 then (k, v) :: s'
-    else p :: set' s' k v
+    else p :: pmset' s' k v
   else [:: (k, v)].
 
-Lemma set_proof (s : seq (T * S)) k v (Ps : PartMap.axiom [seq p.1 | p <- s]) :
-  PartMap.axiom [seq p.1 | p <- set' s k v].
+Lemma pmset_proof (s : seq (T * S)) k v (Ps : PartMap.axiom [seq p.1 | p <- s]) :
+  PartMap.axiom [seq p.1 | p <- pmset' s k v].
 Proof.
 move: s Ps.
-have E: forall s, [seq p.1 | p <- set' s k v] =i k :: [seq p.1 | p <- s].
+have E: forall s, [seq p.1 | p <- pmset' s k v] =i k :: [seq p.1 | p <- s].
   elim=> // p s /= IH k'; rewrite ![in X in X = _]fun_if /= !inE.
   rewrite IH inE -(inj_eq (pcan_inj (@pickleK T)) k).
   case: ltngtP=> // H; try by bool_congr.
@@ -99,7 +99,8 @@ rewrite !(eq_all_r (E s)) {E} /= lb andbT; case: ltngtP=> //=.
 by move=> /(pcan_inj (@pickleK T)) ->.
 Qed.
 
-Definition set (s : partmap T S) k v := PartMap.PMap (set_proof k v (valP s)).
+Definition pmset (s : partmap T S) k v :=
+  PartMap.PMap (pmset_proof k v (valP s)).
 
 Lemma pmmap_proof S' (f : S -> S') (m : partmap T S) :
   PartMap.axiom (map (fun p => p.1) (map (fun p => (p.1, f p.2)) m)).
@@ -139,40 +140,40 @@ Definition pmrem (m : partmap T S) k :=
 
 End Operations.
 
-Coercion get : partmap >-> Funclass.
+Coercion pmget : partmap >-> Funclass.
 
 Section Properties.
 
 Variables (T : countType) (S : Type).
 
-Lemma getE (m : partmap T S) : [pred k | m k] =i [seq p.1 | p <- val m].
+Lemma pmgetE (m : partmap T S) : [pred k | m k] =i [seq p.1 | p <- val m].
 Proof.
-case: m => [s Ps] k; rewrite /get /= {Ps} inE.
+case: m => [s Ps] k; rewrite /pmget /= {Ps} inE.
 elim: s=> [|p s IH] //=; rewrite !inE [in LHS]fun_if /= {}IH.
 by case: (_ == _).
 Qed.
 
-Lemma get_set (m : partmap T S) k v k' :
-  set m k v k' =
-  if k' == k then Some v else get m k'.
+Lemma pmget_set (m : partmap T S) k v k' :
+  pmset m k v k' =
+  if k' == k then Some v else pmget m k'.
 Proof.
-case: m; rewrite /get /set /=; elim=> //= p s IH /andP [lb /IH {IH} IH].
+case: m; rewrite /pmget /pmset /=; elim=> //= p s IH /andP [lb /IH {IH} IH].
 rewrite ![in LHS](fun_if, if_arg) /= {}IH.
 have [->{k'}|Hne] := altP (k' =P k);
   rewrite -(inj_eq (pcan_inj (@pickleK T)) k p.1); case: ltngtP=> //.
 by move=> /(pcan_inj (@pickleK T)) <-; rewrite (negbTE Hne).
 Qed.
 
-Lemma get_map S' (f : S -> S') (m : partmap T S) : pmmap f m =1 omap f \o m.
+Lemma pmget_map S' (f : S -> S') (m : partmap T S) : pmmap f m =1 omap f \o m.
 Proof.
-case: m=> [s Ps] k; rewrite /pmmap /get /=; elim: s {Ps}=> [|[k' v] s IH] //=.
+case: m=> [s Ps] k; rewrite /pmmap /pmget /=; elim: s {Ps}=> [|[k' v] s IH] //=.
 by rewrite {}IH ![in RHS]fun_if /=.
 Qed.
 
-Lemma get_filter (a : pred S) (m : partmap T S) :
+Lemma pmget_filter (a : pred S) (m : partmap T S) :
   pmfilter a m =1 obind (fun x => if a x then Some x else None) \o m.
 Proof.
-case: m=> [s Ps] k; rewrite /pmfilter /get /=.
+case: m=> [s Ps] k; rewrite /pmfilter /pmget /=.
 elim: s Ps=> [|p s IH /= /andP [lb /IH {IH} IH]] //=.
 rewrite ![in LHS](fun_if, if_arg) /= {}IH.
 have [-> {k}|k_p] //= := altP (_ =P _); case: (a _)=> //.
@@ -180,11 +181,11 @@ elim: s lb => [|p' s IH /andP /= [lb /IH {IH} IH]] //=.
 by move: lb; have [->|//] := altP (_ =P _); rewrite ltnn.
 Qed.
 
-Lemma get_rem (m : partmap T S) k k' :
+Lemma pmget_rem (m : partmap T S) k k' :
   pmrem m k k' =
-  if k' == k then None else get m k'.
+  if k' == k then None else pmget m k'.
 Proof.
-case: m; rewrite /pmrem /get /=; elim=> [|p s IH /= /andP [lb Ps]] //=.
+case: m; rewrite /pmrem /pmget /=; elim=> [|p s IH /= /andP [lb Ps]] //=.
   by case: (_ == _).
 rewrite ![in LHS](fun_if, if_arg) /= {}IH //.
 move: {Ps} lb; have [-> lb|ne lb] := altP (_ =P _).
@@ -197,10 +198,10 @@ Qed.
 
 Lemma eq_partmap (m1 m2 : partmap T S) : m1 =1 m2 -> m1 = m2.
 Proof.
-have in_seq: forall s : seq (T * S), [pred k | get' s k] =i [seq p.1 | p <- s].
+have in_seq: forall s : seq (T * S), [pred k | pmget' s k] =i [seq p.1 | p <- s].
   elim=> [|p s IH] k; rewrite /= !inE // -IH inE.
   by case: (k == p.1).
-case: m1 m2 => [s1 Ps1] [s2 Ps2]; rewrite /get /= => s1_s2.
+case: m1 m2 => [s1 Ps1] [s2 Ps2]; rewrite /pmget /= => s1_s2.
 apply: val_inj=> /=.
 elim: s1 Ps1 s2 Ps2 s1_s2
       => [_|[k1 v1] s1 IH /= /andP [lb1 /IH {IH} IH]]
@@ -219,7 +220,7 @@ rewrite leq_eqVlt=> /orP [/eqP/(pcan_inj (@pickleK T)) k1_k2|k1_k2].
   rewrite {}IH // => k; move: {s1_s2} (s1_s2 k).
   have [-> {k} _|ne ?] // := altP (_ =P _).
   move: (in_seq s1 k1) (in_seq s2 k1); rewrite !inE.
-  case: (get' s1 k1) (get' s2 k1) => [v1'|] [v2'|] //=.
+  case: (pmget' s1 k1) (pmget' s2 k1) => [v1'|] [v2'|] //=.
   - by move=> _ /esym/(allP lb2) /=; rewrite ltnn.
   - by move=> /esym/(allP lb1) /=; rewrite ltnn.
   by move=> _ /esym/(allP lb2) /=; rewrite ltnn.
