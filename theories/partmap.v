@@ -36,17 +36,21 @@ have [/allP /= H|] //= := boolP (all [pred k'' | k' < k''] s);
 by rewrite andbT; apply/allP=> k'' /H /=; apply: Ord.lt_trans.
 Qed.
 
-Record type := PMap {pmval :> seq (T * S); _ : axiom [seq p.1 | p <- pmval]}.
+Record partmap_type := PMap {pmval :> seq (T * S); _ : axiom [seq p.1 | p <- pmval]}.
+Definition partmap_of of phant (T -> S) := partmap_type.
+Identity Coercion type_of_partmap_of : partmap_of >-> partmap_type.
 
 End Def.
 
 Module Exports.
 
-Notation partmap := type.
+Notation "{ 'partmap' T }" := (@partmap_of _ _ (Phant T))
+  (at level 0, format "{ 'partmap'  T }") : type_scope.
 Canonical partmap_subType T S := [subType for @pmval T S].
-Definition partmap_eqMixin T (S : eqType) := [eqMixin of type T S by <:].
+Definition partmap_eqMixin T (S : eqType) :=
+  [eqMixin of partmap_type T S by <:].
 Canonical partmap_eqType T (S : eqType) :=
-  Eval hnf in EqType (type T S) (partmap_eqMixin T S).
+  Eval hnf in EqType (partmap_type T S) (partmap_eqMixin T S).
 
 (*
 
@@ -74,7 +78,7 @@ Section Operations.
 
 Variables (T : ordType) (S : Type).
 
-Local Coercion PartMap.pmval : partmap >-> seq.
+Local Coercion PartMap.pmval : PartMap.partmap_type >-> seq.
 Local Open Scope ord_scope.
 
 Fixpoint pmget' (s : seq (T * S)) (k : T) : option S :=
@@ -83,7 +87,7 @@ Fixpoint pmget' (s : seq (T * S)) (k : T) : option S :=
     else pmget' s k
   else None.
 
-Definition pmget (m : partmap T S) k := pmget' m k.
+Definition pmget (m : PartMap.partmap_type T S) k := pmget' m k.
 
 Fixpoint pmset' (s : seq (T * S)) (k : T) (v : S) : seq (T * S) :=
   if s is p :: s' then
@@ -108,16 +112,16 @@ rewrite !(eq_all_r (E s)) {E} /= lb andbT; case: Ord.ltgtP=> //=.
 by move=> ->.
 Qed.
 
-Definition pmset (s : partmap T S) k v :=
+Definition pmset (s : {partmap T -> S}) k v :=
   PartMap.PMap (pmset_proof k v (valP s)).
 
-Lemma pmmap_proof S' (f : S -> S') (m : partmap T S) :
+Lemma pmmap_proof S' (f : S -> S') (m : {partmap T -> S}) :
   PartMap.axiom (map (fun p => p.1) (map (fun p => (p.1, f p.2)) m)).
 Proof. by rewrite -!map_comp; apply: (valP m). Qed.
 
 Definition pmmap S' (f : S -> S') m := PartMap.PMap (pmmap_proof f m).
 
-Lemma pmfilter_proof (a : pred S) (m : partmap T S) :
+Lemma pmfilter_proof (a : pred S) (m : {partmap T -> S}) :
   PartMap.axiom [seq p.1 | p <- m & a p.2].
 Proof.
 case: m=> /=; elim=> [|p s IH /= /andP [lb /IH {IH} IH]] //=.
@@ -126,7 +130,7 @@ elim: s lb=> //= p' s IH /andP [lb /IH {IH} IH].
 by rewrite 2!fun_if /= lb IH; case: (a _).
 Qed.
 
-Definition pmfilter (a : pred S) (m : partmap T S) :=
+Definition pmfilter (a : pred S) (m : {partmap T -> S}) :=
   PartMap.PMap (pmfilter_proof a m).
 
 Fixpoint pmrem' (s : seq (T * S)) k :=
@@ -144,29 +148,29 @@ elim: s lb=> // p' s IH /= /andP [lb Ps].
 by rewrite 2!fun_if /= {}IH // /= lb Ps; case: (_ == _).
 Qed.
 
-Definition pmrem (m : partmap T S) k :=
+Definition pmrem (m : {partmap T -> S}) k :=
   PartMap.PMap (pmrem_proof k (valP m)).
 
-Definition pmempty : partmap T S :=
+Definition pmempty : {partmap T -> S} :=
   @PartMap.PMap T S [::] erefl.
 
 End Operations.
 
-Coercion pmget : partmap >-> Funclass.
+Coercion pmget : PartMap.partmap_type >-> Funclass.
 
 Section Properties.
 
 Variables (T : ordType) (S : Type).
 Local Open Scope ord_scope.
 
-Lemma pmgetE (m : partmap T S) : [pred k | m k] =i [seq p.1 | p <- val m].
+Lemma pmgetE (m : {partmap T -> S}) : [pred k | m k] =i [seq p.1 | p <- val m].
 Proof.
 case: m => [s Ps] k; rewrite /pmget /= {Ps} inE.
 elim: s=> [|p s IH] //=; rewrite !inE [in LHS]fun_if /= {}IH.
 by case: (_ == _).
 Qed.
 
-Lemma pmget_set (m : partmap T S) k v k' :
+Lemma pmget_set (m : {partmap T -> S}) k v k' :
   pmset m k v k' =
   if k' == k then Some v else pmget m k'.
 Proof.
@@ -179,13 +183,14 @@ Qed.
 Lemma pmemptyP : @pmempty T S =1 [fun : T => None].
 Proof. by []. Qed.
 
-Lemma pmget_map S' (f : S -> S') (m : partmap T S) : pmmap f m =1 omap f \o m.
+Lemma pmget_map S' (f : S -> S') (m : {partmap T -> S}) :
+  pmmap f m =1 omap f \o m.
 Proof.
-case: m=> [s Ps] k; rewrite /pmmap /pmget /=; elim: s {Ps}=> [|[k' v] s IH] //=.
-by rewrite {}IH ![in RHS]fun_if /=.
+case: m=> [s Ps] k; rewrite /pmmap /pmget /=.
+by elim: s {Ps}=> [|[k' v] s IH] //=; rewrite {}IH ![in RHS]fun_if /=.
 Qed.
 
-Lemma pmget_filter (a : pred S) (m : partmap T S) :
+Lemma pmget_filter (a : pred S) (m : {partmap T -> S}) :
   pmfilter a m =1 obind (fun x => if a x then Some x else None) \o m.
 Proof.
 case: m=> [s Ps] k; rewrite /pmfilter /pmget /=.
@@ -196,7 +201,7 @@ elim: s lb => [|p' s IH /andP /= [lb /IH {IH} IH]] //=.
 by move: lb; have [->|//] := altP (_ =P _); rewrite Ord.ltxx.
 Qed.
 
-Lemma pmget_rem (m : partmap T S) k k' :
+Lemma pmget_rem (m : {partmap T -> S}) k k' :
   pmrem m k k' =
   if k' == k then None else pmget m k'.
 Proof.
@@ -211,7 +216,7 @@ have [-> {k'}|ne'] // := altP (k' =P k).
 by rewrite eq_sym (negbTE ne).
 Qed.
 
-Lemma eq_partmap (m1 m2 : partmap T S) : m1 =1 m2 -> m1 = m2.
+Lemma eq_partmap (m1 m2 : {partmap T -> S}) : m1 =1 m2 -> m1 = m2.
 Proof.
 have in_seq: forall s : seq (T * S), [pred k | pmget' s k] =i [seq p.1 | p <- s].
   elim=> [|p s IH] k; rewrite /= !inE // -IH inE.
