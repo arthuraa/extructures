@@ -1,5 +1,4 @@
--install none
--I theories
+-R theories CoqUtils
 
 theories/hseq.v
 theories/word.v
