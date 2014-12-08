@@ -112,8 +112,8 @@ rewrite !(eq_all_r (E s)) {E} /= lb andbT; case: Ord.ltgtP=> //=.
 by move=> ->.
 Qed.
 
-Definition pmset (s : {partmap T -> S}) k v :=
-  PartMap.PMap (pmset_proof k v (valP s)).
+Definition pmset (m : {partmap T -> S}) k v :=
+  PartMap.PMap (pmset_proof k v (valP m)).
 
 Lemma pmmap_proof S' (f : S -> S') (m : {partmap T -> S}) :
   PartMap.axiom (map (fun p => p.1) (map (fun p => (p.1, f p.2)) m)).
