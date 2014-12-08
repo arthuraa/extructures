@@ -271,6 +271,25 @@ Proof. exact: id_bitwise2 addFb bits_zero. Qed.
 Lemma xorw0 : right_id zerow xorw.
 Proof. by move=> w; rewrite xorwC xor0w. Qed.
 
+Section Order.
+
+Local Open Scope ord_scope.
+
+Lemma leqw_mone w : w <= monew.
+Proof.
+case: w=> [] /=; do 3!rewrite /Ord.leq /=.
+case: k=> [|k' n].
+  by rewrite expn0=> n; rewrite ord1.
+rewrite !modn_small; try by rewrite -{1}(expn1 2) leq_exp2l.
+  have := (leq_sub2r 1 (valP n)); rewrite subn1 //=.
+by rewrite subn1 prednK ?leqnn // expn_gt0.
+Qed.
+
+Lemma leqw_zero w : zerow <= w.
+Proof. by do 3!rewrite /Ord.leq /=; rewrite mod0n. Qed.
+
+End Order.
+
 End Def.
 
 Delimit Scope word_scope with w.
