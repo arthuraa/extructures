@@ -39,6 +39,7 @@ Definition as_word (n : nat) := Word (Ordinal (ltn_pmod n exp2_gt0)).
 Definition addw (w1 w2 : word) := as_word (val w1 + val w2).
 Definition oppw (w : word) := as_word (2 ^ k - val w).
 Definition mulw (w1 w2 : word) := as_word (val w1 * val w2).
+Definition subw (w1 w2 : word) := addw w1 (oppw w2).
 
 Definition zerow := as_word 0.
 Definition onew := as_word 1.
@@ -271,6 +272,16 @@ Lemma xorw0 : right_id zerow xorw.
 Proof. by move=> w; rewrite xorwC xor0w. Qed.
 
 End Def.
+
+Delimit Scope word_scope with w.
+Notation "+%w" := addw.
+Notation "-%w" := oppw.
+Notation "x + y" := (addw x y) : word_scope.
+Notation "x - y" := (subw x y) : word_scope.
+Notation "x * y" := (mulw x y) : word_scope.
+Notation "- x" := (oppw x) : word_scope.
+Notation "0" := (zerow) : word_scope.
+Notation "1" := (onew) : word_scope.
 
 Section Splitting.
 
