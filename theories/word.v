@@ -292,6 +292,18 @@ End Order.
 
 End Def.
 
+Arguments onew {_}.
+Arguments zerow {_}.
+Arguments monew {_}.
+Arguments as_word {_} _.
+Arguments addw {_} _ _.
+Arguments subw {_} _ _.
+Arguments mulw {_} _ _.
+Arguments oppw {_} _.
+Arguments andw {_} _ _.
+Arguments orw {_} _ _.
+Arguments xorw {_} _ _.
+
 Delimit Scope word_scope with w.
 Notation "+%w" := addw.
 Notation "-%w" := oppw.
