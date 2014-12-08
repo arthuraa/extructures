@@ -1,5 +1,6 @@
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat choice fintype seq.
 Require Import div ssralg finalg zmodp bigop tuple finfun binomial.
+Require Import ssrint intdiv.
 Require Import hseq ord.
 
 Set Implicit Arguments.
@@ -13,6 +14,8 @@ Variable k : nat.
 CoInductive word : predArgType := Word of 'I_(2 ^ k).
 
 Definition ord_of_word (w : word) := let: Word i := w in i.
+
+Local Coercion ord_of_word : word >-> ordinal.
 
 Canonical word_subType := [newType for ord_of_word].
 Definition word_eqMixin := [eqMixin of word by <:].
@@ -34,32 +37,44 @@ Proof. by rewrite card_sub eq_cardT // -cardT card_ord. Qed.
 Lemma exp2_gt0 : 0 < 2 ^ k.
 Proof. by rewrite expn_gt0. Qed.
 
-Definition as_word (n : nat) := Word (Ordinal (ltn_pmod n exp2_gt0)).
+Definition as_word (n : int) :=
+  Word (Ordinal (ltn_pmod `|modz n (2 ^ k)%N| exp2_gt0)).
 
-Definition addw (w1 w2 : word) := as_word (val w1 + val w2).
-Definition oppw (w : word) := as_word (2 ^ k - val w).
-Definition mulw (w1 w2 : word) := as_word (val w1 * val w2).
+Lemma as_wordK (n : nat) : n < 2 ^ k -> val (as_word n) = n :> nat.
+Proof. by move=> ub; rewrite /= modz_nat absz_nat modn_mod modn_small //. Qed.
+
+(* Signed conversion to integers *)
+Definition int_of_word (w : word) : int :=
+  if w < 2 ^ k.-1 then w
+  else (w - 2 ^ k)%Z.
+
+Definition addw (w1 w2 : word) := as_word (w1 + w2)%N.
+Definition oppw (w : word) := as_word (2 ^ k - w)%N.
+Definition mulw (w1 w2 : word) := as_word (w1 * w2)%N.
 Definition subw (w1 w2 : word) := addw w1 (oppw w2).
 
 Definition zerow := as_word 0.
 Definition onew := as_word 1.
 Definition monew := oppw onew.
 
-Lemma valwK (w : word) : as_word (val w) = w.
-Proof. by apply: val_inj; apply: val_inj; rewrite /= modn_small. Qed.
+Lemma valwK (w : word) : as_word w = w.
+Proof.
+by do 2!apply: val_inj; rewrite /= modz_nat absz_nat modn_mod modn_small.
+Qed.
 
 Lemma add0w : left_id zerow addw.
-Proof. by move=> w; rewrite /addw /= mod0n valwK. Qed.
+Proof. by move=> w; rewrite /addw /= !mod0z mod0n valwK. Qed.
 
 Lemma addNw : left_inverse zerow oppw addw.
 Proof.
-  by move=> w; do 2!apply: val_inj;
-  rewrite /= modnDml subnK ?modnn ?mod0n // ltnW.
+move=> w; do 2!apply: val_inj.
+by rewrite /= !modz_nat !absz_nat /= !modnDml subnK ?modnn ?mod0n // ltnW.
 Qed.
 
 Lemma addwA : associative addw.
 Proof.
-by move=> x y z; do 2!apply: val_inj; rewrite /= modnDml modnDmr addnA.
+move=> x y z; do 2!apply: val_inj.
+by rewrite /= !modz_nat !absz_nat /= !modn_mod !modnDml modnDmr addnA.
 Qed.
 
 Lemma addwC : commutative addw.
@@ -74,7 +89,8 @@ Canonical word_finGroupType := Eval hnf in [finGroupType of word for +%R].
 
 Lemma mul1w : left_id onew mulw.
 Proof.
-  by move=> w; do 2!apply: val_inj; rewrite /= /mulw modnMml mul1n modn_small.
+move=> w; do 2!apply: val_inj.
+by rewrite /= /mulw !modz_nat !absz_nat !modn_mod modnMml mul1n modn_small.
 Qed.
 
 Lemma mulwC : commutative mulw.
@@ -85,26 +101,26 @@ Proof. by move=> w; rewrite mulwC mul1w. Qed.
 
 Lemma mulwA : associative mulw.
 Proof.
-  move=> w1 w2 w3; do 2!apply: val_inj.
-  by rewrite /= /mulw modnMml modnMmr mulnA.
+move=> w1 w2 w3; do 2!apply: val_inj.
+by rewrite /= /mulw !modz_nat !absz_nat !modn_mod modnMml modnMmr mulnA.
 Qed.
 
 Lemma mulw_addr : right_distributive mulw addw.
 Proof.
-  move=> w1 w2 w3; do 2!apply: val_inj.
-  by rewrite /= /mulw modnMmr modnDm mulnDr.
+move=> w1 w2 w3; do 2!apply: val_inj.
+by rewrite /= /mulw !modz_nat !absz_nat !modn_mod modnMmr modnDm mulnDr.
 Qed.
 
 Lemma mulw_addl : left_distributive mulw addw.
 Proof.
-  by move=> w1 w2 w3; rewrite -!(mulwC w3) mulw_addr.
+by move=> w1 w2 w3; rewrite -!(mulwC w3) mulw_addr.
 Qed.
 
 Definition bits_of_word (w : word) :=
   locked [ffun i : 'I_k => odd (val w %/ 2 ^ i)].
 
 Definition word_of_bits (bs : {ffun pred 'I_k}) :=
-  as_word (\sum_(i < k) bs i * 2 ^ i).
+  as_word (\sum_(i < k) bs i * 2 ^ i)%N.
 
 Lemma word_of_bitsK : cancel word_of_bits bits_of_word.
 Proof.
@@ -113,7 +129,8 @@ have Hsum2 : forall N (f : pred 'I_N), \sum_(i < N) f i * 2 ^ i < 2 ^ N.
   rewrite -[2 ^ N]prednK ?expn_gt0 // predn_exp mul1n ltnS leq_sum // => i _.
   by case: (f i); rewrite // ?mul1n ?mul0n leqnn.
 move=> bs; apply/ffunP=> - [i Hi].
-rewrite /bits_of_word /word_of_bits -lock ffunE /= modn_small; last first.
+rewrite /bits_of_word /word_of_bits -lock ffunE /= !modz_nat !absz_nat.
+rewrite modn_mod modn_small; last first.
   by apply: Hsum2.
 have Hl : k = i.+1 + (k - i.+1) by rewrite subnKC //.
 rewrite {}Hl in bs Hi *.
@@ -173,6 +190,7 @@ apply: (canLR word_of_bitsK).
 rewrite -(GRing.add0r monew) /monew; apply: (canLR (GRing.subrK (oppw onew))).
 rewrite GRing.opprK.
 do 2!apply: val_inj=> /=.
+rewrite !modz_nat !absz_nat !modn_mod.
 rewrite (eq_big_seq (fun i : 'I_k => 2 ^ i)); last first.
   by move=> i _; rewrite /= ffunE mul1n.
 have -> : (\sum_(i < k) 2 ^ i) = (2 ^ k).-1 by rewrite predn_exp /= mul1n.
@@ -280,13 +298,17 @@ Proof.
 case: w=> [] /=; do 3!rewrite /Ord.leq /=.
 case: k=> [|k' n].
   by rewrite expn0=> n; rewrite ord1.
+rewrite !modz_nat !absz_nat !modn_mod.
 rewrite !modn_small; try by rewrite -{1}(expn1 2) leq_exp2l.
   have := (leq_sub2r 1 (valP n)); rewrite subn1 //=.
 by rewrite subn1 prednK ?leqnn // expn_gt0.
 Qed.
 
 Lemma leqw_zero w : zerow <= w.
-Proof. by do 3!rewrite /Ord.leq /=; rewrite mod0n. Qed.
+Proof.
+do 3!rewrite /Ord.leq /=.
+by rewrite !modz_nat !absz_nat !modn_mod mod0n.
+Qed.
 
 End Order.
 
