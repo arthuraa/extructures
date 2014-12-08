@@ -304,3 +304,7 @@ rewrite -[drop n t]/(val [tuple of drop n t]).
 move: (addKn _ _) [tuple of drop n t] => E; move: (E); rewrite {}E=> E t'.
 by rewrite tcast_id -[in RHS](IH t') /=; congr merge_tuple; apply: val_inj.
 Qed.
+
+Notation "[ 'hseq' x ; .. ; y ]" :=
+  [hseq of Tagged _ x :: .. [:: Tagged _ y] ..]
+  (at level 0) : form_scope.
