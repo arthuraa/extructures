@@ -1,6 +1,6 @@
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat choice fintype seq.
 Require Import div ssralg finalg zmodp bigop tuple finfun binomial.
-Require Import hseq.
+Require Import hseq ord.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -25,6 +25,8 @@ Canonical word_subCountType := Eval hnf in [subCountType of word].
 Definition word_finMixin := [finMixin of word by <:].
 Canonical word_finType := Eval hnf in FinType word word_finMixin.
 Canonical word_subFinType := Eval hnf in [subFinType of word].
+Definition word_ordMixin := [ordMixin of word by <:].
+Canonical word_ordType := Eval hnf in OrdType word word_ordMixin.
 
 Lemma card_word : #|{: word}| = 2 ^ k.
 Proof. by rewrite card_sub eq_cardT // -cardT card_ord. Qed.

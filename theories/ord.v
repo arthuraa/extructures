@@ -1,4 +1,4 @@
-Require Import ssreflect ssrfun ssrbool ssrnat eqtype seq.
+Require Import ssreflect ssrfun ssrbool ssrnat eqtype seq fintype.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -290,3 +290,6 @@ End SubOrdType.
 Notation "[ 'ordMixin' 'of' T 'by' <: ]" :=
     (sub_ordMixin _ : Ord.mixin_of T)
   (at level 0, format "[ 'ordMixin'  'of'  T  'by'  <: ]") : form_scope.
+
+Definition ordinal_ordMixin n := [ordMixin of 'I_n by <:].
+Canonical ordinal_ordType n := Eval hnf in OrdType 'I_n (ordinal_ordMixin n).
