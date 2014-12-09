@@ -112,6 +112,13 @@ Notation "[ 'hseq' 'of' hs ]" :=
   (mkhseq (fun hsP => @HSeq _ _ _ hs hsP))
   (at level 0, format "[ 'hseq'  'of'  hs ]") : form_scope.
 
+Notation "[ 'hseq' ]" := [hseq of [::]]
+  (at level 0, format "[ 'hseq' ]") : form_scope.
+
+Notation "[ 'hseq' x ; .. ; y ]" :=
+  [hseq of Tagged _ x :: .. [:: Tagged _ y] ..]
+  (at level 0, format "[ 'hseq' '[' x ; '/' .. ; '/' y ']' ]") : form_scope.
+
 Section HIdx.
 
 Section Def.
@@ -182,9 +189,6 @@ Variables (I : eqType) (T_ : I -> Type) (idx : seq I).
 
 Canonical nil_hseq (I : eqType) (T_ : I -> Type) :=
   @HSeq I T_ [::] [::] isT.
-
-Notation "[ 'hseq' ]" := ([hseq of [::]])
-  (at level 0, format "[ 'hseq' ]") : form_scope.
 
 Lemma cons_hseqP i (x : T_ i) (hs : hseq T_ idx) :
   map tag (Tagged T_ x :: hs) == i :: idx.
@@ -304,7 +308,3 @@ rewrite -[drop n t]/(val [tuple of drop n t]).
 move: (addKn _ _) [tuple of drop n t] => E; move: (E); rewrite {}E=> E t'.
 by rewrite tcast_id -[in RHS](IH t') /=; congr merge_tuple; apply: val_inj.
 Qed.
-
-Notation "[ 'hseq' x ; .. ; y ]" :=
-  [hseq of Tagged _ x :: .. [:: Tagged _ y] ..]
-  (at level 0) : form_scope.
