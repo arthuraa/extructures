@@ -368,3 +368,30 @@ by move=> i w'; rewrite word_of_bitsK /= tcastKV.
 Qed.
 
 End Splitting.
+
+Definition wcast k1 k2 (p : k1 = k2) (w : word k1) : word k2 :=
+  eq_rect k1 word w k2 p.
+
+Lemma wcast_id k (eq_kk : k = k) w : wcast eq_kk w = w.
+Proof. by rewrite eq_axiomK. Qed.
+
+Lemma wcastK k1 k2 (eq_k1k2 : k1 = k2) :
+  cancel (wcast eq_k1k2) (wcast (esym eq_k1k2)).
+Proof.
+move: (eq_k1k2) (esym _); rewrite -{}eq_k1k2 {k2}=> eq_kk eq_kk'.
+by rewrite !eq_axiomK.
+Qed.
+
+Lemma wcastKV k1 k2 (eq_k1k2 : k1 = k2) :
+  cancel (wcast (esym eq_k1k2)) (wcast eq_k1k2).
+Proof.
+move: (eq_k1k2) (esym _); rewrite -{}eq_k1k2 {k2}=> eq_kk eq_kk'.
+by rewrite !eq_axiomK.
+Qed.
+
+Lemma wcast_trans k1 k2 k3 (eq_k1k2 : k1 = k2) (eq_k2k3 : k2 = k3) :
+  wcast (etrans eq_k1k2 eq_k2k3) =1 wcast eq_k2k3 \o wcast eq_k1k2.
+Proof.
+move: (eq_k1k2) (eq_k2k3) (etrans _ _); rewrite -{}eq_k2k3 -{}eq_k1k2 {k2 k3}.
+by move=> ???; rewrite !eq_axiomK.
+Qed.
