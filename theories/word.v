@@ -340,29 +340,29 @@ Section Splitting.
 
 Variable ks : seq nat.
 
-Definition split_word (w : word (sumn ks)) : hseq word ks :=
+Definition wunpack (w : word (sumn ks)) : hseq word ks :=
   let t := tcast (card_ord (sumn ks)) (val (bits_of_word w)) in
   let word_of_tuple k t' :=
       word_of_bits (Finfun (tcast (esym (card_ord k)) t')) in
   hmap word_of_tuple (split_tuple t).
 
-Definition merge_word (ws : hseq word ks) : word (sumn ks) :=
+Definition wpack (ws : hseq word ks) : word (sumn ks) :=
   let tuple_of_word k w :=
       tcast (card_ord k) (val (bits_of_word w)) in
   let t := tcast (esym (card_ord (sumn ks)))
                  (merge_tuple (hmap tuple_of_word ws)) in
   word_of_bits (Finfun t).
 
-Lemma merge_wordK : cancel merge_word split_word.
+Lemma wpackK : cancel wpack wunpack.
 Proof.
-move=> ws; rewrite /split_word /merge_word /= word_of_bitsK /= tcastKV.
+move=> ws; rewrite /wunpack /wpack /= word_of_bitsK /= tcastKV.
 rewrite merge_tupleK hmapK // => i w; rewrite tcastK /=.
 by apply: (canLR (@bits_of_wordK i)); case: (bits_of_word _).
 Qed.
 
-Lemma split_wordK : cancel split_word merge_word.
+Lemma wunpackK : cancel wunpack wpack.
 Proof.
-move=> w; rewrite /split_word /merge_word /= hmapK ?split_tupleK ?tcastK.
+move=> w; rewrite /wunpack /wpack /= hmapK ?split_tupleK ?tcastK.
   by apply: (canLR (@bits_of_wordK _)); case: (bits_of_word _).
 by move=> i w'; rewrite word_of_bitsK /= tcastKV.
 Qed.
