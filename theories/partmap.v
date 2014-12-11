@@ -156,6 +156,8 @@ Definition pmempty : {partmap T -> S} :=
 
 End Operations.
 
+Arguments pmempty {_ _}.
+
 Coercion pmget : PartMap.partmap_type >-> Funclass.
 
 Section Properties.
