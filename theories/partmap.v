@@ -305,4 +305,16 @@ move=> m; apply: eq_partmap=> k; rewrite getm_union emptymP /=.
 by case: (m k).
 Qed.
 
+Lemma unionmA : associative (@unionm T S).
+Proof.
+move=> m1 m2 m3; apply: eq_partmap=> k; rewrite !getm_union.
+by case: (m1 k).
+Qed.
+
+Lemma unionmI : idempotent (@unionm T S).
+Proof.
+move=> m; apply: eq_partmap=> k; rewrite !getm_union.
+by case: (m k).
+Qed.
+
 End Properties.
