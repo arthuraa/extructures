@@ -115,6 +115,12 @@ Qed.
 Definition pmset (m : {partmap T -> S}) k v :=
   PartMap.PMap (pmset_proof k v (valP m)).
 
+Definition pmupd (m : {partmap T -> S}) k v :=
+  if pmget m k then Some (pmset m k v) else None.
+
+Definition pmunion (m1 m2 : {partmap T -> S}) :=
+  foldr (fun p m => pmset m p.1 p.2) m2 m1.
+
 Lemma pmmap_proof S' (f : S -> S') (m : {partmap T -> S}) :
   PartMap.axiom (map (fun p => p.1) (map (fun p => (p.1, f p.2)) m)).
 Proof. by rewrite -!map_comp; apply: (valP m). Qed.
@@ -154,11 +160,25 @@ Definition pmrem (m : {partmap T -> S}) k :=
 Definition pmempty : {partmap T -> S} :=
   @PartMap.PMap T S [::] erefl.
 
+Definition mkpartmap (kvs : seq (T * S)) : {partmap T -> S} :=
+  foldr (fun kv m => pmset m kv.1 kv.2) pmempty kvs.
+
+Definition mem_partmap (m : {partmap T -> S}) :=
+  [pred k : T | pmget m k].
+
+Canonical mem_partmap_predType := mkPredType mem_partmap.
+
 End Operations.
 
-Arguments pmempty {_ _}.
-
 Coercion pmget : PartMap.partmap_type >-> Funclass.
+
+Arguments pmempty {_ _}.
+Arguments pmunion {_ _} _ _.
+
+Notation "[ 'partmap' kv1 ; .. ; kvn ]" :=
+  (mkpartmap (cons kv1 .. (cons kvn nil) ..))
+  (at level 0, format "[ 'partmap' '[' kv1 ; '/' .. ; '/' kvn ']' ]")
+  : form_scope.
 
 Section Properties.
 
@@ -180,6 +200,23 @@ case: m; rewrite /pmget /pmset /=; elim=> //= p s IH /andP [lb /IH {IH} IH].
 rewrite ![in LHS](fun_if, if_arg) /= {}IH.
 have [->{k'}|Hne] := altP (k' =P k); case: (Ord.ltgtP k) => //.
 by move=> <-; rewrite (negbTE Hne).
+Qed.
+
+Lemma mem_pmunion (m1 m2 : {partmap T -> S}) k :
+  k \in pmunion m1 m2 = (k \in m1) || (k \in m2).
+Proof.
+rewrite /pmunion /=; case: m1=> [m1 Pm1] /=.
+rewrite [in X in X || _]/in_mem /= [in X in X || _]/pmget /= {Pm1}.
+elim: m1 => [|p m1 IH] //=; rewrite {1}/in_mem /= pmget_set.
+by case: (_ == _).
+Qed.
+
+Lemma pmget_union (m1 m2 : {partmap T -> S}) k :
+  pmunion m1 m2 k = if m1 k then m1 k else m2 k.
+Proof.
+case: m1 => [m1 Pm1]; rewrite /pmunion {2 3}/pmget /= {Pm1}.
+elim: m1 => [|p m1 IH] //=.
+by rewrite pmget_set {}IH; case: (_ == _).
 Qed.
 
 Lemma pmemptyP : @pmempty T S =1 [fun : T => None].
@@ -218,6 +255,13 @@ have [-> {k'}|ne'] // := altP (k' =P k).
 by rewrite eq_sym (negbTE ne).
 Qed.
 
+Lemma mem_mkpartmap (kvs : seq (T * S)) :
+  mkpartmap kvs =i [seq kv.1 | kv <- kvs].
+Proof.
+move=> k; elim: kvs => [|kv kvs IH] //=; rewrite !inE pmget_set -{}IH.
+by case: (_ == _).
+Qed.
+
 Lemma eq_partmap (m1 m2 : {partmap T -> S}) : m1 =1 m2 -> m1 = m2.
 Proof.
 have in_seq: forall s : seq (T * S), [pred k | pmget' s k] =i [seq p.1 | p <- s].
@@ -250,6 +294,15 @@ move/(_ k1)/esym: s1_s2 k1_k2; rewrite eqxx.
 have [->|_ s1_s2] := altP (_ =P _); first by rewrite Ord.ltxx.
 move/(_ s2 k1): in_seq; rewrite inE {}s1_s2 /= => /esym/(allP lb2)/Ord.ltW /=.
 by move=> ->.
+Qed.
+
+Lemma pmunion0m : left_id (@pmempty T S) pmunion.
+Proof. by []. Qed.
+
+Lemma pmunionm0 : right_id (@pmempty T S) pmunion.
+Proof.
+move=> m; apply: eq_partmap=> k; rewrite pmget_union pmemptyP /=.
+by case: (m k).
 Qed.
 
 End Properties.
