@@ -81,26 +81,26 @@ Variables (T : ordType) (S : Type).
 Local Coercion PartMap.pmval : PartMap.partmap_type >-> seq.
 Local Open Scope ord_scope.
 
-Fixpoint pmget' (s : seq (T * S)) (k : T) : option S :=
+Fixpoint getm' (s : seq (T * S)) (k : T) : option S :=
   if s is p :: s then
     if k == p.1 then Some p.2
-    else pmget' s k
+    else getm' s k
   else None.
 
-Definition pmget (m : PartMap.partmap_type T S) k := pmget' m k.
+Definition getm (m : PartMap.partmap_type T S) k := getm' m k.
 
-Fixpoint pmset' (s : seq (T * S)) (k : T) (v : S) : seq (T * S) :=
+Fixpoint setm' (s : seq (T * S)) (k : T) (v : S) : seq (T * S) :=
   if s is p :: s' then
     if k < p.1 then (k, v) :: s
     else if k == p.1 then (k, v) :: s'
-    else p :: pmset' s' k v
+    else p :: setm' s' k v
   else [:: (k, v)].
 
-Lemma pmset_proof (s : seq (T * S)) k v (Ps : PartMap.axiom [seq p.1 | p <- s]) :
-  PartMap.axiom [seq p.1 | p <- pmset' s k v].
+Lemma setm_proof (s : seq (T * S)) k v (Ps : PartMap.axiom [seq p.1 | p <- s]) :
+  PartMap.axiom [seq p.1 | p <- setm' s k v].
 Proof.
 move: s Ps.
-have E: forall s, [seq p.1 | p <- pmset' s k v] =i k :: [seq p.1 | p <- s].
+have E: forall s, [seq p.1 | p <- setm' s k v] =i k :: [seq p.1 | p <- s].
   elim=> // p s /= IH k'; rewrite ![in X in X = _]fun_if /= !inE.
   rewrite IH inE.
   case: (Ord.ltgtP k p.1) => // H; try by bool_congr.
@@ -112,22 +112,22 @@ rewrite !(eq_all_r (E s)) {E} /= lb andbT; case: Ord.ltgtP=> //=.
 by move=> ->.
 Qed.
 
-Definition pmset (m : {partmap T -> S}) k v :=
-  PartMap.PMap (pmset_proof k v (valP m)).
+Definition setm (m : {partmap T -> S}) k v :=
+  PartMap.PMap (setm_proof k v (valP m)).
 
-Definition pmupd (m : {partmap T -> S}) k v :=
-  if pmget m k then Some (pmset m k v) else None.
+Definition updm (m : {partmap T -> S}) k v :=
+  if getm m k then Some (setm m k v) else None.
 
-Definition pmunion (m1 m2 : {partmap T -> S}) :=
-  foldr (fun p m => pmset m p.1 p.2) m2 m1.
+Definition unionm (m1 m2 : {partmap T -> S}) :=
+  foldr (fun p m => setm m p.1 p.2) m2 m1.
 
-Lemma pmmap_proof S' (f : S -> S') (m : {partmap T -> S}) :
+Lemma mapm_proof S' (f : S -> S') (m : {partmap T -> S}) :
   PartMap.axiom (map (fun p => p.1) (map (fun p => (p.1, f p.2)) m)).
 Proof. by rewrite -!map_comp; apply: (valP m). Qed.
 
-Definition pmmap S' (f : S -> S') m := PartMap.PMap (pmmap_proof f m).
+Definition mapm S' (f : S -> S') m := PartMap.PMap (mapm_proof f m).
 
-Lemma pmfilter_proof (a : pred S) (m : {partmap T -> S}) :
+Lemma filterm_proof (a : pred S) (m : {partmap T -> S}) :
   PartMap.axiom [seq p.1 | p <- m & a p.2].
 Proof.
 case: m=> /=; elim=> [|p s IH /= /andP [lb /IH {IH} IH]] //=.
@@ -136,17 +136,17 @@ elim: s lb=> //= p' s IH /andP [lb /IH {IH} IH].
 by rewrite 2!fun_if /= lb IH; case: (a _).
 Qed.
 
-Definition pmfilter (a : pred S) (m : {partmap T -> S}) :=
-  PartMap.PMap (pmfilter_proof a m).
+Definition filterm (a : pred S) (m : {partmap T -> S}) :=
+  PartMap.PMap (filterm_proof a m).
 
-Fixpoint pmrem' (s : seq (T * S)) k :=
+Fixpoint remm' (s : seq (T * S)) k :=
   if s is p :: s then
-    if p.1 == k then s else p :: pmrem' s k
+    if p.1 == k then s else p :: remm' s k
   else [::].
 
-Lemma pmrem_proof s k :
+Lemma remm_proof s k :
   PartMap.axiom [seq p.1 | p <- s] ->
-  PartMap.axiom [seq p.1 | p <- pmrem' s k].
+  PartMap.axiom [seq p.1 | p <- remm' s k].
 Proof.
 elim: s=> [|p s IH /= /andP [lb Ps]] //=.
 rewrite 2!fun_if /= {}IH // {}Ps andbT; case: (_ == _)=> //.
@@ -154,26 +154,26 @@ elim: s lb=> // p' s IH /= /andP [lb Ps].
 by rewrite 2!fun_if /= {}IH // /= lb Ps; case: (_ == _).
 Qed.
 
-Definition pmrem (m : {partmap T -> S}) k :=
-  PartMap.PMap (pmrem_proof k (valP m)).
+Definition remm (m : {partmap T -> S}) k :=
+  PartMap.PMap (remm_proof k (valP m)).
 
-Definition pmempty : {partmap T -> S} :=
+Definition emptym : {partmap T -> S} :=
   @PartMap.PMap T S [::] erefl.
 
 Definition mkpartmap (kvs : seq (T * S)) : {partmap T -> S} :=
-  foldr (fun kv m => pmset m kv.1 kv.2) pmempty kvs.
+  foldr (fun kv m => setm m kv.1 kv.2) emptym kvs.
 
 Definition mem_partmap (m : {partmap T -> S}) :=
-  [pred k : T | pmget m k].
+  [pred k : T | getm m k].
 
 Canonical mem_partmap_predType := mkPredType mem_partmap.
 
 End Operations.
 
-Coercion pmget : PartMap.partmap_type >-> Funclass.
+Coercion getm : PartMap.partmap_type >-> Funclass.
 
-Arguments pmempty {_ _}.
-Arguments pmunion {_ _} _ _.
+Arguments emptym {_ _}.
+Arguments unionm {_ _} _ _.
 
 Notation "[ 'partmap' kv1 ; .. ; kvn ]" :=
   (mkpartmap (cons kv1 .. (cons kvn nil) ..))
@@ -185,54 +185,54 @@ Section Properties.
 Variables (T : ordType) (S : Type).
 Local Open Scope ord_scope.
 
-Lemma pmgetE (m : {partmap T -> S}) : [pred k | m k] =i [seq p.1 | p <- val m].
+Lemma getmE (m : {partmap T -> S}) : [pred k | m k] =i [seq p.1 | p <- val m].
 Proof.
-case: m => [s Ps] k; rewrite /pmget /= {Ps} inE.
+case: m => [s Ps] k; rewrite /getm /= {Ps} inE.
 elim: s=> [|p s IH] //=; rewrite !inE [in LHS]fun_if /= {}IH.
 by case: (_ == _).
 Qed.
 
-Lemma pmget_set (m : {partmap T -> S}) k v k' :
-  pmset m k v k' =
-  if k' == k then Some v else pmget m k'.
+Lemma getm_set (m : {partmap T -> S}) k v k' :
+  setm m k v k' =
+  if k' == k then Some v else getm m k'.
 Proof.
-case: m; rewrite /pmget /pmset /=; elim=> //= p s IH /andP [lb /IH {IH} IH].
+case: m; rewrite /getm /setm /=; elim=> //= p s IH /andP [lb /IH {IH} IH].
 rewrite ![in LHS](fun_if, if_arg) /= {}IH.
 have [->{k'}|Hne] := altP (k' =P k); case: (Ord.ltgtP k) => //.
 by move=> <-; rewrite (negbTE Hne).
 Qed.
 
-Lemma mem_pmunion (m1 m2 : {partmap T -> S}) k :
-  k \in pmunion m1 m2 = (k \in m1) || (k \in m2).
+Lemma mem_unionm (m1 m2 : {partmap T -> S}) k :
+  k \in unionm m1 m2 = (k \in m1) || (k \in m2).
 Proof.
-rewrite /pmunion /=; case: m1=> [m1 Pm1] /=.
-rewrite [in X in X || _]/in_mem /= [in X in X || _]/pmget /= {Pm1}.
-elim: m1 => [|p m1 IH] //=; rewrite {1}/in_mem /= pmget_set.
+rewrite /unionm /=; case: m1=> [m1 Pm1] /=.
+rewrite [in X in X || _]/in_mem /= [in X in X || _]/getm /= {Pm1}.
+elim: m1 => [|p m1 IH] //=; rewrite {1}/in_mem /= getm_set.
 by case: (_ == _).
 Qed.
 
-Lemma pmget_union (m1 m2 : {partmap T -> S}) k :
-  pmunion m1 m2 k = if m1 k then m1 k else m2 k.
+Lemma getm_union (m1 m2 : {partmap T -> S}) k :
+  unionm m1 m2 k = if m1 k then m1 k else m2 k.
 Proof.
-case: m1 => [m1 Pm1]; rewrite /pmunion {2 3}/pmget /= {Pm1}.
+case: m1 => [m1 Pm1]; rewrite /unionm {2 3}/getm /= {Pm1}.
 elim: m1 => [|p m1 IH] //=.
-by rewrite pmget_set {}IH; case: (_ == _).
+by rewrite getm_set {}IH; case: (_ == _).
 Qed.
 
-Lemma pmemptyP : @pmempty T S =1 [fun : T => None].
+Lemma emptymP : @emptym T S =1 [fun : T => None].
 Proof. by []. Qed.
 
-Lemma pmget_map S' (f : S -> S') (m : {partmap T -> S}) :
-  pmmap f m =1 omap f \o m.
+Lemma getm_map S' (f : S -> S') (m : {partmap T -> S}) :
+  mapm f m =1 omap f \o m.
 Proof.
-case: m=> [s Ps] k; rewrite /pmmap /pmget /=.
+case: m=> [s Ps] k; rewrite /mapm /getm /=.
 by elim: s {Ps}=> [|[k' v] s IH] //=; rewrite {}IH ![in RHS]fun_if /=.
 Qed.
 
-Lemma pmget_filter (a : pred S) (m : {partmap T -> S}) :
-  pmfilter a m =1 obind (fun x => if a x then Some x else None) \o m.
+Lemma getm_filter (a : pred S) (m : {partmap T -> S}) :
+  filterm a m =1 obind (fun x => if a x then Some x else None) \o m.
 Proof.
-case: m=> [s Ps] k; rewrite /pmfilter /pmget /=.
+case: m=> [s Ps] k; rewrite /filterm /getm /=.
 elim: s Ps=> [|p s IH /= /andP [lb /IH {IH} IH]] //=.
 rewrite ![in LHS](fun_if, if_arg) /= {}IH.
 have [-> {k}|k_p] //= := altP (_ =P _); case: (a _)=> //.
@@ -240,11 +240,11 @@ elim: s lb => [|p' s IH /andP /= [lb /IH {IH} IH]] //=.
 by move: lb; have [->|//] := altP (_ =P _); rewrite Ord.ltxx.
 Qed.
 
-Lemma pmget_rem (m : {partmap T -> S}) k k' :
-  pmrem m k k' =
-  if k' == k then None else pmget m k'.
+Lemma getm_rem (m : {partmap T -> S}) k k' :
+  remm m k k' =
+  if k' == k then None else getm m k'.
 Proof.
-case: m; rewrite /pmrem /pmget /=; elim=> [|p s IH /= /andP [lb Ps]] //=.
+case: m; rewrite /remm /getm /=; elim=> [|p s IH /= /andP [lb Ps]] //=.
   by case: (_ == _).
 rewrite ![in LHS](fun_if, if_arg) /= {}IH //.
 move: {Ps} lb; have [-> lb|ne lb] := altP (_ =P _).
@@ -258,16 +258,16 @@ Qed.
 Lemma mem_mkpartmap (kvs : seq (T * S)) :
   mkpartmap kvs =i [seq kv.1 | kv <- kvs].
 Proof.
-move=> k; elim: kvs => [|kv kvs IH] //=; rewrite !inE pmget_set -{}IH.
+move=> k; elim: kvs => [|kv kvs IH] //=; rewrite !inE getm_set -{}IH.
 by case: (_ == _).
 Qed.
 
 Lemma eq_partmap (m1 m2 : {partmap T -> S}) : m1 =1 m2 -> m1 = m2.
 Proof.
-have in_seq: forall s : seq (T * S), [pred k | pmget' s k] =i [seq p.1 | p <- s].
+have in_seq: forall s : seq (T * S), [pred k | getm' s k] =i [seq p.1 | p <- s].
   elim=> [|p s IH] k; rewrite /= !inE // -IH inE.
   by case: (k == p.1).
-case: m1 m2 => [s1 Ps1] [s2 Ps2]; rewrite /pmget /= => s1_s2.
+case: m1 m2 => [s1 Ps1] [s2 Ps2]; rewrite /getm /= => s1_s2.
 apply: val_inj=> /=.
 elim: s1 Ps1 s2 Ps2 s1_s2
       => [_|[k1 v1] s1 IH /= /andP [lb1 /IH {IH} IH]]
@@ -286,7 +286,7 @@ rewrite Ord.leq_eqVlt=> /orP [/eqP k1_k2|k1_k2].
   rewrite {}IH // => k; move: {s1_s2} (s1_s2 k).
   have [-> {k} _|ne ?] // := altP (_ =P _).
   move: (in_seq s1 k1) (in_seq s2 k1); rewrite !inE.
-  case: (pmget' s1 k1) (pmget' s2 k1) => [v1'|] [v2'|] //=.
+  case: (getm' s1 k1) (getm' s2 k1) => [v1'|] [v2'|] //=.
   - by move=> _ /esym/(allP lb2) /=; rewrite Ord.ltxx.
   - by move=> /esym/(allP lb1) /=; rewrite Ord.ltxx.
   by move=> _ /esym/(allP lb2) /=; rewrite Ord.ltxx.
@@ -296,12 +296,12 @@ move/(_ s2 k1): in_seq; rewrite inE {}s1_s2 /= => /esym/(allP lb2)/Ord.ltW /=.
 by move=> ->.
 Qed.
 
-Lemma pmunion0m : left_id (@pmempty T S) pmunion.
+Lemma union0m : left_id (@emptym T S) unionm.
 Proof. by []. Qed.
 
-Lemma pmunionm0 : right_id (@pmempty T S) pmunion.
+Lemma unionm0 : right_id (@emptym T S) unionm.
 Proof.
-move=> m; apply: eq_partmap=> k; rewrite pmget_union pmemptyP /=.
+move=> m; apply: eq_partmap=> k; rewrite getm_union emptymP /=.
 by case: (m k).
 Qed.
 
