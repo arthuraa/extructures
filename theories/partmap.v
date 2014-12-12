@@ -177,7 +177,7 @@ Arguments unionm {_ _} _ _.
 
 Notation "[ 'partmap' kv1 ; .. ; kvn ]" :=
   (mkpartmap (cons kv1 .. (cons kvn nil) ..))
-  (at level 0, format "[ 'partmap' '[' kv1 ; '/' .. ; '/' kvn ']' ]")
+  (at level 0, format "[ 'partmap'  '[' kv1 ; '/' .. ; '/' kvn ']' ]")
   : form_scope.
 
 Section Properties.
