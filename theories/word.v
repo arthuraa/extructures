@@ -338,6 +338,9 @@ Notation "- x" := (oppw x) : word_scope.
 Notation "0" := (zerow) : word_scope.
 Notation "1" := (onew) : word_scope.
 
+Definition swcast {k k'} (w : word k) : word k' :=
+  as_word (val w).
+
 Section Splitting.
 
 Variable ks : seq nat.
