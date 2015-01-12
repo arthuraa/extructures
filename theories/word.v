@@ -323,6 +323,7 @@ Arguments addw {_} _ _.
 Arguments subw {_} _ _.
 Arguments mulw {_} _ _.
 Arguments oppw {_} _.
+Arguments shlw {_} _ _.
 Arguments andw {_} _ _.
 Arguments orw {_} _ _.
 Arguments xorw {_} _ _.
