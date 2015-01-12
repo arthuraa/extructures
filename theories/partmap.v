@@ -262,6 +262,11 @@ move=> k; elim: kvs => [|kv kvs IH] //=; rewrite !inE getm_set -{}IH.
 by case: (_ == _).
 Qed.
 
+Lemma getm_mkpartmap (kvs : seq (T * S)) : mkpartmap kvs =1 getm' kvs.
+Proof.
+by move=> k; elim: kvs=> [|p kvs IH] //=; rewrite getm_set IH.
+Qed.
+
 Lemma eq_partmap (m1 m2 : {partmap T -> S}) : m1 =1 m2 -> m1 = m2.
 Proof.
 have in_seq: forall s : seq (T * S), [pred k | getm' s k] =i [seq p.1 | p <- s].
@@ -318,3 +323,12 @@ by case: (m k).
 Qed.
 
 End Properties.
+
+(* Find a good name for this *)
+Lemma getm_mkpartmap' (T : ordType) (S : eqType) (kvs : seq (T * S)) k v
+  : mkpartmap kvs k = Some v -> (k, v) \in kvs.
+Proof.
+elim: kvs => [|[k' v'] kvs IH] //=; rewrite getm_set.
+have [-> [->]|_ H] := altP (_ =P _); first by rewrite inE eqxx.
+by rewrite inE IH // orbT.
+Qed.
