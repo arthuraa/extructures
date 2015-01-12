@@ -52,6 +52,7 @@ Definition addw (w1 w2 : word) := as_word (w1 + w2)%N.
 Definition oppw (w : word) := as_word (2 ^ k - w)%N.
 Definition mulw (w1 w2 : word) := as_word (w1 * w2)%N.
 Definition subw (w1 w2 : word) := addw w1 (oppw w2).
+Definition shlw (w1 w2 : word) := as_word (w1 * 2 ^ w2)%N.
 
 Definition zerow := as_word 0.
 Definition onew := as_word 1.
