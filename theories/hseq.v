@@ -16,7 +16,8 @@ Notation "[ 'hseq' ]" := HSeqNil
 Notation "x :: y" := (HSeqCons x y) : hseq_scope.
 Notation "[ 'hseq' x ; .. ; y ]" :=
   (HSeqCons x .. (HSeqCons y HSeqNil) ..)
-  (at level 0, format "[ 'hseq' '[' x ; '/' .. ; '/' y ']' ]") : form_scope.
+  (at level 0, format "[ 'hseq' '['  x ; '/'  .. ; '/'  y ']' ]")
+  : form_scope.
 
 Section Def.
 
