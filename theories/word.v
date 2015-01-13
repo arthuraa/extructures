@@ -7,6 +7,32 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+(* Some of the Ssreflect constructions require 1 != 0 (e.g. the
+zmodType structure). To go around this limitation while allowing for
+the maximum flexibility, we add a type of non-zero natural numbers. *)
+
+Structure non_zero : Type := NonZero {
+  nat_of_non_zero :> nat;
+  _ : nat_of_non_zero != 0
+}.
+
+Canonical non_zero_subType := [subType for nat_of_non_zero].
+Definition non_zero_eqMixin := [eqMixin of non_zero by <:].
+Canonical non_zero_eqType := Eval hnf in EqType non_zero non_zero_eqMixin.
+Definition non_zero_choiceMixin := [choiceMixin of non_zero by <:].
+Canonical non_zero_choiceType :=
+  Eval hnf in ChoiceType non_zero non_zero_choiceMixin.
+Definition non_zero_countMixin := [countMixin of non_zero by <:].
+Canonical non_zero_countType :=
+  Eval hnf in CountType non_zero non_zero_countMixin.
+Canonical non_zero_subCountType :=
+  Eval hnf in [subCountType of non_zero].
+Definition non_zero_ordMixin := [ordMixin of non_zero by <:].
+Canonical non_zero_ordType :=
+  Eval hnf in OrdType non_zero non_zero_ordMixin.
+
+Canonical non_zero_succn n := @NonZero n.+1 erefl.
+
 Section Def.
 
 Variable k : nat.
@@ -57,6 +83,13 @@ Definition shlw (w1 w2 : word) := as_word (w1 * 2 ^ w2)%N.
 Definition zerow := as_word 0.
 Definition onew := as_word 1.
 Definition monew := oppw onew.
+
+Lemma onew_zero : (onew == zerow) = (k == 0).
+Proof.
+rewrite -!val_eqE /=; case: k => [|k'] //=.
+rewrite expnS !modz_nat !absz_nat !mod0n modn_mod modn_small //.
+by rewrite -{1}[2]/(2 * 2 ^ 0) leq_pmul2l // leq_exp2l.
+Qed.
 
 Lemma valwK (w : word) : as_word w = w.
 Proof.
@@ -337,6 +370,22 @@ Notation "x * y" := (mulw x y) : word_scope.
 Notation "- x" := (oppw x) : word_scope.
 Notation "0" := (zerow) : word_scope.
 Notation "1" := (onew) : word_scope.
+
+Section NonZero.
+
+Variable k : non_zero.
+
+Lemma onewN0 : 1%w != 0%w :> word k.
+Proof. by rewrite onew_zero (valP k). Qed.
+
+Definition word_ringMixin :=
+  RingMixin (@mulwA k) (@mul1w k) (@mulw1 k)
+            (@mulw_addl k) (@mulw_addr k) onewN0.
+
+Canonical word_ringType :=
+  Eval hnf in RingType (word k) word_ringMixin.
+
+End NonZero.
 
 Definition swcast {k k'} (w : word k) : word k' :=
   as_word (val w).
