@@ -30,6 +30,8 @@ Variable (T_ : I -> Type).
 Fixpoint hseq (idx : seq I) : Type :=
   if idx is i :: idx then hseq_cons (T_ i) (hseq idx) else hseq_nil.
 
+Definition htags idx of hseq idx := idx.
+
 Lemma hseq0 : all_equal_to [hseq].
 Proof. by case. Qed.
 
@@ -280,6 +282,41 @@ Notation "[ 'hnth' hs i ]" :=
   (at level 0, hs, i at level 8, format "[ 'hnth'  hs  i ]") : form_scope.
 
 *)
+
+Section HNth.
+
+Variables (I : Type) (T_ : I -> Type).
+
+Fixpoint hnth' (idx : seq I) (i : I) (x : T_ i)
+               : hseq T_ idx -> forall n, T_ (nth i idx n) :=
+  match idx return hseq T_ idx -> forall n, T_ (nth i idx n) with
+  | [::]      => fun _  n =>
+                   match n with
+                   | 0 => x
+                   | S _ => x
+                   end
+  | i' :: idx => fun hs n =>
+                   match n with
+                   | 0 => hshead hs
+                   | S n' => hnth' x (hsbehead hs) n'
+                   end
+  end.
+
+Lemma hnth_default (idx : seq I) (hs : hseq T_ idx) (n : 'I_(size idx))
+  : {i : I & T_ i}.
+Proof.
+case: idx hs n=> [|i idx] hs n; first by case: n.
+exact: Tagged T_ (hshead hs).
+Qed.
+
+Definition hnth (idx : seq I) (hs : hseq T_ idx) (n : 'I_(size idx)) :=
+  hnth' (tagged (hnth_default hs n)) hs n.
+
+End HNth.
+
+Notation "[ 'hnth' hs i ]" :=
+  (hnth hs (@Ordinal (size (htags hs%hseq)) i (erefl true)))
+  (at level 0, hs, i at level 8, format "[ 'hnth'  hs  i ]") : form_scope.
 
 Lemma hseq_eta (I : Type) (T_ : I -> Type) i idx :
   forall hs : hseq T_ (i :: idx),
