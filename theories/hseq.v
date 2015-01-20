@@ -5,47 +5,173 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+CoInductive hseq_nil : Type := HSeqNil.
+CoInductive hseq_cons T S : Type := HSeqCons of T & S.
+
+Delimit Scope hseq_scope with hseq.
+Bind Scope hseq_scope with hseq_cons.
+
+Notation "[ 'hseq' ]" := HSeqNil
+  (at level 0, format "[ 'hseq' ]") : form_scope.
+Notation "x :: y" := (HSeqCons x y) : hseq_scope.
+Notation "[ 'hseq' x ; .. ; y ]" :=
+  (HSeqCons x .. (HSeqCons y HSeqNil) ..)
+  (at level 0, format "[ 'hseq' '['  x ; '/'  .. ; '/'  y ']' ]")
+  : form_scope.
+
 Section Def.
 
-Variable I : eqType.
+Variable I : Type.
 
 Section Basic.
 
-Variables (T_ : I -> Type) (idx : seq I).
+Variable (T_ : I -> Type).
 
-Record hseq : predArgType :=
-  HSeq {hsval :> seq {i : I & T_ i}; _ : map tag hsval == idx}.
+Fixpoint hseq (idx : seq I) : Type :=
+  if idx is i :: idx then hseq_cons (T_ i) (hseq idx) else hseq_nil.
 
-Definition hstags of hseq := idx.
+Definition htags idx of hseq idx := idx.
 
-Canonical hseq_subType := [subType for hsval].
+Lemma hseq0 : all_equal_to [hseq].
+Proof. by case. Qed.
+
+Definition hshead i idx (hs : hseq (i :: idx)) : T_ i :=
+  let: (x :: _)%hseq := hs in x.
+
+Definition hsbehead idx : hseq idx -> hseq (behead idx) :=
+  match idx with
+  | [::]     => fun _  => [hseq]
+  | _ :: idx => fun hs => let: (_ :: hs)%hseq := hs in hs
+  end.
 
 End Basic.
 
-Definition hseq_eqMixin (T_ : I -> eqType) idx :=
-  [eqMixin of hseq T_ idx by <:].
-Canonical hseq_eqType (T_ : I -> eqType) idx :=
-  EqType (hseq T_ idx) (hseq_eqMixin T_ idx).
+End Def.
 
-Lemma tags_hseq T_ idx (hs : hseq T_ idx) : map tag hs = idx.
-Proof. exact: (eqP (valP hs)). Qed.
+Bind Scope hseq_scope with hseq.
+
+Section HSeqEqType.
+
+Variables (I : Type) (T_ : I -> eqType).
+
+Fixpoint hseq_eq (idx : seq I) : rel (hseq T_ idx) :=
+  match idx with
+  | [::]     => fun _   _   => true
+  | i :: idx => fun hs1 hs2 =>
+                  (hshead hs1 == hshead hs2)
+                  && hseq_eq (hsbehead hs1) (hsbehead hs2)
+  end.
+
+Lemma hseq_eqP idx : Equality.axiom (@hseq_eq idx).
+Proof.
+move=> hs1 hs2 /=; apply/(iffP idP) => [H|<- {hs2}].
+  elim: idx hs1 hs2 H => [|i idx IH] /=
+                      => [[] []|[x1 hs1] [x2 hs2]] //=.
+  by move=> /andP [/eqP <- /IH <-].
+elim: idx hs1 => [|i idx IH] //= [x hs] /=.
+by rewrite eqxx IH.
+Qed.
+
+Definition hseq_eqMixin idx := EqMixin (@hseq_eqP idx).
+Canonical hseq_eqType idx :=
+  Eval hnf in EqType (hseq T_ idx) (hseq_eqMixin idx).
+
+End HSeqEqType.
+
+Module Import HSeqChoiceType.
+
+Section Def.
+
+Variables (I : Type) (T_ : I -> choiceType).
+
+Import Choice.InternalTheory.
+Import CodeSeq.
+
+Fact hseq_choiceMixin idx : choiceMixin (hseq T_ idx).
+Proof.
+pose fix f idx ns {struct idx} :=
+  match idx return pred (hseq T_ idx) -> option (hseq T_ idx) with
+  | [::] => fun P => if P [hseq] then Some [hseq] else None
+  | i :: idx' =>
+    fun P =>
+      if ns is n :: ns' then
+        let fr x := f idx' ns' (fun hs => P (x :: hs)%hseq) in
+        obind (fun x => omap (HSeqCons x) (fr x)) (find fr n)
+      else None
+  end.
+exists (fun P n => f idx (decode n) P) => [P n hs|P [hs Hhs]|P Q E n].
+- elim: idx P {n}(decode n) hs=> [|i idx IH] /= P
+                              => [_ []|[|n ns] [x hs]] //.
+    by case: (P _).
+  case E: (find _ _) => [x'|] //=.
+  have := correct E; case fE: (f _ _) => [hs'|] //= _ [Hx Hhs].
+  rewrite {}Hx {}Hhs {x' hs'} in E fE; exact: IH fE.
+- suff [ns H]: exists ns, f idx ns P by exists (code ns); rewrite codeK.
+  elim: idx P hs Hhs=> [|i idx IH] /= P
+                    => [[] ->|[x hs] H]; first by exists [::].
+  have [ns Hns]: exists ns, f idx ns (fun hs => P (x :: hs)%hseq) by apply: IH.
+  have [|n Hn] :=
+    @complete _ (fun x => f idx ns (fun hs' => P (x :: hs')%hseq)).
+    by eauto.
+  case E: (find _ _) Hn => [x'|] //= _; have Hns' := correct E.
+  exists (n :: ns); rewrite E /=.
+  by case: (f _ _ _) Hns'.
+elim: idx P Q E {n}(decode n) => [|i idx IH] /= P Q E => [_|[|n ns] //].
+  by rewrite (E [hseq]).
+pose fx (P : pred (hseq T_ (i :: idx))) x :=
+  f idx ns (fun hs => P (x :: hs)%hseq).
+have E' : fx P =1 fx Q by move=> x; apply: IH=> hs; apply: E.
+have {IH} -> : find (fx P) =1 find (fx Q).
+  by apply: extensional => x; rewrite E'.
+case: (find _ _) => [x|] //=.
+by rewrite /fx in E'; rewrite E'.
+Qed.
+Canonical hseq_choiceType idx :=
+  Eval hnf in ChoiceType (hseq T_ idx) (hseq_choiceMixin idx).
 
 End Def.
 
-Definition hseq_choiceMixin (I : choiceType) (T_ : I -> choiceType) idx :=
-  [choiceMixin of hseq T_ idx by <:].
-Canonical hseq_choiceType (I : choiceType) (T_ : I -> choiceType) idx :=
-  ChoiceType (hseq T_ idx) (hseq_choiceMixin T_ idx).
-Definition hseq_countMixin (I : countType) (T_ : I -> countType) idx :=
-  [countMixin of hseq T_ idx by <:].
-Canonical hseq_countType (I : countType) (T_ : I -> countType) idx :=
-  CountType (hseq T_ idx) (hseq_countMixin T_ idx).
-Canonical hseq_subCountType (I : countType) (T_ : I -> countType) idx :=
-  [subCountType of hseq T_ idx].
+End HSeqChoiceType.
+
+Module HSeqCountType.
+
+Section Def.
+
+Variables (I : Type) (T_ : I -> countType).
+
+Fixpoint nats_of_hseq idx : hseq T_ idx -> seq nat :=
+  match idx with
+  | [::] => fun _ => [::]
+  | i :: idx => fun hs => pickle (hshead hs) :: nats_of_hseq (hsbehead hs)
+  end.
+
+Fixpoint hseq_of_nats idx : seq nat -> option (hseq T_ idx) :=
+  match idx return seq nat -> option (hseq T_ idx) with
+  | [::] => fun _ => Some [hseq]
+  | i :: idx =>
+    fun ns =>
+      let mkHs x := omap (HSeqCons x) (hseq_of_nats idx (behead ns)) in
+      obind (obind mkHs \o unpickle) (ohead ns)
+  end.
+
+Lemma nats_of_hseqK idx : pcancel (@nats_of_hseq idx) (hseq_of_nats idx).
+Proof.
+elim: idx => [|i idx IH] => [[] //|/= [x hs] /=].
+by rewrite pickleK /= IH.
+Qed.
+
+End Def.
+
+End HSeqCountType.
+
+Definition hseq_countMixin I T_ idx :=
+  PcanCountMixin (@HSeqCountType.nats_of_hseqK I T_ idx).
+Canonical hseq_countType I (T_ : I -> countType) idx :=
+  Eval hnf in CountType (hseq T_ idx) (hseq_countMixin T_ idx).
 
 Module Type FinHSeqSig.
 Section FinHSeqSig.
-Variables (I : finType) (T_ : I -> finType) (idx : seq I).
+Variables (I : Type) (T_ : I -> finType) (idx : seq I).
 Parameter enum : seq (hseq T_ idx).
 Axiom enumP : Finite.axiom enum.
 Axiom size_enum : size enum = foldr muln 1 [seq #|T_ i| | i <- idx].
@@ -54,36 +180,31 @@ End FinHSeqSig.
 
 Module FinHSeq.
 Section FinHSeq.
-Variables (I : finType) (T_ : I -> finType) (idx : seq I).
+Variables (I : Type) (T_ : I -> finType).
 
-Definition enum : seq (hseq T_ idx) :=
-  let extend i e :=
-      flatten (codom (fun x : T_ i => map (cons (Tagged T_ x)) e)) in
-  pmap insub (foldr extend [::[::]] idx).
+Fixpoint enum idx : seq (hseq T_ idx) :=
+  match idx with
+  | [::] => [:: [hseq]]
+  | i :: idx =>
+    flatten (codom (fun x : T_ i => map (HSeqCons x) (enum  idx)))
+  end.
 
-Lemma enumP : Finite.axiom enum.
+Lemma enumP idx : Finite.axiom (enum idx).
 Proof.
-case=> /= hs Phs.
-rewrite -(count_map _ (pred1 hs)) (pmap_filter (@insubK _ _ _)).
-rewrite count_filter -(@eq_count _ (pred1 hs)) => [|s /=]; last first.
-  by rewrite isSome_insub; case: eqP=> // ->.
-elim: idx hs Phs => [|i idx' IH] [|[i' x] s] //= /eqP [Hi {IH}/eqP/IH].
-rewrite {}Hi {i'} in x *; move: (foldr _ _ _) => eidx IH.
+elim: idx=> [|i idx' IH] => /= [[]|/= [x hs]] //=.
+move/(_ hs) in IH.
 transitivity (x \in T_ i : nat)=> //.
 rewrite -mem_enum codomE.
 elim: (fintype.enum (T_ i)) (enum_uniq (T_ i))=> //= y e IHe /andP[/negPf ney].
 rewrite count_cat count_map inE /preim /= {1}/eq_op /= eq_sym => {IHe}/IHe->.
-rewrite -tag_eqE /tag_eq eqxx /= tagged_asE.
 by case: eqP => [->|_]; rewrite ?(ney, count_pred0, IH).
 Qed.
 
-Lemma size_enum : size enum = foldr muln 1 [seq #|T_ i| | i <- idx].
+Lemma size_enum idx : size (enum idx) = foldr muln 1 [seq #|T_ i| | i <- idx].
 Proof.
-rewrite /= size_pmap_sub; elim: idx=> [|i idx' /= <-] //=.
-rewrite cardE /codom /image_mem; move: (foldr _ _ _) => e.
+elim: idx=> [|i idx' /= <-] //=; rewrite cardE /codom /image_mem.
 elim: (fintype.enum (T_ i)) => //= x xs IHxs.
-rewrite count_cat {}IHxs count_map mulSn /preim /=; congr addn.
-by apply: eq_count=> s /=; rewrite eqE /= eqxx.
+by rewrite size_cat {}IHxs size_map mulSn /preim /=; congr addn.
 Qed.
 
 End FinHSeq.
@@ -91,33 +212,14 @@ End FinHSeq.
 
 Section UseFinHSeq.
 
-Variables (I : finType) (T_ : I -> finType) (idx : seq I).
+Variables (I : Type) (T_ : I -> finType) (idx : seq I).
 
 Definition hseq_finMixin := FinMixin (@FinHSeq.enumP I T_ idx).
 Canonical hseq_finType := Eval hnf in FinType (hseq T_ idx) hseq_finMixin.
-Canonical hseq_subFinType := [subFinType of hseq T_ idx].
 
 End UseFinHSeq.
 
-(* FIXME: find a better name for this *)
-Definition mkhseq (I : eqType) T_ (idx : seq I) (hs : hseq T_ idx)
-                  (mkHs : map tag hs == idx -> hseq T_ idx) :=
-  mkHs (let: HSeq _ hsP := hs return map tag hs == idx in hsP).
-
-Lemma mkhseqE (I : eqType) T_ (idx : seq I) (hs : hseq T_ idx) :
-  mkhseq (fun Phs => @HSeq I T_ idx hs Phs) = hs.
-Proof. by case: hs. Qed.
-
-Notation "[ 'hseq' 'of' hs ]" :=
-  (mkhseq (fun hsP => @HSeq _ _ _ hs hsP))
-  (at level 0, format "[ 'hseq'  'of'  hs ]") : form_scope.
-
-Notation "[ 'hseq' ]" := [hseq of [::]]
-  (at level 0, format "[ 'hseq' ]") : form_scope.
-
-Notation "[ 'hseq' x ; .. ; y ]" :=
-  [hseq of Tagged _ x :: .. [:: Tagged _ y] ..]
-  (at level 0, format "[ 'hseq' '[' x ; '/' .. ; '/' y ']' ]") : form_scope.
+(* Leave this out for now
 
 Section HIdx.
 
@@ -172,10 +274,6 @@ End Def.
 Definition hidx0 {I : eqType} {i : I} {idx : seq I} : hidx i (i :: idx) :=
   HIdx (eqxx _ : tnth (in_tuple (i :: idx)) (ord0 : 'I_(size idx).+1) == i).
 
-Definition hshead (I : eqType) (T_ : I -> Type) i idx (hs : hseq T_ (i :: idx))
-                  : T_ i :=
-  hnth hs hidx0.
-
 End HIdx.
 
 Notation "[ 'hnth' hs i ]" :=
@@ -183,72 +281,55 @@ Notation "[ 'hnth' hs i ]" :=
    hnth hs (@HIdx _ _ (hstags hs) i' (eqxx (tnth (in_tuple (hstags hs)) i'))))
   (at level 0, hs, i at level 8, format "[ 'hnth'  hs  i ]") : form_scope.
 
-Section SeqHSeq.
+*)
 
-Variables (I : eqType) (T_ : I -> Type) (idx : seq I).
+Section HNth.
 
-Canonical nil_hseq (I : eqType) (T_ : I -> Type) :=
-  @HSeq I T_ [::] [::] isT.
+Variables (I : Type) (T_ : I -> Type).
 
-Lemma cons_hseqP i (x : T_ i) (hs : hseq T_ idx) :
-  map tag (Tagged T_ x :: hs) == i :: idx.
-Proof. by rewrite /= tags_hseq. Qed.
-Canonical cons_hseq i (x : T_ i) (hs : hseq T_ idx) :=
-  @HSeq _ _ (i :: idx) _ (cons_hseqP x hs).
+Fixpoint hnth' (idx : seq I) (i : I) (x : T_ i)
+               : hseq T_ idx -> forall n, T_ (nth i idx n) :=
+  match idx return hseq T_ idx -> forall n, T_ (nth i idx n) with
+  | [::]      => fun _  n =>
+                   match n with
+                   | 0 => x
+                   | S _ => x
+                   end
+  | i' :: idx => fun hs n =>
+                   match n with
+                   | 0 => hshead hs
+                   | S n' => hnth' x (hsbehead hs) n'
+                   end
+  end.
 
-Lemma cat_hseqP idx' (hs : hseq T_ idx) (hs' : hseq T_ idx') :
-  map tag (hs ++ hs') == idx ++ idx'.
-Proof. by rewrite map_cat !tags_hseq. Qed.
-Canonical cat_hseq idx' hs (hs' : hseq T_ idx') :=
-  HSeq (cat_hseqP hs hs').
-
-Lemma behead_hseqP (hs : hseq T_ idx) : map tag (behead hs) == behead idx.
-Proof. by rewrite -behead_map tags_hseq. Qed.
-Canonical behead_hseq hs := HSeq (behead_hseqP hs).
-
-End SeqHSeq.
-
-Lemma hseq_nil (I : eqType) (T_ : I -> Type) :
-  all_equal_to ([hseq of [::]] : hseq T_ [::]).
-Proof. by move=> [[|??] Phs]; apply: val_inj=> //=. Qed.
-
-CoInductive hseq_cons_spec (I : eqType) (T_ : I -> Type) i idx
-  : hseq T_ (i :: idx) -> Type :=
-  HSeqConsSpec x (hs : hseq T_ idx)
-  : hseq_cons_spec [hseq of Tagged T_ x :: hs].
-
-Lemma hseqP (I : eqType) (T_ : I -> Type) i idx (hs : hseq T_ (i :: idx))
-  : hseq_cons_spec hs.
+Lemma hnth_default (idx : seq I) (hs : hseq T_ idx) (n : 'I_(size idx))
+  : {i : I & T_ i}.
 Proof.
-case: hs => [[|[i' x] s] // Phs].
-have Hi : i' = i by case/andP: Phs => [/eqP Hi _].
-rewrite {}Hi {i'} in x Phs *.
-have Ps : map tag s == idx by move: (eqP Phs) => /= [->].
-pose hs := HSeq Ps.
-rewrite (_ : @HSeq _ _ (i :: idx) _ Phs = [hseq of Tagged T_ x :: hs]) //.
-by apply: val_inj.
+case: idx hs n=> [|i idx] hs n; first by case: n.
+exact: Tagged T_ (hshead hs).
 Qed.
 
-Lemma hsheadE (I : eqType) (T_ : I -> Type) i idx
-              (x : T_ i) (hs : hseq T_ idx) :
-  hshead [hseq of Tagged T_ x :: hs] = x.
-Proof. by rewrite /hshead /= /hnth eq_axiomK /=. Qed.
+Definition hnth (idx : seq I) (hs : hseq T_ idx) (n : 'I_(size idx)) :=
+  hnth' (tagged (hnth_default hs n)) hs n.
 
-Lemma hseq_eta (I : eqType) (T_ : I -> Type) i idx :
+End HNth.
+
+Notation "[ 'hnth' hs i ]" :=
+  (hnth hs (@Ordinal (size (htags hs%hseq)) i (erefl true)))
+  (at level 0, hs, i at level 8, format "[ 'hnth'  hs  i ]") : form_scope.
+
+Lemma hseq_eta (I : Type) (T_ : I -> Type) i idx :
   forall hs : hseq T_ (i :: idx),
-    hs = [hseq of Tagged T_ (hshead hs) :: behead hs].
-Proof.
-by move=> hs; case/hseqP: hs => x hs; rewrite hsheadE /=; apply: val_inj.
-Qed.
+    hs = (hshead hs :: hsbehead hs)%hseq.
+Proof. by case. Qed.
 
-Lemma hmap_proof (I : eqType) (T_ S_ : I -> Type) (idx : seq I)
-                 (f : forall i, T_ i -> S_ i) (hs : hseq T_ idx) :
-  map tag (map (fun t => Tagged S_ (f (tag t) (tagged t))) hs) == idx.
-Proof. by rewrite -map_comp /funcomp tags_hseq. Qed.
-
-Definition hmap (I : eqType) (T_ S_ : I -> Type) (idx : seq I)
-                (f : forall i, T_ i -> S_ i) (hs : hseq T_ idx) :=
-  HSeq (hmap_proof f hs).
+Fixpoint hmap (I : Type) (T_ S_ : I -> Type) (idx : seq I)
+              (f : forall i, T_ i -> S_ i)
+              : hseq T_ idx -> hseq S_ idx :=
+  match idx with
+  | [::]     => fun hs => hs
+  | i :: idx => fun hs => (f _ (hshead hs) :: hmap f (hsbehead hs))%hseq
+  end.
 
 Lemma hmapK (I : eqType) T_ S_ idx
             (f : forall i : I, T_ i -> S_ i)
@@ -256,19 +337,20 @@ Lemma hmapK (I : eqType) T_ S_ idx
   (forall i, cancel (f i) (g i)) ->
   cancel (hmap f : hseq T_ idx -> _) (hmap g).
 Proof.
-by move=> Hfg hs; apply: val_inj; apply: mapK=> - [i x] /=; rewrite Hfg.
+move=> fK; elim: idx=> [|i idx IH] //= [x hs] /=.
+by rewrite IH fK.
 Qed.
 
 Fixpoint split_tuple T ns :
   (sumn ns).-tuple T -> hseq (fun n => n.-tuple T) ns :=
   match ns with
-  | [::] => fun t => [hseq of [::]]
+  | [::] => fun t => [hseq]
   | n :: ns' =>
     fun t =>
       let t1 := [tuple of take n t] in
       let ts := [tuple of drop n t] in
-      [hseq of Tagged _ (tcast (minn_idPl (leq_addr (sumn ns') n)) t1) ::
-                        split_tuple (tcast (addKn n (sumn ns')) ts)]
+      (tcast (minn_idPl (leq_addr (sumn ns') n)) t1 ::
+             split_tuple (tcast (addKn n (sumn ns')) ts))%hseq
   end.
 
 Fixpoint merge_tuple T ns :
@@ -277,23 +359,21 @@ Fixpoint merge_tuple T ns :
   | [::] =>
     fun hs => [tuple]
   | n :: ns' =>
-    fun hs => [tuple of hshead hs ++ merge_tuple [hseq of behead hs]]
+    fun hs => [tuple of hshead hs ++ merge_tuple (hsbehead hs)]
   end.
 
 Lemma merge_tupleK T ns : cancel (@merge_tuple T ns) (@split_tuple T ns).
 Proof.
-elim: ns => [|n ns IH] hs //=; first by rewrite hseq_nil [in RHS]hseq_nil.
-case/hseqP: hs=> t hs /=; rewrite hsheadE /=.
-apply: val_inj=> /=; congr cons.
-  congr Tagged.
+elim: ns => [|n ns IH] /= hs; first by rewrite [in RHS]hseq0.
+case: hs=> t hs /=.
+congr HSeqCons.
   set t' := [tuple of take _ _]; move: (minn_idPl _)=> E.
   have : val t' = val t by rewrite /t' /= take_size_cat //= size_tuple.
   by move: (E) t'; rewrite {}E=> E t'; rewrite tcast_id; apply: val_inj.
 set t' := [tuple of drop _ _]; move: (addKn _ _) => E.
 suff -> : tcast E t' = merge_tuple hs by rewrite IH.
 have : val t' = val (merge_tuple hs).
-  rewrite /t' /= drop_size_cat // ?size_tuple // mkhseqE //=.
-  by congr merge_tuple; apply: val_inj.
+  by rewrite /t' /= drop_size_cat // ?size_tuple // mkhseqE //=.
 by move: (E) t'; rewrite {}E=> E t'; rewrite tcast_id; apply: val_inj.
 Qed.
 
@@ -302,7 +382,7 @@ Proof.
 elim: ns => [|n ns IH] /= t //=; first by rewrite [in RHS]tuple0.
 have H : forall m (E : m = n) t', val (tcast E t') = val t'.
   by move=> T' m E; move: (E); rewrite {}E => E t'; rewrite tcast_id.
-rewrite hsheadE; apply: val_inj=> /=; rewrite !{}H /=.
+apply: val_inj=> /=; rewrite !{}H /=.
 rewrite -[in RHS](cat_take_drop n t); congr cat.
 rewrite -[drop n t]/(val [tuple of drop n t]).
 move: (addKn _ _) [tuple of drop n t] => E; move: (E); rewrite {}E=> E t'.
