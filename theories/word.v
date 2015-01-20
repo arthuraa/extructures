@@ -138,6 +138,26 @@ rewrite (_ : z1 = z2) // {}/z1 {}/z2 -modz_nat PoszD.
 by rewrite !absz_pos ?modz_pos ?ltez_natE ?exp2_gt0 ?modzDm.
 Qed.
 
+Lemma valw_add w1 w2 :
+  addw w1 w2 =
+  w1 + w2 - (2 ^ k <= w1 + w2) * 2 ^ k :> nat.
+Proof.
+case: w1 w2 => [[w1 hw1]] [[w2 hw2]] /=.
+rewrite modz_nat absz_nat modn_mod.
+case: (ltnP (w1 + w2) (2 ^ k)) => [ubould|lbound] //=.
+  by rewrite mul0n subn0 modn_small.
+apply: (can_inj (addnK (2 ^ k))).
+rewrite mul1n subnK // addnC [in RHS](divn_eq (w1 + w2) (2 ^ k)).
+congr addn; suff ->: (w1 + w2) %/ 2 ^ k = 1 by rewrite mul1n.
+have ubound: w1 + w2 < 2 * 2 ^ k.
+  rewrite mul2n -addnn; apply (@ltn_trans (w1 + w2).+1) => //.
+  by rewrite -addnS -addSn; apply: leq_add.
+move: {hw1 hw2 w1 w2}(w1 + w2) lbound ubound=> n lbound ubound.
+rewrite -ltn_divLR ?ltnS ?exp2_gt0 // in ubound.
+apply/eqP; rewrite eqn_leq {}ubound /=.
+by rewrite -{1}[1]/(true : nat) -(exp2_gt0) -divnn leq_div2r.
+Qed.
+
 Lemma mul1w : left_id onew mulw.
 Proof.
 move=> w; do 2!apply: val_inj.
