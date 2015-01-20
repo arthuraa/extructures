@@ -1,6 +1,6 @@
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat choice fintype seq.
 Require Import div ssralg finalg zmodp bigop tuple finfun binomial.
-Require Import ssrint intdiv.
+Require Import ssrint intdiv ssrnum.
 Require Import hseq ord.
 
 Set Implicit Arguments.
@@ -120,6 +120,23 @@ Canonical word_finZmodType := Eval hnf in [finZmodType of word].
 Canonical word_baseFinGroupType :=
   Eval hnf in [baseFinGroupType of word for +%R].
 Canonical word_finGroupType := Eval hnf in [finGroupType of word for +%R].
+
+Lemma addw0 : right_id zerow addw. Proof. exact: GRing.addr0. Qed.
+Lemma addwN : right_inverse zerow oppw addw. Proof. exact: GRing.addrN. Qed.
+
+Lemma as_word_add : {morph as_word : n m / (n + m)%R >-> addw n m}.
+Proof.
+have absz_pos: forall m : int, (0 <= m)%R -> `|m| = m :> int by case.
+have modz_pos: forall n m : int, (0 < m)%R -> (0 <= (n %% m)%Z)%R.
+  move=> n m; case: (intP m) => {m} [|m|m] //= _.
+  by rewrite /modz Num.Theory.subr_ge0 lez_floor.
+move=> n m /=; do 2!apply: val_inj => /=.
+rewrite modz_nat modnDm.
+set z1 := ((n + m) %% _)%Z.
+set z2 := (`|_| + `|_|) %% _.
+rewrite (_ : z1 = z2) // {}/z1 {}/z2 -modz_nat PoszD.
+by rewrite !absz_pos ?modz_pos ?ltez_natE ?exp2_gt0 ?modzDm.
+Qed.
 
 Lemma mul1w : left_id onew mulw.
 Proof.
