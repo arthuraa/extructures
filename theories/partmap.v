@@ -115,6 +115,9 @@ Qed.
 Definition setm (m : {partmap T -> S}) k v :=
   PartMap.PMap (setm_proof k v (valP m)).
 
+Definition repm (m : {partmap T -> S}) k f : option {partmap T -> S} :=
+  omap (setm m k \o f) (getm m k).
+
 Definition updm (m : {partmap T -> S}) k v :=
   if getm m k then Some (setm m k v) else None.
 
@@ -201,6 +204,19 @@ rewrite ![in LHS](fun_if, if_arg) /= {}IH.
 have [->{k'}|Hne] := altP (k' =P k); case: (Ord.ltgtP k) => //.
 by move=> <-; rewrite (negbTE Hne).
 Qed.
+
+Lemma getm_rep (m m' : {partmap T -> S}) k f :
+  repm m k f = Some m' ->
+  forall k', m' k' = if k' == k then omap f (m k) else getm m k'.
+Proof.
+rewrite /repm.
+case: (m k) => [v [<-]|] //= k'.
+by rewrite getm_set.
+Qed.
+
+Lemma updm_set (m m' : {partmap T -> S}) k v :
+  updm m k v = Some m' -> m' = setm m k v.
+Proof. by rewrite /updm; case: (getm m _) => [m''|] //= [<-]. Qed.
 
 Lemma mem_unionm (m1 m2 : {partmap T -> S}) k :
   k \in unionm m1 m2 = (k \in m1) || (k \in m2).
