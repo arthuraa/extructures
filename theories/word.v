@@ -124,7 +124,7 @@ Canonical word_finGroupType := Eval hnf in [finGroupType of word for +%R].
 Lemma addw0 : right_id zerow addw. Proof. exact: GRing.addr0. Qed.
 Lemma addwN : right_inverse zerow oppw addw. Proof. exact: GRing.addrN. Qed.
 
-Lemma as_word_add : {morph as_word : n m / (n + m)%R >-> addw n m}.
+Lemma as_word_add : {morph as_word : n m / (n + m)%R >-> (n + m)%R}.
 Proof.
 have absz_pos: forall m : int, (0 <= m)%R -> `|m| = m :> int by case.
 have modz_pos: forall n m : int, (0 < m)%R -> (0 <= (n %% m)%Z)%R.
@@ -156,6 +156,25 @@ move: {hw1 hw2 w1 w2}(w1 + w2) lbound ubound=> n lbound ubound.
 rewrite -ltn_divLR ?ltnS ?exp2_gt0 // in ubound.
 apply/eqP; rewrite eqn_leq {}ubound /=.
 by rewrite -{1}[1]/(true : nat) -(exp2_gt0) -divnn leq_div2r.
+Qed.
+
+(* FIXME: Find a better name for this *)
+Lemma valw_add' (w1 w2 : word) :
+  w1 + w2 < 2 ^ k -> addw w1 w2 = w1 + w2 :> nat.
+Proof. by rewrite valw_add ltnNge => /negbTE ->; rewrite subn0. Qed.
+
+Lemma valw_sub (w1 w2 : word) :
+  w2 <= w1 ->
+  subw w1 w2 = (w1 - w2)%N :> nat.
+Proof.
+rewrite /= !modz_nat !absz_nat !modn_mod.
+case: w1 w2 => [[w1 pw1]] [[w2 pw2]] /=.
+have [->{w2 pw2} _|w2_neq_0] := altP (w2 =P 0).
+  by rewrite !subn0 modnn addn0 modn_small.
+rewrite (@modn_small (2 ^ k - _)); last first.
+  by rewrite -[X in _ < X]subn0 ltn_sub2l ?lt0n // expn_eq0.
+move=> w2_leq_w1; rewrite addnBA 1?ltnW // addnC -addnBA // modnDl.
+by rewrite modn_small // (leq_ltn_trans _ pw1) // leq_subr.
 Qed.
 
 Lemma mul1w : left_id onew mulw.
