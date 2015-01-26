@@ -144,8 +144,8 @@ Export Ord.Exports.
 Notation "x <= y" := (Ord.leq x y) : ord_scope.
 Notation "x < y" := (~~ (Ord.leq y x)) : ord_scope.
 Notation "x <= y <= z" := (Ord.leq x y && Ord.leq y z) : ord_scope.
-Notation "x <= y <  z" := (Ord.leq x y && ~~ Ord.leq y z) : ord_scope.
-Notation "x <  y <= z" := (~~ Ord.leq x y && Ord.leq y z) : ord_scope.
+Notation "x <= y <  z" := (Ord.leq x y && ~~ Ord.leq z y) : ord_scope.
+Notation "x <  y <= z" := (~~ Ord.leq y x && Ord.leq y z) : ord_scope.
 
 Lemma nat_ordP : Ord.axioms leq.
 Proof. exact: And4 leqnn leq_trans anti_leq leq_total. Qed.
