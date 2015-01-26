@@ -41,7 +41,7 @@ CoInductive word : predArgType := Word of 'I_(2 ^ k).
 
 Definition ord_of_word (w : word) := let: Word i := w in i.
 
-Local Coercion ord_of_word : word >-> ordinal.
+Coercion ord_of_word : word >-> ordinal.
 
 Canonical word_subType := [newType for ord_of_word].
 Definition word_eqMixin := [eqMixin of word by <:].
