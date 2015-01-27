@@ -453,13 +453,15 @@ Section FixLength.
 Variable ks : seq nat.
 
 Definition wunpack (w : word (sumn ks)) : hseq word ks :=
-  let word_of_tuple k t' := word_of_bits [ffun i : 'I_k => tnth t' i] in
-  hmap word_of_tuple (split_tuple [tuple bits_of_word w i | i < sumn ks]).
+  let word_of_tuple k t' :=
+      word_of_bits [ffun i : 'I_k => tnth t' (rev_ord i)] in
+  let t := [tuple bits_of_word w (rev_ord i) | i < sumn ks] in
+  hmap word_of_tuple (split_tuple t).
 
 Definition wpack (ws : hseq word ks) : word (sumn ks) :=
-  let tuple_of_word k w := [tuple bits_of_word w i | i < k] in
+  let tuple_of_word k w := [tuple bits_of_word w (rev_ord i) | i < k] in
   let t := merge_tuple (hmap tuple_of_word ws) in
-  word_of_bits [ffun i => tnth t i].
+  word_of_bits [ffun i => tnth t (rev_ord i)].
 
 Lemma wpackK : cancel wpack wunpack.
 Proof.
@@ -467,59 +469,66 @@ move=> ws; rewrite /wunpack /wpack /= word_of_bitsK /=.
 set t := merge_tuple _; set t' := [tuple _ | i < sumn ks].
 have ->: t' = t.
   rewrite {}/t'; apply: eq_from_tnth=> i.
-  by rewrite tnth_map ffunE tnth_ord_tuple.
+  by rewrite tnth_map ffunE tnth_ord_tuple rev_ordK.
 rewrite {}/t' {}/t merge_tupleK hmapK // => k w {ws}.
 apply: (canLR (@bits_of_wordK k)); apply/ffunP => i; rewrite ffunE.
-by rewrite tnth_map tnth_ord_tuple.
+by rewrite tnth_map tnth_ord_tuple rev_ordK.
 Qed.
 
 Lemma wunpackK : cancel wunpack wpack.
 Proof.
 move=> w; rewrite /wunpack /wpack /= hmapK.
   apply: (canLR (@bits_of_wordK _)); apply/ffunP=> i; rewrite ffunE.
-  by rewrite split_tupleK tnth_map tnth_ord_tuple.
+  by rewrite split_tupleK tnth_map tnth_ord_tuple rev_ordK.
 move=> k w'; rewrite word_of_bitsK /=; apply/eq_from_tnth=> i.
-by rewrite tnth_map tnth_ord_tuple ffunE.
+by rewrite tnth_map tnth_ord_tuple ffunE rev_ordK.
 Qed.
 
 End FixLength.
 
 Lemma wunpackS k ks (w : word (sumn (k :: ks))) :
-  wunpack w = (as_word w :: wunpack (as_word (w %/ 2 ^ k)))%hseq.
+  wunpack w = (as_word (w %/ 2 ^ sumn ks) :: wunpack (as_word w))%hseq.
 Proof.
 rewrite /wunpack /=.
 set ff := [ffun i => tnth _ _].
-have {ff} -> : ff = [ffun i : 'I_k => bits_of_word w (lshift (sumn ks) i)].
-  rewrite {}/ff; move: {w}(bits_of_word w)=> bs.
+pose pi (i : 'I_k) := rev_ord (lshift (sumn ks) (rev_ord i)).
+have piE : forall i, val (pi i) = sumn ks + i.
+  move=> i /=; rewrite subnSK // subnBA; last by rewrite ltnW.
+  by rewrite -addnA addnC addnK.
+pose ff' := [ffun i : 'I_k => bits_of_word w (pi i)].
+have {ff} -> : ff = ff'.
+  rewrite {}/ff {}/ff'; move: {w}(bits_of_word w)=> bs.
   apply/ffunP => i; rewrite /= !ffunE /=.
-  rewrite tcastE (tnth_nth false) /=.
-  rewrite nth_take // (nth_map (lshift (sumn ks) i)); last first.
-    rewrite -cardT card_ord (leq_trans (valP i)) //=.
-    exact: leq_addr.
-  by rewrite -[in RHS](nth_ord_enum (lshift (sumn ks) i) (lshift (sumn ks) i)).
+  rewrite tcastE (tnth_nth false) nth_take ?rev_ord_proof //.
+  have kmi : k - i.+1 < k + sumn ks.
+    rewrite (leq_trans (rev_ord_proof i)) //=; exact: leq_addr.
+  rewrite (nth_map (pi i)); last by rewrite /= -cardT card_ord kmi.
+  congr fun_of_fin; apply/val_inj.
+  by rewrite /= -[k - i.+1]/(val (Ordinal kmi)) nth_enum_ord //=.
 congr HSeqCons.
   apply/(canLR (@bits_of_wordK k))/ffunP => i /=; rewrite !ffunE.
-  rewrite /bits_of_word -!lock !ffunE /= !modz_nat !absz_nat modn_mod.
-  have : forall n m, n %% 2 = m %% 2 -> odd n = odd m.
-    move=> n m; rewrite !modn2; by case: (odd _) (odd _) => [] [].
-  apply.
-  rewrite {1}(divn_eq w (2 ^ k)) -{4}(@subnK i.+1 k) //.
-  rewrite expnD expnS !mulnA divnMDl ?exp2_gt0 //.
-  by rewrite -modnDm modnMl add0n modn_mod.
+  rewrite /bits_of_word -!lock !ffunE piE /= !modz_nat !absz_nat modn_mod.
+  rewrite modn_small; last first.
+    by rewrite ltn_divLR ?exp2_gt0 // -expnD.
+  by rewrite (expnD _ _ i) divnMA.
 congr hmap; congr split_tuple; apply/val_inj => /=.
 have -> /= : forall p t, val (tcast p t) = val t.
   by move=> n m T p; move: (p); rewrite {}p => p; rewrite eq_axiomK.
 rewrite -map_drop; apply/(@eq_from_nth _ false).
   by rewrite 2!size_map size_drop -!cardE !card_ord addnC addnK.
 move=> i; rewrite size_map size_drop -cardE card_ord {1}addnC addnK=> hi.
-rewrite (nth_map (rshift k (Ordinal hi))); last first.
+rewrite -[i]/(val (Ordinal hi)); move: {i hi} (Ordinal hi) => i /=.
+have nthE : forall n (i j : 'I_n), nth i (enum 'I_n) j = j.
+  by move=> {i} n i j; apply/val_inj; rewrite /= nth_enum_ord.
+rewrite (nth_map i); last by rewrite -cardE card_ord.
+rewrite (nth_map (rshift k i)); last first.
   by rewrite size_drop -cardE card_ord addnC addnK.
-rewrite (nth_map (Ordinal hi)); last first.
-  by rewrite -cardE card_ord.
-rewrite nth_drop /bits_of_word -!lock !ffunE !nth_enum_ord //; last first.
-  by rewrite ltn_add2l.
-rewrite as_wordK.
-
+rewrite nth_drop -[k + i]/(val (rshift k i)) !nthE.
+rewrite /bits_of_word -!lock !ffunE /= !modz_nat !absz_nat modn_mod.
+rewrite subnS subnDl -subnS.
+rewrite {1}(divn_eq w (2 ^ sumn ks)) -[in X in _ %/ _ * X](subnK (valP i)) /=.
+rewrite [in X in _ %/ _ * X]expnD -(mulnC (2 ^ i.+1)) mulnA.
+by rewrite divnMDl ?exp2_gt0 // odd_add expnS !odd_mul !andbF.
 Qed.
 
 End Splitting.
