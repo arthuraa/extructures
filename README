@@ -1,0 +1,10 @@
+This is a basic set of libraries for Coq based on Ssreflect.
+
+To compile:
+
+coq_makefile -f Make -o Makefile
+make
+
+To install:
+
+make install
