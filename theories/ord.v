@@ -267,9 +267,9 @@ Qed.
 
 Definition InjOrdMixin f_inj := OrdMixin (inj_ordAxiom f_inj).
 
-Definition PcanEqMixin g (fK : pcancel f g) := InjOrdMixin (pcan_inj fK).
+Definition PcanOrdMixin g (fK : pcancel f g) := InjOrdMixin (pcan_inj fK).
 
-Definition CanEqMixin g (fK : cancel f g) := InjOrdMixin (can_inj fK).
+Definition CanOrdMixin g (fK : cancel f g) := InjOrdMixin (can_inj fK).
 
 End TransferOrdType.
 
