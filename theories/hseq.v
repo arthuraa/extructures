@@ -1,5 +1,8 @@
-Require Import ssreflect ssrbool ssrfun ssrnat eqtype seq choice fintype.
-Require Import tuple bigop finfun.
+Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
+Require Import Ssreflect.ssrnat Ssreflect.seq Ssreflect.eqtype.
+Require Import Ssreflect.choice Ssreflect.fintype.
+
+Require Import MathComp.tuple MathComp.bigop MathComp.finfun.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -109,7 +112,8 @@ exists (fun P n => f idx (decode n) P) => [P n hs|P [hs Hhs]|P Q E n].
 - suff [ns H]: exists ns, f idx ns P by exists (code ns); rewrite codeK.
   elim: idx P hs Hhs=> [|i idx IH] /= P
                     => [[] ->|[x hs] H]; first by exists [::].
-  have [ns Hns]: exists ns, f idx ns (fun hs => P (x :: hs)%hseq) by apply: IH.
+  have [ns Hns]: exists ns, f idx ns (fun hs => P (x :: hs)%hseq).
+    by apply: IH; eauto.
   have [|n Hn] :=
     @complete _ (fun x => f idx ns (fun hs' => P (x :: hs')%hseq)).
     by eauto.

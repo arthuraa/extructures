@@ -1,4 +1,7 @@
-Require Import ssreflect ssrbool ssrfun ssrnat eqtype seq choice fintype.
+Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
+Require Import Ssreflect.ssrnat Ssreflect.eqtype Ssreflect.seq.
+Require Import Ssreflect.choice Ssreflect.fintype.
+
 Require Import ord.
 
 Set Implicit Arguments.

@@ -1,6 +1,11 @@
-Require Import ssreflect ssrfun ssrbool eqtype ssrnat choice fintype seq.
-Require Import div ssralg finalg zmodp bigop tuple finfun binomial.
-Require Import ssrint intdiv ssrnum.
+Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
+Require Import Ssreflect.ssrnat Ssreflect.eqtype Ssreflect.seq.
+Require Import Ssreflect.choice Ssreflect.fintype.
+
+Require Import MathComp.div MathComp.ssralg MathComp.finalg MathComp.zmodp.
+Require Import MathComp.bigop MathComp.tuple MathComp.finfun MathComp.binomial.
+Require Import MathComp.ssrint MathComp.intdiv MathComp.ssrnum.
+
 Require Import hseq ord.
 
 Set Implicit Arguments.
@@ -71,7 +76,7 @@ Proof. by move=> ub; rewrite /= modz_nat absz_nat modn_mod modn_small //. Qed.
 
 (* Signed conversion to integers *)
 Definition int_of_word (w : word) : int :=
-  if w < 2 ^ k.-1 then w
+  if w < 2 ^ k.-1 then w : int
   else (w - 2 ^ k)%Z.
 
 Definition addw (w1 w2 : word) := as_word (w1 + w2)%N.
