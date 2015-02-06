@@ -300,7 +300,7 @@ elim: s1 Ps1 s2 Ps2 s1_s2
 move/IH: Ps2=> {IH} IH s1_s2.
 wlog: k1 k2 v1 v2 s1 s2 lb1 lb2 s1_s2 IH / k1 <= k2.
   move=> H.
-  have [|/Ord.ltW k2_k1] := boolP (k1 <= k2); first by eauto.
+  have [|k2_k1] := orP (Ord.leq_total k1 k2); first by eauto.
   symmetry; apply: H; eauto.
     by move=> k /=; rewrite s1_s2.
   by move=> H'; rewrite IH //.
@@ -317,7 +317,7 @@ rewrite Ord.leq_eqVlt=> /orP [/eqP k1_k2|k1_k2].
 move/(_ k1)/esym: s1_s2 k1_k2; rewrite eqxx.
 have [->|_ s1_s2] := altP (_ =P _); first by rewrite Ord.ltxx.
 move/(_ s2 k1): in_seq; rewrite inE {}s1_s2 /= => /esym/(allP lb2)/Ord.ltW /=.
-by move=> ->.
+by rewrite Ord.ltNge => ->.
 Qed.
 
 Lemma union0m : left_id (@emptym T S) unionm.
