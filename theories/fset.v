@@ -43,6 +43,8 @@ End FSet.
 
 Export FSet.Exports.
 
+Delimit Scope fset_scope with fset.
+
 Section Operations.
 
 Variables (T : ordType).
@@ -74,6 +76,8 @@ by rewrite !(eq_all_r (E s)) {E} /= lb andbT.
 Qed.
 
 Definition fsetU1 s x := FSet.FSet (fsetU1_proof s x).
+
+Notation "x |: s" := (fsetU1 s x) : fset_scope.
 
 Definition mem_fset s :=
   [pred x : T | x \in val s].
