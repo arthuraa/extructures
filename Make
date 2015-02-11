@@ -1,5 +1,6 @@
 -R theories CoqUtils
 
+theories/fset.v
 theories/hseq.v
 theories/word.v
 theories/partmap.v
