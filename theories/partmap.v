@@ -2,6 +2,8 @@ Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
 Require Import Ssreflect.ssrnat Ssreflect.eqtype Ssreflect.seq.
 Require Import Ssreflect.choice Ssreflect.fintype.
 
+Require Import MathComp.path.
+
 Require Import ord.
 
 Set Implicit Arguments.
@@ -16,30 +18,10 @@ Variables (T : ordType) (S : Type).
 
 Local Open Scope ord_scope.
 
-Fixpoint axiom (s : seq T) : bool :=
-  if s is k :: s then
-    all [pred k' | k < k'] s && axiom s
-  else true.
-
-Fixpoint loc_axiom' k (s : seq T) : bool :=
-  if s is k' :: s then (k < k') && loc_axiom' k' s
-  else true.
-
-Definition loc_axiom s :=
-  if s is k :: s then loc_axiom' k s
-  else true.
-
-Lemma axiomE : axiom =1 loc_axiom.
-Proof.
-case=> // k s /=; elim: s k=> //= k' s <- k.
-have [k_k'|] //= := boolP (_ < _).
-rewrite andbA; congr andb.
-have [/allP /= H|] //= := boolP (all [pred k'' | k' < k''] s);
-  last by rewrite andbF.
-by rewrite andbT; apply/allP=> k'' /H /=; apply: Ord.lt_trans.
-Qed.
-
-Record partmap_type := PMap {pmval :> seq (T * S); _ : axiom [seq p.1 | p <- pmval]}.
+Record partmap_type := PMap {
+  pmval : seq (T * S);
+  _ : sorted (@Ord.lt T) [seq p.1 | p <- pmval]
+}.
 Definition partmap_of of phant (T -> S) := partmap_type.
 Identity Coercion type_of_partmap_of : partmap_of >-> partmap_type.
 
@@ -49,6 +31,7 @@ Module Exports.
 
 Notation "{ 'partmap' T }" := (@partmap_of _ _ (Phant T))
   (at level 0, format "{ 'partmap'  T }") : type_scope.
+Coercion pmval : partmap_type >-> seq.
 Canonical partmap_subType T S := [subType for @pmval T S].
 Definition partmap_eqMixin T (S : eqType) :=
   [eqMixin of partmap_type T S by <:].
@@ -81,10 +64,12 @@ Section Operations.
 
 Variables (T : ordType) (S : Type).
 
-Local Coercion PartMap.pmval : PartMap.partmap_type >-> seq.
+Implicit Type m : {partmap T -> S}.
+Implicit Type k : T.
+
 Local Open Scope ord_scope.
 
-Fixpoint getm' (s : seq (T * S)) (k : T) : option S :=
+Fixpoint getm' s k : option S :=
   if s is p :: s then
     if k == p.1 then Some p.2
     else getm' s k
@@ -92,31 +77,30 @@ Fixpoint getm' (s : seq (T * S)) (k : T) : option S :=
 
 Definition getm (m : PartMap.partmap_type T S) k := getm' m k.
 
-Fixpoint setm' (s : seq (T * S)) (k : T) (v : S) : seq (T * S) :=
+Fixpoint setm' s k v : seq (T * S) :=
   if s is p :: s' then
     if k < p.1 then (k, v) :: s
     else if k == p.1 then (k, v) :: s'
     else p :: setm' s' k v
   else [:: (k, v)].
 
-Lemma setm_proof (s : seq (T * S)) k v (Ps : PartMap.axiom [seq p.1 | p <- s]) :
-  PartMap.axiom [seq p.1 | p <- setm' s k v].
+Lemma setm_proof m k v : sorted (@Ord.lt T) [seq p.1 | p <- setm' m k v].
 Proof.
-move: s Ps.
 have E: forall s, [seq p.1 | p <- setm' s k v] =i k :: [seq p.1 | p <- s].
   elim=> // p s /= IH k'; rewrite ![in X in X = _]fun_if /= !inE.
   rewrite IH inE.
   case: (Ord.ltgtP k p.1) => // H; try by bool_congr.
   by rewrite H orbA orbb.
-elim=> // p s /= IH /andP [lb Ps].
-rewrite ![in X in is_true X]fun_if /= {}IH // Ps !andbT.
-rewrite !(eq_all_r (E s)) {E} /= lb andbT; case: Ord.ltgtP=> //=.
-  by move=> k_p; move/allP in lb; apply/allP=> p' /lb /=; apply: Ord.lt_trans.
-by move=> ->.
+case: m; elim=> // p s /= IH Ps.
+move: (order_path_min (@Ord.lt_trans T) Ps) => lb.
+rewrite ![in X in is_true X]fun_if /= path_min_sorted; last exact: (allP lb).
+rewrite (path_sorted Ps); case: Ord.ltgtP=> [k_p//|k_p|-> //] /=.
+rewrite path_min_sorted ?(IH (path_sorted Ps)) //=; apply/allP.
+by rewrite !(eq_all_r (E s)) {E} /= lb andbT.
 Qed.
 
 Definition setm (m : {partmap T -> S}) k v :=
-  PartMap.PMap (setm_proof k v (valP m)).
+  PartMap.PMap (setm_proof m k v).
 
 Definition repm (m : {partmap T -> S}) k f : option {partmap T -> S} :=
   omap (setm m k \o f) (getm m k).
@@ -127,19 +111,20 @@ Definition updm (m : {partmap T -> S}) k v :=
 Definition unionm (m1 m2 : {partmap T -> S}) :=
   foldr (fun p m => setm m p.1 p.2) m2 m1.
 
-Lemma mapm_proof S' (f : S -> S') (m : {partmap T -> S}) :
-  PartMap.axiom (map (fun p => p.1) (map (fun p => (p.1, f p.2)) m)).
+Lemma mapm_proof S' (f : S -> S') m :
+  sorted (@Ord.lt T) (map (fun p => p.1) (map (fun p => (p.1, f p.2)) m)).
 Proof. by rewrite -!map_comp; apply: (valP m). Qed.
 
 Definition mapm S' (f : S -> S') m := PartMap.PMap (mapm_proof f m).
 
-Lemma filterm_proof (a : pred S) (m : {partmap T -> S}) :
-  PartMap.axiom [seq p.1 | p <- m & a p.2].
+Lemma filterm_proof (a : pred S) m :
+  sorted (@Ord.lt T) [seq p.1 | p <- m & a p.2].
 Proof.
-case: m=> /=; elim=> [|p s IH /= /andP [lb /IH {IH} IH]] //=.
-rewrite 2!fun_if /= {}IH andbT; case: (a p.2)=> //.
-elim: s lb=> //= p' s IH /andP [lb /IH {IH} IH].
-by rewrite 2!fun_if /= lb IH; case: (a _).
+rewrite (subseq_sorted _ _ (valP m)) //; first exact: Ord.lt_trans.
+rewrite /=; elim: {m} (PartMap.pmval m) => // p s IH.
+rewrite (lock subseq) /=; case: (a _); rewrite /= -lock.
+  by rewrite /= eqxx.
+by rewrite (subseq_trans IH) // subseq_cons.
 Qed.
 
 Definition filterm (a : pred S) (m : {partmap T -> S}) :=
@@ -150,18 +135,17 @@ Fixpoint remm' (s : seq (T * S)) k :=
     if p.1 == k then s else p :: remm' s k
   else [::].
 
-Lemma remm_proof s k :
-  PartMap.axiom [seq p.1 | p <- s] ->
-  PartMap.axiom [seq p.1 | p <- remm' s k].
+Lemma remm_proof m k : sorted (@Ord.lt T) [seq p.1 | p <- remm' m k].
 Proof.
-elim: s=> [|p s IH /= /andP [lb Ps]] //=.
-rewrite 2!fun_if /= {}IH // {}Ps andbT; case: (_ == _)=> //.
-elim: s lb=> // p' s IH /= /andP [lb Ps].
-by rewrite 2!fun_if /= {}IH // /= lb Ps; case: (_ == _).
+apply/(subseq_sorted _ _ (valP m)); first exact: Ord.lt_trans.
+rewrite /=; elim: {m} (PartMap.pmval m) => // p s IH.
+rewrite (lock subseq) /=; case: (_ == _); rewrite /= -lock.
+  by rewrite subseq_cons.
+by rewrite /= eqxx.
 Qed.
 
-Definition remm (m : {partmap T -> S}) k :=
-  PartMap.PMap (remm_proof k (valP m)).
+Definition remm m k :=
+  PartMap.PMap (remm_proof m k).
 
 Definition emptym : {partmap T -> S} :=
   @PartMap.PMap T S [::] erefl.
@@ -202,8 +186,8 @@ Lemma getm_set (m : {partmap T -> S}) k v k' :
   setm m k v k' =
   if k' == k then Some v else getm m k'.
 Proof.
-case: m; rewrite /getm /setm /=; elim=> //= p s IH /andP [lb /IH {IH} IH].
-rewrite ![in LHS](fun_if, if_arg) /= {}IH.
+case: m; rewrite /getm /setm /=; elim=> //= p s IH Ps.
+rewrite ![in LHS](fun_if, if_arg) /= {}IH; last exact: path_sorted Ps.
 have [->{k'}|Hne] := altP (k' =P k); case: (Ord.ltgtP k) => //.
 by move=> <-; rewrite (negbTE Hne).
 Qed.
@@ -252,10 +236,11 @@ Lemma getm_filter (a : pred S) (m : {partmap T -> S}) :
   filterm a m =1 obind (fun x => if a x then Some x else None) \o m.
 Proof.
 case: m=> [s Ps] k; rewrite /filterm /getm /=.
-elim: s Ps=> [|p s IH /= /andP [lb /IH {IH} IH]] //=.
-rewrite ![in LHS](fun_if, if_arg) /= {}IH.
+elim: s Ps=> [|p s IH /= Ps] //=.
+rewrite ![in LHS](fun_if, if_arg) /= {}IH; last exact: path_sorted Ps.
 have [-> {k}|k_p] //= := altP (_ =P _); case: (a _)=> //.
-elim: s lb => [|p' s IH /andP /= [lb /IH {IH} IH]] //=.
+elim: s {Ps} (order_path_min (@Ord.lt_trans _) Ps)
+      => [|p' s IH /andP /= [lb /IH {IH} IH]] //=.
 by move: lb; have [->|//] := altP (_ =P _); rewrite Ord.ltxx.
 Qed.
 
@@ -263,10 +248,11 @@ Lemma getm_rem (m : {partmap T -> S}) k k' :
   remm m k k' =
   if k' == k then None else getm m k'.
 Proof.
-case: m; rewrite /remm /getm /=; elim=> [|p s IH /= /andP [lb Ps]] //=.
+case: m; rewrite /remm /getm /=; elim=> [|p s IH /= Ps] //=.
   by case: (_ == _).
-rewrite ![in LHS](fun_if, if_arg) /= {}IH //.
-move: {Ps} lb; have [-> lb|ne lb] := altP (_ =P _).
+rewrite ![in LHS](fun_if, if_arg) /= {}IH //; last exact: path_sorted Ps.
+move: {Ps} (order_path_min (@Ord.lt_trans _) Ps).
+have [-> lb|ne lb] := altP (_ =P _).
   have [-> {k' p}|ne //] := altP (_ =P _).
   elim: s lb=> [|p s IH /= /andP [lb /IH {IH} ->]] //=.
   by move: lb; have [->|//] := altP (_ =P _); rewrite Ord.ltxx.
@@ -294,10 +280,12 @@ have in_seq: forall s : seq (T * S), [pred k | getm' s k] =i [seq p.1 | p <- s].
 case: m1 m2 => [s1 Ps1] [s2 Ps2]; rewrite /getm /= => s1_s2.
 apply: val_inj=> /=.
 elim: s1 Ps1 s2 Ps2 s1_s2
-      => [_|[k1 v1] s1 IH /= /andP [lb1 /IH {IH} IH]]
-         [_|[k2 v2] s2 /= /andP [lb2 Ps2]] //
+      => [_|[k1 v1] s1 IH /= Ps1] [_|[k2 v2] s2 /= Ps2] //
       => [/(_ k2)|/(_ k1)| ]; try by rewrite eqxx.
-move/IH: Ps2=> {IH} IH s1_s2.
+have lb1 := order_path_min (@Ord.lt_trans _) Ps1.
+have lb2 := order_path_min (@Ord.lt_trans _) Ps2.
+move: {Ps1 Ps2} (path_sorted Ps2) (path_sorted Ps1) => Ps1 Ps2.
+move: IH => /(_ Ps2 _ Ps1) {Ps1 Ps2} IH s1_s2.
 wlog: k1 k2 v1 v2 s1 s2 lb1 lb2 s1_s2 IH / k1 <= k2.
   move=> H.
   have [|k2_k1] := orP (Ord.leq_total k1 k2); first by eauto.
