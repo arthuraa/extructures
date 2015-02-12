@@ -308,6 +308,12 @@ move/(_ s2 k1): in_seq; rewrite inE {}s1_s2 /= => /esym/(allP lb2)/Ord.ltW /=.
 by rewrite Ord.ltNge => ->.
 Qed.
 
+Lemma setmI m k v : m k = Some v -> setm m k v = m.
+Proof.
+move=> get_k; apply/eq_partmap=> k'; rewrite getm_set.
+by have [->{k'}|//] := altP (_ =P _); rewrite get_k.
+Qed.
+
 Lemma union0m : left_id (@emptym T S) unionm.
 Proof. by []. Qed.
 
