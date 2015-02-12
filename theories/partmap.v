@@ -175,14 +175,16 @@ Section Properties.
 Variables (T : ordType) (S : Type).
 Local Open Scope ord_scope.
 
-Lemma getmE (m : {partmap T -> S}) : [pred k | m k] =i [seq p.1 | p <- val m].
+Implicit Type m : {partmap T -> S}.
+
+Lemma getmE m : [pred k | m k] =i [seq p.1 | p <- val m].
 Proof.
 case: m => [s Ps] k; rewrite /getm /= {Ps} inE.
 elim: s=> [|p s IH] //=; rewrite !inE [in LHS]fun_if /= {}IH.
 by case: (_ == _).
 Qed.
 
-Lemma getm_set (m : {partmap T -> S}) k v k' :
+Lemma getm_set m k v k' :
   setm m k v k' =
   if k' == k then Some v else getm m k'.
 Proof.
@@ -192,7 +194,7 @@ have [->{k'}|Hne] := altP (k' =P k); case: (Ord.ltgtP k) => //.
 by move=> <-; rewrite (negbTE Hne).
 Qed.
 
-Lemma getm_rep (m m' : {partmap T -> S}) k f :
+Lemma getm_rep m m' k f :
   repm m k f = Some m' ->
   forall k', m' k' = if k' == k then omap f (m k) else getm m k'.
 Proof.
@@ -201,7 +203,7 @@ case: (m k) => [v [<-]|] //= k'.
 by rewrite getm_set.
 Qed.
 
-Lemma updm_set (m m' : {partmap T -> S}) k v :
+Lemma updm_set m m' k v :
   updm m k v = Some m' -> m' = setm m k v.
 Proof. by rewrite /updm; case: (getm m _) => [m''|] //= [<-]. Qed.
 
@@ -214,8 +216,7 @@ elim: m1 => [|p m1 IH] //=; rewrite {1}/in_mem /= getm_set.
 by case: (_ == _).
 Qed.
 
-Lemma getm_union (m1 m2 : {partmap T -> S}) k :
-  unionm m1 m2 k = if m1 k then m1 k else m2 k.
+Lemma getm_union m1 m2 k : unionm m1 m2 k = if m1 k then m1 k else m2 k.
 Proof.
 case: m1 => [m1 Pm1]; rewrite /unionm {2 3}/getm /= {Pm1}.
 elim: m1 => [|p m1 IH] //=.
@@ -225,14 +226,13 @@ Qed.
 Lemma emptymP : @emptym T S =1 [fun : T => None].
 Proof. by []. Qed.
 
-Lemma getm_map S' (f : S -> S') (m : {partmap T -> S}) :
-  mapm f m =1 omap f \o m.
+Lemma getm_map S' (f : S -> S') m : mapm f m =1 omap f \o m.
 Proof.
 case: m=> [s Ps] k; rewrite /mapm /getm /=.
 by elim: s {Ps}=> [|[k' v] s IH] //=; rewrite {}IH ![in RHS]fun_if /=.
 Qed.
 
-Lemma getm_filter (a : pred S) (m : {partmap T -> S}) :
+Lemma getm_filter (a : pred S) m :
   filterm a m =1 obind (fun x => if a x then Some x else None) \o m.
 Proof.
 case: m=> [s Ps] k; rewrite /filterm /getm /=.
@@ -244,7 +244,7 @@ elim: s {Ps} (order_path_min (@Ord.lt_trans _) Ps)
 by move: lb; have [->|//] := altP (_ =P _); rewrite Ord.ltxx.
 Qed.
 
-Lemma getm_rem (m : {partmap T -> S}) k k' :
+Lemma getm_rem m k k' :
   remm m k k' =
   if k' == k then None else getm m k'.
 Proof.
@@ -272,7 +272,7 @@ Proof.
 by move=> k; elim: kvs=> [|p kvs IH] //=; rewrite getm_set IH.
 Qed.
 
-Lemma eq_partmap (m1 m2 : {partmap T -> S}) : m1 =1 m2 -> m1 = m2.
+Lemma eq_partmap m1 m2 : m1 =1 m2 -> m1 = m2.
 Proof.
 have in_seq: forall s : seq (T * S), [pred k | getm' s k] =i [seq p.1 | p <- s].
   elim=> [|p s IH] k; rewrite /= !inE // -IH inE.
