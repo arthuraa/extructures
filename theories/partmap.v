@@ -60,6 +60,11 @@ End PartMap.
 
 Export PartMap.Exports.
 
+(* Redefine the partmap constructor with a different signature, in
+order to keep types consistent. *)
+Definition partmap (T : ordType) S s Ps : {partmap T -> S} :=
+  @PartMap.PMap T S s Ps.
+
 Section Operations.
 
 Variables (T : ordType) (S : Type).
@@ -100,7 +105,7 @@ by rewrite !(eq_all_r (E s)) {E} /= lb andbT.
 Qed.
 
 Definition setm (m : {partmap T -> S}) k v :=
-  PartMap.PMap (setm_proof m k v).
+  partmap (setm_proof m k v).
 
 Definition repm (m : {partmap T -> S}) k f : option {partmap T -> S} :=
   omap (setm m k \o f) (getm m k).
@@ -115,7 +120,7 @@ Lemma mapm_proof S' (f : S -> S') m :
   sorted (@Ord.lt T) (map (fun p => p.1) (map (fun p => (p.1, f p.2)) m)).
 Proof. by rewrite -!map_comp; apply: (valP m). Qed.
 
-Definition mapm S' (f : S -> S') m := PartMap.PMap (mapm_proof f m).
+Definition mapm S' (f : S -> S') m := partmap (mapm_proof f m).
 
 Lemma filterm_proof (a : pred S) m :
   sorted (@Ord.lt T) [seq p.1 | p <- m & a p.2].
@@ -128,7 +133,7 @@ by rewrite (subseq_trans IH) // subseq_cons.
 Qed.
 
 Definition filterm (a : pred S) (m : {partmap T -> S}) :=
-  PartMap.PMap (filterm_proof a m).
+  partmap (filterm_proof a m).
 
 Fixpoint remm' (s : seq (T * S)) k :=
   if s is p :: s then
@@ -145,10 +150,10 @@ by rewrite /= eqxx.
 Qed.
 
 Definition remm m k :=
-  PartMap.PMap (remm_proof m k).
+  partmap (remm_proof m k).
 
 Definition emptym : {partmap T -> S} :=
-  @PartMap.PMap T S [::] erefl.
+  @partmap T S [::] erefl.
 
 Definition mkpartmap (kvs : seq (T * S)) : {partmap T -> S} :=
   foldr (fun kv m => setm m kv.1 kv.2) emptym kvs.

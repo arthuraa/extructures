@@ -45,6 +45,11 @@ Export FSet.Exports.
 
 Delimit Scope fset_scope with fset.
 
+(* Redefine the partmap constructor with a different signature, in
+order to keep types consistent. *)
+Definition fset (T : ordType) s Ps : {fset T} :=
+  @FSet.FSet T s Ps.
+
 Section Operations.
 
 Variables (T : ordType).
@@ -75,9 +80,7 @@ rewrite path_min_sorted ?(IH (path_sorted Ps)) //=; apply/allP.
 by rewrite !(eq_all_r (E s)) {E} /= lb andbT.
 Qed.
 
-Definition fsetU1 s x := FSet.FSet (fsetU1_proof s x).
-
-Notation "x |: s" := (fsetU1 s x) : fset_scope.
+Definition fsetU1 s x := fset (fsetU1_proof s x).
 
 Definition mem_fset s :=
   [pred x : T | x \in val s].
@@ -85,6 +88,8 @@ Definition mem_fset s :=
 Canonical mem_fset_predType := mkPredType mem_fset.
 
 End Operations.
+
+Notation "x |: s" := (fsetU1 s x) : fset_scope.
 
 Section Properties.
 
