@@ -95,8 +95,9 @@ Section Properties.
 
 Variables (T : ordType).
 Local Open Scope ord_scope.
+Local Open Scope fset_scope.
 
-Implicit Type s : {fset T}.
+Implicit Types (s : {fset T}) (x y : T).
 
 Lemma eq_fseq s1 s2 : s1 =i s2 -> s1 = s2.
 Proof.
@@ -108,6 +109,15 @@ have {E} E := E : s1 =i s2; apply: (eq_sorted _ _ Ps1 Ps2) => //.
   exact: Ord.lt_trans.
 apply: uniq_perm_eq => //; [move: Ps1|move: Ps2]; apply/sorted_uniq => //;
 by [apply: Ord.ltxx|apply: Ord.lt_trans].
+Qed.
+
+Lemma in_fsetU1 x y s : x \in y |: s = (x == y) || (x \in s).
+Proof.
+case: s => s Ps; rewrite !inE /=; elim: s Ps => [|z s IH /=] // Ps.
+rewrite /= !inE /= ![in LHS]fun_if !inE.
+case: (Ord.ltgtP y z) =>[//|z_lt_y |<-].
+  by rewrite IH ?(path_sorted Ps) //; bool_congr.
+by rewrite orbA orbb.
 Qed.
 
 End Properties.
