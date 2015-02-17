@@ -5,3 +5,4 @@ theories/hseq.v
 theories/word.v
 theories/partmap.v
 theories/ord.v
+theories/string.v

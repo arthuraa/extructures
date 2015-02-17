@@ -440,3 +440,11 @@ Canonical ordinal_partOrdType n :=
   Eval hnf in PartOrdType 'I_n (ordinal_partOrdMixin n).
 Definition ordinal_ordMixin n := [ordMixin of 'I_n by <:].
 Canonical ordinal_ordType n := Eval hnf in OrdType 'I_n (ordinal_ordMixin n).
+
+Lemma nat_of_boolK : cancel nat_of_bool (eq_op 1).
+Proof. by case. Qed.
+
+Definition bool_partOrdMixin := CanPartOrdMixin nat_of_boolK.
+Canonical bool_partOrdType := Eval hnf in PartOrdType bool bool_partOrdMixin.
+Definition bool_ordMixin := CanOrdMixin nat_of_boolK.
+Canonical bool_ordType := Eval hnf in OrdType bool bool_ordMixin.
