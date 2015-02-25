@@ -58,6 +58,8 @@ Implicit Type s : {fset T}.
 
 Local Open Scope ord_scope.
 
+Definition fset0 := @fset T [::] erefl.
+
 Fixpoint fsetU1' (s : seq T) x : seq T :=
   if s is x' :: s' then
     if x < x' then x :: s
@@ -82,6 +84,8 @@ Qed.
 
 Definition fsetU1 s x := fset (fsetU1_proof s x).
 
+Definition fsetU s1 s2 := foldr (fun x s => fsetU1 s x) s2 s1.
+
 Definition mem_fset s :=
   [pred x : T | x \in val s].
 
@@ -90,6 +94,7 @@ Canonical mem_fset_predType := mkPredType mem_fset.
 End Operations.
 
 Notation "x |: s" := (fsetU1 s x) : fset_scope.
+Notation "s1 :|: s2" := (fsetU s1 s2) : fset_scope.
 
 Section Properties.
 
@@ -118,6 +123,12 @@ rewrite /= !inE /= ![in LHS]fun_if !inE.
 case: (Ord.ltgtP y z) =>[//|z_lt_y |<-].
   by rewrite IH ?(path_sorted Ps) //; bool_congr.
 by rewrite orbA orbb.
+Qed.
+
+Lemma in_fset x s1 s2 : (x \in s1 :|: s2) = (x \in s1) || (x \in s2).
+Proof.
+case: s1=> [/= s1 Ps1]; rewrite /fsetU !inE /= {Ps1}.
+by elim: s1=> [|y s1 IH] //=; rewrite in_fsetU1 IH inE; bool_congr.
 Qed.
 
 End Properties.
