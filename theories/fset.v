@@ -96,6 +96,8 @@ Canonical mem_fset_predType := mkPredType mem_fset.
 End Operations.
 
 Arguments fset0 {_}.
+Arguments fsetU1 {_} _ _.
+Arguments fsetU {_} _ _.
 
 Notation "x |: s" := (fsetU1 s x) : fset_scope.
 Notation "s1 :|: s2" := (fsetU s1 s2) : fset_scope.
