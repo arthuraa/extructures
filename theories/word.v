@@ -149,6 +149,9 @@ rewrite (_ : z1 = z2) // {}/z1 {}/z2 -modz_nat PoszD.
 by rewrite !absz_pos ?modz_pos ?ltez_natE ?exp2_gt0 ?modzDm.
 Qed.
 
+Lemma valw_zero : zerow = 0 :> nat.
+Proof. by rewrite /= modz_nat mod0n /= mod0n. Qed.
+
 Lemma valw_add w1 w2 :
   addw w1 w2 =
   w1 + w2 - (2 ^ k <= w1 + w2) * 2 ^ k :> nat.
