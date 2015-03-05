@@ -86,6 +86,8 @@ Definition fsetU1 s x := fset (fsetU1_proof s x).
 
 Definition fsetU s1 s2 := foldr (fun x s => fsetU1 s x) s2 s1.
 
+Definition mkfset xs := foldr (fun x s => fsetU1 s x) fset0 xs.
+
 Definition mem_fset s :=
   [pred x : T | x \in val s].
 
@@ -132,5 +134,8 @@ Proof.
 case: s1=> [/= s1 Ps1]; rewrite /fsetU !inE /= {Ps1}.
 by elim: s1=> [|y s1 IH] //=; rewrite in_fsetU1 IH inE; bool_congr.
 Qed.
+
+Lemma in_mkfset x xs : (x \in mkfset xs) = (x \in xs).
+Proof. by elim: xs => [|x' xs IH] //=; rewrite in_fsetU1 IH inE. Qed.
 
 End Properties.

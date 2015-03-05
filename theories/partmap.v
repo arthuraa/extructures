@@ -342,11 +342,37 @@ Qed.
 
 End Properties.
 
+Section EqType.
+
+Variables (T : ordType) (S : eqType).
+Implicit Types (m : {partmap T -> S}) (k : T) (v : S).
+
+Lemma getm_in m k v : reflect (m k = Some v) ((k, v) \in (m : seq (T * S))).
+Proof.
+case: m => [s Ps] /=; apply/(iffP idP); rewrite /getm /=.
+  elim: s Ps => [|[k' v'] s IH] //= sorted_s.
+  move/(_ (path_sorted sorted_s)) in IH.
+  rewrite inE => /orP [/eqP [e_k e_v]|in_s].
+    by rewrite -{}e_k -{}e_v {k' v' sorted_s} eqxx.
+  have [e_k|n_k] := altP (k =P k'); last by auto.
+  rewrite -{}e_k {k'} in sorted_s.
+  suff : Ord.lt k k by rewrite Ord.ltxx.
+  move/allP: (order_path_min (@Ord.lt_trans T) sorted_s); apply.
+  by apply: map_f in_s.
+elim: s Ps=> [|[k' v'] s IH] //= sorted_s.
+move/(_ (path_sorted sorted_s)) in IH.
+have [e_k [e_v]|n_k get_k] := altP (k =P k').
+  by rewrite -{}e_k {}e_v {k' v'} inE eqxx in sorted_s *.
+by rewrite inE IH // orbT.
+Qed.
+
 (* Find a good name for this *)
-Lemma getm_mkpartmap' (T : ordType) (S : eqType) (kvs : seq (T * S)) k v
+Lemma getm_mkpartmap' (kvs : seq (T * S)) k v
   : mkpartmap kvs k = Some v -> (k, v) \in kvs.
 Proof.
 elim: kvs => [|[k' v'] kvs IH] //=; rewrite getm_set.
 have [-> [->]|_ H] := altP (_ =P _); first by rewrite inE eqxx.
 by rewrite inE IH // orbT.
 Qed.
+
+End EqType.
