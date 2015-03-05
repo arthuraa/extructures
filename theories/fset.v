@@ -132,7 +132,7 @@ case: (Ord.ltgtP y z) =>[//|z_lt_y |<-].
 by rewrite orbA orbb.
 Qed.
 
-Lemma in_fset x s1 s2 : (x \in s1 :|: s2) = (x \in s1) || (x \in s2).
+Lemma in_fsetU x s1 s2 : (x \in s1 :|: s2) = (x \in s1) || (x \in s2).
 Proof.
 case: s1=> [/= s1 Ps1]; rewrite /fsetU !inE /= {Ps1}.
 by elim: s1=> [|y s1 IH] //=; rewrite in_fsetU1 IH inE; bool_congr.
