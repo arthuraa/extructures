@@ -2,7 +2,7 @@ Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
 Require Import Ssreflect.ssrnat Ssreflect.eqtype Ssreflect.seq.
 Require Import Ssreflect.choice Ssreflect.fintype.
 
-Require Import MathComp.path.
+Require Import MathComp.path MathComp.bigop.
 
 Require Import ord.
 
@@ -86,6 +86,8 @@ Definition fsetU1 s x := fset (fsetU1_proof s x).
 
 Definition fsetU s1 s2 := foldr (fun x s => fsetU1 s x) s2 s1.
 
+Definition fsubset s1 s2 := fsetU s1 s2 == s2.
+
 Definition mkfset xs := foldr (fun x s => fsetU1 s x) fset0 xs.
 
 Definition mem_fset s :=
@@ -111,7 +113,7 @@ Local Open Scope fset_scope.
 
 Implicit Types (s : {fset T}) (x y : T).
 
-Lemma eq_fseq s1 s2 : s1 =i s2 -> s1 = s2.
+Lemma eq_fset s1 s2 : s1 =i s2 -> s1 = s2.
 Proof.
 case: s1 s2 => [s1 Ps1] [s2 Ps2] /= E; apply/val_inj=> /=.
 have anti: antisymmetric (@Ord.lt T).
@@ -122,6 +124,9 @@ have {E} E := E : s1 =i s2; apply: (eq_sorted _ _ Ps1 Ps2) => //.
 apply: uniq_perm_eq => //; [move: Ps1|move: Ps2]; apply/sorted_uniq => //;
 by [apply: Ord.ltxx|apply: Ord.lt_trans].
 Qed.
+
+Lemma in_fset0 x : x \in fset0 = false.
+Proof. by []. Qed.
 
 Lemma in_fsetU1 x y s : x \in y |: s = (x == y) || (x \in s).
 Proof.
@@ -138,7 +143,98 @@ case: s1=> [/= s1 Ps1]; rewrite /fsetU !inE /= {Ps1}.
 by elim: s1=> [|y s1 IH] //=; rewrite in_fsetU1 IH inE; bool_congr.
 Qed.
 
+Lemma fsetUP x s1 s2 : reflect (x \in s1 \/ x \in s2) (x \in s1 :|: s2).
+Proof. by rewrite in_fsetU; apply/orP. Qed.
+
+Lemma fsetUC : commutative (@fsetU T).
+Proof. by move=> s1 s2; apply/eq_fset=> x; rewrite !in_fsetU orbC. Qed.
+
+Lemma fsetUA : associative (@fsetU T).
+Proof.
+by move=> s1 s2 s3; apply/eq_fset=> x; rewrite !in_fsetU orbA.
+Qed.
+
+Lemma fset0U : left_id fset0 (@fsetU T).
+Proof. by []. Qed.
+
+Lemma fsetU0 : right_id fset0 (@fsetU T).
+Proof. by move=> s; rewrite fsetUC fset0U. Qed.
+
+Lemma fsetUid : idempotent (@fsetU T).
+Proof. by move=> s; apply/eq_fset=> x; rewrite in_fsetU orbb. Qed.
+
+Lemma fsubsetP s1 s2 : reflect {subset s1 <= s2} (fsubset s1 s2).
+Proof.
+apply/(iffP idP)=> [/eqP <- x|hs1s2]; first by rewrite in_fsetU => ->.
+apply/eqP/eq_fset=> x; rewrite in_fsetU.
+have [/hs1s2|//] //= := boolP (x \in s1).
+Qed.
+
+Lemma fsubsetUl s1 s2 : fsubset s1 (s1 :|: s2).
+Proof. by rewrite /fsubset fsetUA fsetUid. Qed.
+
+Lemma fsubsetUr s1 s2 : fsubset s2 (s1 :|: s2).
+Proof. by rewrite fsetUC fsubsetUl. Qed.
+
 Lemma in_mkfset x xs : (x \in mkfset xs) = (x \in xs).
 Proof. by elim: xs => [|x' xs IH] //=; rewrite in_fsetU1 IH inE. Qed.
 
 End Properties.
+
+Section setOpsAlgebra.
+
+Import Monoid.
+
+Variable T : ordType.
+
+Canonical fsetU_monoid := Law (@fsetUA T) (@fset0U T) (@fsetU0 T).
+Canonical fsetU_comoid := ComLaw (@fsetUC T).
+
+End setOpsAlgebra.
+
+Notation "\bigcup_ ( i <- r | P ) F" :=
+  (\big[@fsetU _/fset0]_(i <- r | P) F%fset) : fset_scope.
+Notation "\bigcup_ ( i <- r ) F" :=
+  (\big[@fsetU _/fset0]_(i <- r) F%fset) : fset_scope.
+Notation "\bigcup_ ( m <= i < n | P ) F" :=
+  (\big[@fsetU _/fset0]_(m <= i < n | P%B) F%fset) : fset_scope.
+Notation "\bigcup_ ( m <= i < n ) F" :=
+  (\big[@fsetU _/fset0]_(m <= i < n) F%fset) : fset_scope.
+Notation "\bigcup_ ( i | P ) F" :=
+  (\big[@fsetU _/fset0]_(i | P%B) F%fset) : fset_scope.
+Notation "\bigcup_ i F" :=
+  (\big[@fsetU _/fset0]_i F%fset) : fset_scope.
+Notation "\bigcup_ ( i : t | P ) F" :=
+  (\big[@fsetU _/fset0]_(i : t | P%B) F%fset) (only parsing): fset_scope.
+Notation "\bigcup_ ( i : t ) F" :=
+  (\big[@fsetU _/fset0]_(i : t) F%fset) (only parsing) : fset_scope.
+Notation "\bigcup_ ( i < n | P ) F" :=
+  (\big[@fsetU _/fset0]_(i < n | P%B) F%fset) : fset_scope.
+Notation "\bigcup_ ( i < n ) F" :=
+  (\big[@fsetU _/fset0]_ (i < n) F%fset) : fset_scope.
+Notation "\bigcup_ ( i 'in' A | P ) F" :=
+  (\big[@fsetU _/fset0]_(i in A | P%B) F%fset) : fset_scope.
+Notation "\bigcup_ ( i 'in' A ) F" :=
+  (\big[@fsetU _/fset0]_(i in A) F%fset) : fset_scope.
+
+Section BigSetOps.
+
+Variable T : ordType.
+Variable I : finType.
+
+Implicit Types (U : pred T) (P : pred I) (F :  I -> {fset T}).
+
+Local Open Scope fset_scope.
+
+Lemma bigcup_sup j P F : P j -> fsubset (F j) (\bigcup_(i | P i) F i).
+Proof. by move=> Pj; rewrite (bigD1 j) //= fsubsetUl. Qed.
+
+Lemma bigcupP x P F :
+  reflect (exists2 i, P i & x \in F i) (x \in \bigcup_(i | P i) F i).
+Proof.
+apply/(iffP idP)=> [|[i Pi]]; last first.
+  apply: fsubsetP x; exact: bigcup_sup.
+by elim/big_rec: _ => [|i _ Pi _ /fsetUP[|//]]; [rewrite inE | exists i].
+Qed.
+
+End BigSetOps.
