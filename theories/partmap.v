@@ -393,3 +393,103 @@ by rewrite inE IH // orbT.
 Qed.
 
 End EqType.
+
+Section Inverse.
+
+Section Def.
+
+Variables (T S : ordType).
+
+Implicit Type (m : {partmap T -> S}).
+
+Definition invm m := mkpartmap [seq (p.2, p.1) | p <- m].
+
+End Def.
+
+Section Cancel.
+
+Variables (T S : ordType).
+
+Implicit Type (m : {partmap T -> S}).
+
+Lemma getm_inv m k k' : invm m k = Some k' -> m k' = Some k.
+Proof.
+rewrite /invm=> /getm_mkpartmap'/mapP [[h h'] /getm_in get_k /= [??]].
+by subst h h'.
+Qed.
+
+Lemma invmP m k : reflect (exists k', m k' = Some k) (k \in invm m).
+Proof.
+apply/(iffP idP).
+  rewrite inE; case im_k: (invm m k) => [k'|] //= _.
+  rewrite -(getm_inv im_k); eauto.
+move=> [k' /getm_in m_k'].
+rewrite /invm mem_mkpartmap; apply/mapP; exists (k, k') => //.
+by apply/mapP; exists (k', k).
+Qed.
+
+Lemma invmPn m k : reflect (forall k', m k' != Some k) (k \notin invm m).
+Proof.
+apply/(iffP idP).
+  by move=> h k'; apply: contra h=> /eqP h; apply/invmP; eauto.
+move=> h; apply/negP=> /invmP [k' h'].
+by move: (h k'); rewrite h' eqxx.
+Qed.
+
+Lemma invmE m k : obind m (invm m k) = if k \in invm m then Some k else None.
+Proof.
+rewrite inE; case get_k: (invm m k) => [k'|] //=.
+rewrite /invm in get_k; move/getm_mkpartmap'/mapP in get_k.
+by case: get_k => [[h h'] /getm_in get_k [??]]; subst k k'.
+Qed.
+
+End Cancel.
+
+Section CancelRev.
+
+Variables (T S : ordType).
+
+Implicit Type (m : {partmap T -> S}).
+
+Lemma invmEV m k :
+  {in m, injective m} ->
+  obind (invm m) (m k) = if k \in m then Some k else None.
+Proof.
+move=> inj_m; rewrite inE; case m_k: (m k) => [k'|] //=.
+move: (invmE m k').
+rewrite inE.
+case im_k': (invm m k') => [k''|] //=.
+  move=> m_k''; congr Some; apply: inj_m; last by congruence.
+  by rewrite inE m_k''.
+have /invmPn/(_ k) : k' \notin invm m by rewrite inE im_k'.
+by rewrite m_k eqxx.
+Qed.
+
+End CancelRev.
+
+Variables (T S : ordType).
+
+Implicit Type (m : {partmap T -> S}).
+
+Lemma invm_inj m : {in invm m, injective (invm m)}.
+Proof.
+move=> k1 in_im k2 h.
+have {h}: obind m (invm m k1) = obind m (invm m k2) by congruence.
+rewrite invmE {}in_im.
+case im_k2: (invm m k2) => [k|] //=.
+by move/getm_inv in im_k2; congruence.
+Qed.
+
+Lemma invmK m : {in m, injective m} -> invm (invm m) = m.
+Proof.
+move=> inj_m; apply/eq_partmap=> k.
+move: (invmEV k inj_m); rewrite inE.
+case m_k: (m k) => [k'|] //= im_k'.
+  by move: (invmEV k' (@invm_inj m)); rewrite inE im_k' /=.
+move {im_k'}.
+suff : k \notin invm (invm m) by rewrite inE; case: (invm (invm m) k).
+apply/invmPn=> k'; apply/eqP=> im_k'.
+by move: (invmE m k'); rewrite inE im_k' /= m_k.
+Qed.
+
+End Inverse.
