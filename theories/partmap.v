@@ -20,7 +20,7 @@ Local Open Scope ord_scope.
 
 Record partmap_type := PMap {
   pmval : seq (T * S);
-  _ : sorted (@Ord.lt T) [seq p.1 | p <- pmval]
+  _ : sorted (@Ord.lt T) (unzip1 pmval)
 }.
 Definition partmap_of of phant (T -> S) := partmap_type.
 Identity Coercion type_of_partmap_of : partmap_of >-> partmap_type.
@@ -89,7 +89,7 @@ Fixpoint setm' s k v : seq (T * S) :=
     else p :: setm' s' k v
   else [:: (k, v)].
 
-Lemma setm_proof m k v : sorted (@Ord.lt T) [seq p.1 | p <- setm' m k v].
+Lemma setm_proof m k v : sorted (@Ord.lt T) (unzip1 (setm' m k v)).
 Proof.
 have E: forall s, [seq p.1 | p <- setm' s k v] =i k :: [seq p.1 | p <- s].
   elim=> // p s /= IH k'; rewrite ![in X in X = _]fun_if /= !inE.
@@ -117,13 +117,13 @@ Definition unionm (m1 m2 : {partmap T -> S}) :=
   foldr (fun p m => setm m p.1 p.2) m2 m1.
 
 Lemma mapm_proof S' (f : S -> S') m :
-  sorted (@Ord.lt T) (map (fun p => p.1) (map (fun p => (p.1, f p.2)) m)).
-Proof. by rewrite -!map_comp; apply: (valP m). Qed.
+  sorted (@Ord.lt T) (unzip1 (map (fun p => (p.1, f p.2)) m)).
+Proof. by rewrite /unzip1 -!map_comp; apply: (valP m). Qed.
 
 Definition mapm S' (f : S -> S') m := partmap (mapm_proof f m).
 
 Lemma filterm_proof (a : T -> S -> bool) m :
-  sorted (@Ord.lt T) [seq p.1 | p <- m & a p.1 p.2].
+  sorted (@Ord.lt T) (unzip1 [seq p | p <- m & a p.1 p.2]).
 Proof.
 rewrite (subseq_sorted _ _ (valP m)) //; first exact: Ord.lt_trans.
 rewrite /=; elim: {m} (PartMap.pmval m) => // p s IH.
@@ -140,7 +140,7 @@ Fixpoint remm' (s : seq (T * S)) k :=
     if p.1 == k then s else p :: remm' s k
   else [::].
 
-Lemma remm_proof m k : sorted (@Ord.lt T) [seq p.1 | p <- remm' m k].
+Lemma remm_proof m k : sorted (@Ord.lt T) (unzip1 (remm' m k)).
 Proof.
 apply/(subseq_sorted _ _ (valP m)); first exact: Ord.lt_trans.
 rewrite /=; elim: {m} (PartMap.pmval m) => // p s IH.
@@ -390,6 +390,44 @@ Proof.
 elim: kvs => [|[k' v'] kvs IH] //=; rewrite getm_set.
 have [-> [->]|_ H] := altP (_ =P _); first by rewrite inE eqxx.
 by rewrite inE IH // orbT.
+Qed.
+
+Definition injectivem m := uniq (unzip2 m).
+
+Lemma injectivemP m : reflect {in m, injective m} (injectivem m).
+Proof.
+apply/(iffP idP).
+  move=> inj_m k1; rewrite inE; case m_k1: (m k1) => [v|] // _.
+  move/getm_in in m_k1; move=> k2 /esym/getm_in.
+  move: inj_m m_k1; rewrite /injectivem.
+  have: uniq (unzip1 m).
+    apply (sorted_uniq (@Ord.lt_trans T) (@Ord.ltxx T)).
+    exact: (valP m).
+  elim: (val m) => [|[k' v'] s IH] //=.
+  move=>/andP [k'_nin_s /IH {IH} IH] /andP [v'_nin_s /IH {IH} IH].
+  rewrite !inE -pair_eqE /=.
+  have [k1k'|k1k'] /= := altP (k1 =P k').
+    subst k'; have /negbTE ->: (k1, v) \notin s.
+      apply: contra k'_nin_s => k'_in_s.
+      by apply/mapP; exists (k1, v).
+    rewrite orbF=> /eqP ?; subst v'; rewrite eqxx andbT.
+    have /negbTE ->: (k2, v) \notin s.
+      apply: contra v'_nin_s => v'_in_s.
+      by apply/mapP; exists (k2, v).
+    by rewrite orbF => /eqP ->.
+  move=> k1_in_s; move: (k1_in_s)=> /IH {IH} IH.
+  have [k2k'|k2k'] //= := altP (k2 =P k').
+  subst k'; case/orP=> [/eqP ?|//]; subst v'.
+  suff c : v \in unzip2 s by rewrite c in v'_nin_s.
+  by apply/mapP; exists (k1, v).
+move=> inj_m.
+rewrite /injectivem map_inj_in_uniq.
+  apply: (@map_uniq _ _ (@fst T S)).
+  apply: (sorted_uniq (@Ord.lt_trans T) (@Ord.ltxx T)).
+  exact: (valP m).
+move=> [k1 v] [k2 v'] /= /getm_in k1_in_m /getm_in k2_in_m ?; subst v'.
+move: (inj_m k1); rewrite inE k1_in_m => /(_ erefl k2 (esym k2_in_m)).
+congruence.
 Qed.
 
 End EqType.
