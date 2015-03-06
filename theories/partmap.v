@@ -350,6 +350,13 @@ move=> m; apply: eq_partmap=> k; rewrite !getm_union.
 by case: (m k).
 Qed.
 
+Lemma mem_unzip1_partmap m : unzip1 m =i m.
+Proof.
+move=> x; rewrite !inE; case: m => [s Ps] /=; rewrite /getm /=.
+elim: s {Ps} => [|k s IH] //=.
+by rewrite inE IH; case: (x == k.1).
+Qed.
+
 End Properties.
 
 Section EqType.
