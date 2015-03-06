@@ -158,6 +158,9 @@ Definition emptym : {partmap T -> S} :=
 Definition mkpartmap (kvs : seq (T * S)) : {partmap T -> S} :=
   foldr (fun kv m => setm m kv.1 kv.2) emptym kvs.
 
+Definition mkpartmapf (ks : seq T) (f : T -> S) : {partmap T -> S} :=
+  mkpartmap [seq (k, f k) | k <- ks].
+
 Definition mem_partmap (m : {partmap T -> S}) :=
   [pred k : T | getm m k].
 
@@ -275,6 +278,13 @@ Qed.
 Lemma getm_mkpartmap (kvs : seq (T * S)) : mkpartmap kvs =1 getm' kvs.
 Proof.
 by move=> k; elim: kvs=> [|p kvs IH] //=; rewrite getm_set IH.
+Qed.
+
+Lemma getm_mkpartmapf (ks : seq T) (f : T -> S) k :
+  mkpartmapf ks f k = if k \in ks then Some (f k) else None.
+Proof.
+rewrite /mkpartmapf; elim: ks => [|k' ks IH] //=.
+by rewrite getm_set inE {}IH; have [<-|?] := altP (k =P k').
 Qed.
 
 Lemma eq_partmap m1 m2 : m1 =1 m2 -> m1 = m2.
