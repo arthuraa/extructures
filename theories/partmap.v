@@ -122,8 +122,8 @@ Proof. by rewrite -!map_comp; apply: (valP m). Qed.
 
 Definition mapm S' (f : S -> S') m := partmap (mapm_proof f m).
 
-Lemma filterm_proof (a : pred S) m :
-  sorted (@Ord.lt T) [seq p.1 | p <- m & a p.2].
+Lemma filterm_proof (a : T -> S -> bool) m :
+  sorted (@Ord.lt T) [seq p.1 | p <- m & a p.1 p.2].
 Proof.
 rewrite (subseq_sorted _ _ (valP m)) //; first exact: Ord.lt_trans.
 rewrite /=; elim: {m} (PartMap.pmval m) => // p s IH.
@@ -132,7 +132,7 @@ rewrite (lock subseq) /=; case: (a _); rewrite /= -lock.
 by rewrite (subseq_trans IH) // subseq_cons.
 Qed.
 
-Definition filterm (a : pred S) (m : {partmap T -> S}) :=
+Definition filterm (a : T -> S -> bool) (m : {partmap T -> S}) :=
   partmap (filterm_proof a m).
 
 Fixpoint remm' (s : seq (T * S)) k :=
@@ -237,10 +237,10 @@ case: m=> [s Ps] k; rewrite /mapm /getm /=.
 by elim: s {Ps}=> [|[k' v] s IH] //=; rewrite {}IH ![in RHS]fun_if /=.
 Qed.
 
-Lemma getm_filter (a : pred S) m :
-  filterm a m =1 obind (fun x => if a x then Some x else None) \o m.
+Lemma getm_filter a m k :
+  filterm a m k = obind (fun x => if a k x then Some x else None) (m k).
 Proof.
-case: m=> [s Ps] k; rewrite /filterm /getm /=.
+case: m=> [s Ps]; rewrite /filterm /getm /=.
 elim: s Ps=> [|p s IH /= Ps] //=.
 rewrite ![in LHS](fun_if, if_arg) /= {}IH; last exact: path_sorted Ps.
 have [-> {k}|k_p] //= := altP (_ =P _); case: (a _)=> //.
