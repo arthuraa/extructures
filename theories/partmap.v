@@ -4,7 +4,7 @@ Require Import Ssreflect.choice Ssreflect.fintype.
 
 Require Import MathComp.path.
 
-Require Import ord.
+Require Import ord fset.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -160,6 +160,8 @@ Definition mkpartmap (kvs : seq (T * S)) : {partmap T -> S} :=
 
 Definition mkpartmapf (ks : seq T) (f : T -> S) : {partmap T -> S} :=
   mkpartmap [seq (k, f k) | k <- ks].
+
+Definition keys m := mkfset (unzip1 m).
 
 Definition mem_partmap (m : {partmap T -> S}) :=
   [pred k : T | getm m k].
@@ -356,6 +358,9 @@ move=> x; rewrite !inE; case: m => [s Ps] /=; rewrite /getm /=.
 elim: s {Ps} => [|k s IH] //=.
 by rewrite inE IH; case: (x == k.1).
 Qed.
+
+Lemma keysP m : keys m =i m.
+Proof. by move=> x; rewrite inE /keys/= in_mkfset mem_unzip1_partmap. Qed.
 
 End Properties.
 

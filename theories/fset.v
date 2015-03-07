@@ -18,7 +18,7 @@ Variables (T : ordType).
 
 Local Open Scope ord_scope.
 
-Record fset_type := FSet {
+CoInductive fset_type := FSet {
   fsval : seq T;
   _ : sorted (@Ord.lt T) fsval
 }.
@@ -95,6 +95,12 @@ Definition mem_fset s :=
 
 Canonical mem_fset_predType := mkPredType mem_fset.
 
+Definition fset_filter P s := mkfset [seq x <- s | P x].
+
+Definition fsetD1 s x := fset_filter (predC1 x) s.
+
+Definition fsetD s1 s2 := fset_filter [pred x | x \notin s2] s1.
+
 End Operations.
 
 Arguments fset0 {_}.
@@ -102,11 +108,12 @@ Prenex Implicits fsetU1 fsetU mkfset.
 
 Notation "x |: s" := (fsetU1 s x) : fset_scope.
 Notation "s1 :|: s2" := (fsetU s1 s2) : fset_scope.
+Notation "s :\ x" := (fsetD1 s x) : fset_scope.
+Notation "s1 :\: s2" := (fsetD s1 s2) : fset_scope.
 
 Section Properties.
 
 Variables (T : ordType).
-Local Open Scope ord_scope.
 Local Open Scope fset_scope.
 
 Implicit Types (s : {fset T}) (x y : T) (xs : seq T).
@@ -134,6 +141,24 @@ case: (Ord.ltgtP y z) =>[//|z_lt_y |<-].
   by rewrite IH ?(path_sorted Ps) //; bool_congr.
 by rewrite orbA orbb.
 Qed.
+
+Lemma fset_ind (P : {fset T} -> Prop) :
+  P fset0 ->
+  (forall x s, x \notin s -> P s -> P (x |: s)) ->
+  forall s, P s.
+Proof.
+move=> H0 HS []; elim=> [|/= x xs IH] Pxs; first by rewrite eq_axiomK.
+move: IH => /(_ (path_sorted Pxs)).
+set s : {fset T} := FSet.FSet _; set s' : {fset T} := FSet.FSet _ => Ps.
+have x_nin_s : x \notin s.
+  apply/negP=> /(allP (order_path_min (@Ord.lt_trans T) Pxs)).
+  by rewrite Ord.ltxx.
+suff ->: s' = x |: s by eauto.
+by apply/eq_fset=> x'; rewrite in_fsetU1 !inE.
+Qed.
+
+Lemma size_fset0 : size (fset0 : {fset T}) = 0.
+Proof. by []. Qed.
 
 Lemma size_fsetU1 s x : size (x |: s) = (x \notin s) + size s.
 Proof.
@@ -180,11 +205,35 @@ apply/eqP/eq_fset=> x; rewrite in_fsetU.
 have [/hs1s2|//] //= := boolP (x \in s1).
 Qed.
 
+Lemma fsubsetxx s : fsubset s s.
+Proof. by apply/fsubsetP. Qed.
+
 Lemma fsubsetUl s1 s2 : fsubset s1 (s1 :|: s2).
 Proof. by rewrite /fsubset fsetUA fsetUid. Qed.
 
 Lemma fsubsetUr s1 s2 : fsubset s2 (s1 :|: s2).
 Proof. by rewrite fsetUC fsubsetUl. Qed.
+
+Lemma fsubU1set x s1 s2 :
+  fsubset (x |: s1) s2 = (x \in s2) && (fsubset s1 s2).
+Proof.
+apply/(sameP idP)/(iffP idP).
+  case/andP=> [hx /fsubsetP hs1]; apply/fsubsetP=> x'.
+  by rewrite in_fsetU1=> /orP [/eqP ->|hx']; eauto.
+move/fsubsetP=> h; apply/andP; split.
+  by apply: h; rewrite in_fsetU1 eqxx.
+by apply/fsubsetP=> x' hx'; apply: h; rewrite in_fsetU1 hx' orbT.
+Qed.
+
+Lemma fsubUset s1 s2 s3 :
+  fsubset (s1 :|: s2) s3 = (fsubset s1 s3 && fsubset s2 s3).
+Proof.
+apply/(sameP idP)/(iffP idP).
+  case/andP=> [/fsubsetP hs1 /fsubsetP hs2]; apply/fsubsetP=> x.
+  by rewrite in_fsetU=> /orP [hx|hx]; eauto.
+by move/fsubsetP=> h; apply/andP; split; apply/fsubsetP=> x hx; apply: h;
+rewrite in_fsetU hx ?orbT.
+Qed.
 
 Lemma in_mkfset x xs : (x \in mkfset xs) = (x \in xs).
 Proof. by elim: xs => [|x' xs IH] //=; rewrite in_fsetU1 IH inE. Qed.
@@ -203,6 +252,34 @@ Qed.
 
 Lemma uniq_size_mkfset xs : uniq xs = (size xs == size (mkfset xs)).
 Proof. exact: (uniq_size_uniq (uniq_fset _) (fun x => in_mkfset x _)). Qed.
+
+Lemma in_fset_filter P s x : (x \in fset_filter P s) = P x && (x \in s).
+Proof. by rewrite /fset_filter in_mkfset mem_filter. Qed.
+
+Lemma in_fsetD1 x s y : (x \in s :\ y) = (x != y) && (x \in s).
+Proof. by rewrite in_fset_filter. Qed.
+
+Lemma in_fsetD x s1 s2 : (x \in s1 :\: s2) = (x \notin s2) && (x \in s1).
+Proof. by rewrite in_fset_filter. Qed.
+
+Lemma size_fsetD1 x s : size s = (x \in s) + size (s :\ x).
+Proof.
+have [x_in|x_nin] /= := boolP (x \in s).
+  rewrite [in LHS](_ : s = x |: s :\ x) ?size_fsetU1 ?in_fsetD1 ?eqxx ?x_in //.
+  apply/eq_fset=> x'; rewrite in_fsetU1 in_fsetD1 orb_andr orbN /=.
+  by have [->|//] := altP eqP.
+rewrite add0n; congr size; congr val; apply/eq_fset=> x'.
+by rewrite in_fsetD1; have [->|] //= := altP eqP; apply/negbTE.
+Qed.
+
+Lemma fsubset_leq_size s1 s2 : fsubset s1 s2 -> size s1 <= size s2.
+Proof.
+elim/fset_ind: s1 s2 => [|x s1 Px IH] s2; first by rewrite leq0n.
+rewrite fsubU1set size_fsetU1 (size_fsetD1 x s2) Px add1n.
+case/andP=> [-> ]; rewrite ltnS=> /fsubsetP hs1s2.
+apply: IH; apply/fsubsetP=> x' Hx'; rewrite in_fsetD1 hs1s2 // andbT.
+by apply: contra Px=> /eqP <-.
+Qed.
 
 End Properties.
 
@@ -272,6 +349,16 @@ Implicit Type s : {fset T}.
 
 Definition imfset (f : T -> S) s := mkfset (map f s).
 
+Lemma imfsetP f s x :
+  reflect (exists2 y, y \in s & x = f y) (x \in imfset f s).
+Proof.
+apply/(iffP idP).
+  rewrite /imfset in_mkfset=> /mapP [y Py ->].
+  by eexists; eauto.
+move=> [y Py {x}->]; rewrite /imfset in_mkfset.
+by apply/mapP; eauto.
+Qed.
+
 End Image.
 
 Notation "f @: s" := (imfset f s) (at level 24) : fset_scope.
@@ -323,3 +410,19 @@ by move=> y z Py Pz; apply: hinj; rewrite inE ?Py ?Pz orbT.
 Qed.
 
 End CardImage.
+
+Section Card.
+
+Variable T : ordType.
+
+Implicit Type (s : {fset T}).
+
+Lemma eqEfsubset s1 s2 : (s1 == s2) = (fsubset s1 s2) && (fsubset s2 s1).
+Proof.
+apply/(sameP idP)/(iffP idP)=> [|/eqP ->]; last by rewrite fsubsetxx.
+case/andP=> [/fsubsetP s1s2 /fsubsetP s2s1]; apply/eqP/eq_fset=> x.
+by apply/(sameP idP)/(iffP idP); eauto.
+Qed.
+
+End Card.
+
