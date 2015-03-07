@@ -98,9 +98,7 @@ Canonical mem_fset_predType := mkPredType mem_fset.
 End Operations.
 
 Arguments fset0 {_}.
-Arguments fsetU1 {_} _ _.
-Arguments fsetU {_} _ _.
-Arguments mkfset {_} _.
+Prenex Implicits fsetU1 fsetU mkfset.
 
 Notation "x |: s" := (fsetU1 s x) : fset_scope.
 Notation "s1 :|: s2" := (fsetU s1 s2) : fset_scope.
@@ -111,7 +109,7 @@ Variables (T : ordType).
 Local Open Scope ord_scope.
 Local Open Scope fset_scope.
 
-Implicit Types (s : {fset T}) (x y : T).
+Implicit Types (s : {fset T}) (x y : T) (xs : seq T).
 
 Lemma eq_fset s1 s2 : s1 =i s2 -> s1 = s2.
 Proof.
@@ -135,6 +133,18 @@ rewrite /= !inE /= ![in LHS]fun_if !inE.
 case: (Ord.ltgtP y z) =>[//|z_lt_y |<-].
   by rewrite IH ?(path_sorted Ps) //; bool_congr.
 by rewrite orbA orbb.
+Qed.
+
+Lemma size_fsetU1 s x : size (x |: s) = (x \notin s) + size s.
+Proof.
+rewrite /fsetU1 /= [in RHS]inE /=; move: (valP s)=>/=; move: (s : seq _).
+elim{s} => [|x' xs IH] //=.
+rewrite inE negb_or; case: Ord.ltgtP=> //=.
+  move=> xx' hxs {IH}; suff -> : x \notin xs by [].
+  apply/negP=> /(allP (order_path_min (@Ord.lt_trans T) hxs)).
+  by rewrite Ord.ltNge (Ord.ltW xx').
+move=> x'x hxs; move: IH => /(_ (path_sorted hxs)) ->.
+by rewrite addnS.
 Qed.
 
 Lemma in_fsetU x s1 s2 : (x \in s1 :|: s2) = (x \in s1) || (x \in s2).
@@ -178,6 +188,21 @@ Proof. by rewrite fsetUC fsubsetUl. Qed.
 
 Lemma in_mkfset x xs : (x \in mkfset xs) = (x \in xs).
 Proof. by elim: xs => [|x' xs IH] //=; rewrite in_fsetU1 IH inE. Qed.
+
+Lemma mkfset_cons x xs : mkfset (x :: xs) = x |: mkfset xs.
+Proof. by []. Qed.
+
+Lemma uniq_fset s : uniq s.
+Proof. exact: (sorted_uniq (@Ord.lt_trans T) (@Ord.ltxx T) (valP s)). Qed.
+
+Lemma size_mkfset xs : size (mkfset xs) <= size xs.
+Proof.
+have fsub: {subset mkfset xs <= xs} by move=> x; rewrite in_mkfset.
+exact: (uniq_leq_size (uniq_fset _) fsub).
+Qed.
+
+Lemma uniq_size_mkfset xs : uniq xs = (size xs == size (mkfset xs)).
+Proof. exact: (uniq_size_uniq (uniq_fset _) (fun x => in_mkfset x _)). Qed.
 
 End Properties.
 
@@ -238,3 +263,63 @@ by elim/big_rec: _ => [|i _ Pi _ /fsetUP[|//]]; [rewrite inE | exists i].
 Qed.
 
 End BigSetOps.
+
+Section Image.
+
+Variables T S : ordType.
+
+Implicit Type s : {fset T}.
+
+Definition imfset (f : T -> S) s := mkfset (map f s).
+
+End Image.
+
+Notation "f @: s" := (imfset f s) (at level 24) : fset_scope.
+
+Prenex Implicits imfset.
+
+Section CardImage.
+
+Local Open Scope fset_scope.
+
+Variables T S : ordType.
+
+Implicit Types (s : {fset T}) (f : T -> S).
+
+Lemma size_imfset f s : size (f @: s) <= size s.
+Proof.
+by rewrite /imfset (leq_trans (size_mkfset (map f s))) // size_map.
+Qed.
+
+Lemma imfset_injP f s : reflect {in s &, injective f} (size (f @: s) == size s).
+Proof.
+case: s => [s Ps] /=; rewrite /imfset /=.
+suff h: reflect {in s &, injective f}
+                (size (mkfset [seq f i | i <- s]) == size s).
+  by apply/(iffP h); move=> {h} h x1 x2; rewrite ?inE /=; apply: h.
+elim: s Ps => [|x s IH] Ps; first by constructor.
+rewrite map_cons mkfset_cons size_fsetU1 /=; apply/(iffP idP).
+  have [hin|hnin] := boolP (_ \in _).
+    rewrite add0n=> /eqP hs.
+    suff: size (mkfset (map f s)) < (size s).+1 by rewrite -hs ltnn.
+    by rewrite ltnS (leq_trans (size_mkfset (map f s))) // size_map leqnn.
+    rewrite add1n eqSS => /IH hinj x1 x2.
+    rewrite !inE=> /orP [/eqP ?|x1_in_s] /orP [/eqP ?|x2_in_s].
+    - by subst x1 x2.
+    - subst x1=> h; apply/eqP; apply: contraNT hnin => _.
+      by rewrite h in_mkfset; apply/mapP; exists x2.
+    - subst x2=> h; apply/eqP; apply: contraNT hnin => _.
+      by rewrite -h in_mkfset; apply/mapP; exists x1.
+    rewrite /= in Ps; move/path_sorted in Ps; move/(_ Ps) in hinj.
+    by apply: hinj x1_in_s x2_in_s.
+move=> hinj; have [hin|hnin] /= := boolP (_ \in _).
+  move: hin; rewrite in_mkfset; move/mapP=> [y Py Px].
+  move: {hinj}(hinj x y); rewrite !inE eqxx Py orbT /= => /(_ erefl erefl Px).
+  move=> ?; subst y.
+  move: Ps => /= /(order_path_min (@Ord.lt_trans T))/allP/(_ _ Py).
+  by rewrite Ord.ltxx.
+rewrite eqSS; apply/IH; first by apply: path_sorted.
+by move=> y z Py Pz; apply: hinj; rewrite inE ?Py ?Pz orbT.
+Qed.
+
+End CardImage.
