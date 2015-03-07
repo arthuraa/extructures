@@ -147,6 +147,22 @@ case: (Ord.ltgtP y z) =>[//|z_lt_y |<-].
 by rewrite orbA orbb.
 Qed.
 
+CoInductive fset_spec : {fset T} -> Type :=
+| FSetSpec0 : fset_spec fset0
+| FSetSpecS x s of x \notin s : fset_spec (x |: s).
+
+Lemma fsetP s : fset_spec s.
+Proof.
+case: s=> [[|x xs] /= Pxs]; first by rewrite eq_axiomK; apply: FSetSpec0.
+have Pxs' := path_sorted Pxs.
+set s' : {fset T} := FSet.FSet Pxs'; set s : {fset T} := FSet.FSet _.
+have x_nin_s : x \notin s'.
+  apply/negP=> /(allP (order_path_min (@Ord.lt_trans T) Pxs)).
+  by rewrite Ord.ltxx.
+suff ->: s = x |: s' by apply: FSetSpecS.
+by apply/eq_fset=> x'; rewrite in_fsetU1 !inE.
+Qed.
+
 Lemma fset_rect (P : {fset T} -> Type) :
   P fset0 ->
   (forall x s, x \notin s -> P s -> P (x |: s)) ->
@@ -295,6 +311,33 @@ rewrite fsubU1set size_fsetU1 (size_fsetD1 x s2) Px add1n.
 case/andP=> [-> ]; rewrite ltnS=> /fsubsetP hs1s2.
 apply: IH; apply/fsubsetP=> x' Hx'; rewrite in_fsetD1 hs1s2 // andbT.
 by apply: contra Px=> /eqP <-.
+Qed.
+
+Lemma sizes_eq0 s : (size s == 0) = (s == fset0).
+Proof.
+case: s / fsetP=> [|x s Px] //.
+rewrite size_fsetU1 Px /= add1n eqE /=.
+apply/esym/negbTE/eqP=> h; move: (in_fset0 x); rewrite -h.
+by rewrite in_fsetU1 eqxx.
+Qed.
+
+Lemma fsubset_sizeP s1 s2 :
+  size s1 = size s2 -> reflect (s1 = s2) (fsubset s1 s2).
+Proof.
+elim/fset_rect: s1 s2=> [|x s1 Px IH] s2.
+  rewrite size_fset0 => /esym/eqP; rewrite sizes_eq0=> /eqP ->.
+  by rewrite fsubsetxx; constructor.
+rewrite size_fsetU1 Px add1n fsubU1set => h_size.
+apply/(iffP idP)=> [/andP [x_in_s2 hs1s2]|].
+  have ->: s2 = x |: s2 :\ x.
+    apply/eq_fset=> x'; rewrite in_fsetU1 in_fsetD1 orb_andr orbN /=.
+    by have [->|] := altP (x' =P x).
+  congr fsetU1; apply: IH.
+    by move: h_size; rewrite (size_fsetD1 x s2) x_in_s2 add1n=> - [?].
+  apply/fsubsetP=> x' x'_in_s1; rewrite in_fsetD1 (fsubsetP _ _ hs1s2) //.
+  by rewrite andbT; apply: contraTN x'_in_s1 => /eqP ->.
+move=> hs2; rewrite -{}hs2 {s2} in h_size *.
+by rewrite in_fsetU1 eqxx /= fsetU1E fsubsetUr.
 Qed.
 
 End Properties.
@@ -451,5 +494,12 @@ case/andP=> [/fsubsetP s1s2 /fsubsetP s2s1]; apply/eqP/eq_fset=> x.
 by apply/(sameP idP)/(iffP idP); eauto.
 Qed.
 
-End Card.
+Lemma eqEfsize s1 s2 : (s1 == s2) = (fsubset s1 s2) && (size s2 <= size s1).
+Proof.
+apply/(sameP idP)/(iffP idP)=> [/andP [hsub hsize]|/eqP ->]; last first.
+  by rewrite fsubsetxx leqnn.
+apply/eqP/fsubset_sizeP=> //; apply/eqP; rewrite eqn_leq hsize andbT.
+by apply: fsubset_leq_size.
+Qed.
 
+End Card.
