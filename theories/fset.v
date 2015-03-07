@@ -60,6 +60,8 @@ Local Open Scope ord_scope.
 
 Definition fset0 := @fset T [::] erefl.
 
+Definition fset1 x := @fset T [:: x] erefl.
+
 Fixpoint fsetU1' (s : seq T) x : seq T :=
   if s is x' :: s' then
     if x < x' then x :: s
@@ -133,6 +135,9 @@ Qed.
 Lemma in_fset0 x : x \in fset0 = false.
 Proof. by []. Qed.
 
+Lemma in_fset1 x y : x \in fset1 y = (x == y).
+Proof. by rewrite inE. Qed.
+
 Lemma in_fsetU1 x y s : x \in y |: s = (x == y) || (x \in s).
 Proof.
 case: s => s Ps; rewrite !inE /=; elim: s Ps => [|z s IH /=] // Ps.
@@ -142,7 +147,7 @@ case: (Ord.ltgtP y z) =>[//|z_lt_y |<-].
 by rewrite orbA orbb.
 Qed.
 
-Lemma fset_ind (P : {fset T} -> Prop) :
+Lemma fset_rect (P : {fset T} -> Type) :
   P fset0 ->
   (forall x s, x \notin s -> P s -> P (x |: s)) ->
   forall s, P s.
@@ -156,6 +161,11 @@ have x_nin_s : x \notin s.
 suff ->: s' = x |: s by eauto.
 by apply/eq_fset=> x'; rewrite in_fsetU1 !inE.
 Qed.
+
+Definition fset_ind (P : {fset T} -> Prop) :
+  P fset0 ->
+  (forall x s, x \notin s -> P s -> P (x |: s)) ->
+  forall s, P s := @fset_rect P.
 
 Lemma size_fset0 : size (fset0 : {fset T}) = 0.
 Proof. by []. Qed.
@@ -177,6 +187,12 @@ Proof.
 case: s1=> [/= s1 Ps1]; rewrite /fsetU !inE /= {Ps1}.
 by elim: s1=> [|y s1 IH] //=; rewrite in_fsetU1 IH inE; bool_congr.
 Qed.
+
+Lemma fsetU1P x y s : reflect (x = y \/ x \in s) (x \in y |: s).
+Proof. by rewrite in_fsetU1; apply/predU1P. Qed.
+
+Lemma fsetU1E y s : y |: s = fset1 y :|: s.
+Proof. by apply/eq_fset=> x; rewrite in_fsetU1. Qed.
 
 Lemma fsetUP x s1 s2 : reflect (x \in s1 \/ x \in s2) (x \in s1 :|: s2).
 Proof. by rewrite in_fsetU; apply/orP. Qed.
@@ -347,6 +363,8 @@ Variables T S : ordType.
 
 Implicit Type s : {fset T}.
 
+Local Open Scope fset_scope.
+
 Definition imfset (f : T -> S) s := mkfset (map f s).
 
 Lemma imfsetP f s x :
@@ -358,6 +376,27 @@ apply/(iffP idP).
 move=> [y Py {x}->]; rewrite /imfset in_mkfset.
 by apply/mapP; eauto.
 Qed.
+
+Lemma mem_imfset f x s : x \in s -> f x \in imfset f s.
+Proof. by move=> Px; apply/imfsetP; eauto. Qed.
+
+Lemma imfset0 f : imfset f fset0 = fset0.
+Proof. by []. Qed.
+
+Lemma imfset1 f x : imfset f (fset1 x) = fset1 (f x).
+Proof. by apply/eq_fset=> y; rewrite in_fset1. Qed.
+
+Lemma imfsetU f s1 s2 : imfset f (s1 :|: s2) = imfset f s1 :|: imfset f s2.
+Proof.
+apply/eq_fset=> y; apply/(sameP idP)/(iffP idP)=> [/fsetUP|/imfsetP].
+  move=> [|] => /imfsetP [x' x'_in_s ->{y}]; apply/imfsetP;
+  exists x'=> //; apply/fsetUP; eauto.
+by move=> [y' /fsetUP [?|?] -> {y}]; apply/fsetUP; [left|right]; apply/imfsetP;
+eauto.
+Qed.
+
+Lemma imfsetU1 f x s : imfset f (x |: s) = f x |: imfset f s.
+Proof. by rewrite fsetU1E imfsetU imfset1 fsetU1E. Qed.
 
 End Image.
 
@@ -378,35 +417,23 @@ Proof.
 by rewrite /imfset (leq_trans (size_mkfset (map f s))) // size_map.
 Qed.
 
-Lemma imfset_injP f s : reflect {in s &, injective f} (size (f @: s) == size s).
+Lemma imfset_injP f s :
+  reflect {in s &, injective f} (size (f @: s) == size s).
 Proof.
-case: s => [s Ps] /=; rewrite /imfset /=.
-suff h: reflect {in s &, injective f}
-                (size (mkfset [seq f i | i <- s]) == size s).
-  by apply/(iffP h); move=> {h} h x1 x2; rewrite ?inE /=; apply: h.
-elim: s Ps => [|x s IH] Ps; first by constructor.
-rewrite map_cons mkfset_cons size_fsetU1 /=; apply/(iffP idP).
-  have [hin|hnin] := boolP (_ \in _).
-    rewrite add0n=> /eqP hs.
-    suff: size (mkfset (map f s)) < (size s).+1 by rewrite -hs ltnn.
-    by rewrite ltnS (leq_trans (size_mkfset (map f s))) // size_map leqnn.
-    rewrite add1n eqSS => /IH hinj x1 x2.
-    rewrite !inE=> /orP [/eqP ?|x1_in_s] /orP [/eqP ?|x2_in_s].
-    - by subst x1 x2.
-    - subst x1=> h; apply/eqP; apply: contraNT hnin => _.
-      by rewrite h in_mkfset; apply/mapP; exists x2.
-    - subst x2=> h; apply/eqP; apply: contraNT hnin => _.
-      by rewrite -h in_mkfset; apply/mapP; exists x1.
-    rewrite /= in Ps; move/path_sorted in Ps; move/(_ Ps) in hinj.
-    by apply: hinj x1_in_s x2_in_s.
-move=> hinj; have [hin|hnin] /= := boolP (_ \in _).
-  move: hin; rewrite in_mkfset; move/mapP=> [y Py Px].
-  move: {hinj}(hinj x y); rewrite !inE eqxx Py orbT /= => /(_ erefl erefl Px).
-  move=> ?; subst y.
-  move: Ps => /= /(order_path_min (@Ord.lt_trans T))/allP/(_ _ Py).
-  by rewrite Ord.ltxx.
-rewrite eqSS; apply/IH; first by apply: path_sorted.
-by move=> y z Py Pz; apply: hinj; rewrite inE ?Py ?Pz orbT.
+elim/fset_rect: s => [|x s Px IH]; first by rewrite imfset0 eqxx; constructor.
+rewrite imfsetU1 !size_fsetU1 Px add1n /=; apply/(iffP idP).
+  have [hin|hnin] /= := boolP (f x \in _).
+    by rewrite add0n=> /eqP him; move: (size_imfset f s); rewrite him ltnn.
+  rewrite add1n eqSS
+    => /IH hinj y1 y2 /fsetU1P[->{y1}|hy1] /fsetU1P[->{y2}|hy2] //=;
+    last by eauto.
+    by move=> hfx; rewrite hfx (mem_imfset f hy2) in hnin.
+  by move=> hfx; rewrite -hfx (mem_imfset f hy1) in hnin.
+move=> hinj; have /IH/eqP ->: {in s &, injective f}.
+  by move=> y1 y2 hy1 hy2 /=; apply:hinj; apply/fsetU1P; auto.
+suff ->: f x \notin f @: s by [].
+apply: contra Px=> /imfsetP [x' Px' hfx']; suff -> : x = x' by [].
+by apply: hinj _ _ hfx'; apply/fsetU1P; auto.
 Qed.
 
 End CardImage.
