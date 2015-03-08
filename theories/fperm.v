@@ -229,8 +229,9 @@ Local Open Scope fperm_scope.
 
 Implicit Types (s : {fperm T}) (x y : T).
 
-Lemma eq_fperm s1 s2 : s1 =1 s2 -> s1 = s2.
+Lemma eq_fperm s1 s2 : s1 =1 s2 <-> s1 = s2.
 Proof.
+split; last congruence.
 have Pval: forall s x, val s x != Some x.
   move=> {s1 s2} s x; apply/eqP=> Px.
   have Px': x \in domm (val s) by rewrite mem_domm Px.

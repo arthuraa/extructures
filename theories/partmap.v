@@ -295,8 +295,9 @@ rewrite /mkpartmapf; elim: ks => [|k' ks IH] //=.
 by rewrite setmE inE {}IH; have [<-|?] := altP (k =P k').
 Qed.
 
-Lemma eq_partmap m1 m2 : m1 =1 m2 -> m1 = m2.
+Lemma eq_partmap m1 m2 : m1 =1 m2 <-> m1 = m2.
 Proof.
+split; last congruence.
 have in_seq: forall s : seq (T * S), [pred k | getm_def s k] =i [seq p.1 | p <- s].
   elim=> [|p s IH] k; rewrite /= !inE // -IH inE.
   by case: (k == p.1).
@@ -342,19 +343,19 @@ Proof. by []. Qed.
 
 Lemma unionm0 : right_id (@emptym T S) unionm.
 Proof.
-move=> m; apply: eq_partmap=> k; rewrite unionmE emptymP /=.
+move=> m; apply/eq_partmap=> k; rewrite unionmE emptymP /=.
 by case: (m k).
 Qed.
 
 Lemma unionmA : associative (@unionm T S).
 Proof.
-move=> m1 m2 m3; apply: eq_partmap=> k; rewrite !unionmE.
+move=> m1 m2 m3; apply/eq_partmap=> k; rewrite !unionmE.
 by case: (m1 k).
 Qed.
 
 Lemma unionmI : idempotent (@unionm T S).
 Proof.
-move=> m; apply: eq_partmap=> k; rewrite !unionmE.
+move=> m; apply/eq_partmap=> k; rewrite !unionmE.
 by case: (m k).
 Qed.
 

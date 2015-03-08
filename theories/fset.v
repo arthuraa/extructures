@@ -120,8 +120,9 @@ Local Open Scope fset_scope.
 
 Implicit Types (s : {fset T}) (x y : T) (xs : seq T).
 
-Lemma eq_fset s1 s2 : s1 =i s2 -> s1 = s2.
+Lemma eq_fset s1 s2 : s1 =i s2 <-> s1 = s2.
 Proof.
+split; last congruence.
 case: s1 s2 => [s1 Ps1] [s2 Ps2] /= E; apply/val_inj=> /=.
 have anti: antisymmetric (@Ord.lt T).
   move=> x y /andP [/Ord.ltW xy /Ord.ltW yx].
