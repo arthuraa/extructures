@@ -340,6 +340,21 @@ move=> hs2; rewrite -{}hs2 {s2} in h_size *.
 by rewrite in_fsetU1 eqxx /= fsetU1E fsubsetUr.
 Qed.
 
+Definition fpick P s := ohead (fset_filter P s).
+
+CoInductive fpick_spec (P : pred T) s : option T -> Type :=
+| FPickSome x of P x & x \in s : fpick_spec P s (Some x)
+| FPickNone of (forall x, x \in s -> ~~ P x) : fpick_spec P s None.
+
+Lemma fpickP P s : fpick_spec P s (fpick P s).
+Proof.
+rewrite /fpick; case E: (val (fset_filter P s))=> [|x xs] /=.
+  constructor=> x x_in_s; apply/negP => Px.
+  by move: (in_fset_filter P s x); rewrite inE E Px x_in_s.
+move: (in_fset_filter P s x); rewrite inE E inE eqxx /=.
+by case/esym/andP=> ??; constructor.
+Qed.
+
 End Properties.
 
 Section setOpsAlgebra.
@@ -446,6 +461,31 @@ End Image.
 Notation "f @: s" := (imfset f s) (at level 24) : fset_scope.
 
 Prenex Implicits imfset.
+
+Section ImageProps.
+
+Local Open Scope fset_scope.
+
+Variables T S R : ordType.
+
+Implicit Types (s : {fset T}) (f : T -> S) (g : S -> R).
+
+Lemma imfset_comp f g s : (g \o f) @: s = g @: (f @: s).
+Proof.
+apply/eq_fset=> x; apply/(sameP idP)/(iffP idP).
+  case/imfsetP=> [y /imfsetP [z Pz ->] ->].
+  by apply/imfsetP; eauto.
+case/imfsetP=> [y /= Py ->]; apply/imfsetP; exists (f y)=> //.
+exact: mem_imfset.
+Qed.
+
+Lemma imfsetS f s1 s2 : fsubset s1 s2 -> fsubset (f @: s1) (f @: s2).
+Proof.
+move/fsubsetP=> h_sub; apply/fsubsetP=> x /imfsetP [y /h_sub Py ->].
+by apply: mem_imfset.
+Qed.
+
+End ImageProps.
 
 Section CardImage.
 

@@ -1,6 +1,6 @@
 Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
 Require Import Ssreflect.ssrnat Ssreflect.eqtype Ssreflect.seq.
-Require Import Ssreflect.choice.
+Require Import Ssreflect.choice Ssreflect.fintype.
 
 Require Import MathComp.path MathComp.bigop.
 
@@ -19,7 +19,8 @@ Variables (T : ordType).
 Local Open Scope ord_scope.
 
 Definition axiom (f : {partmap T -> T}) :=
-  let xs := unzip1 f in
+  let xs := keys f in
+  injectivem f &&
   all (fun x => let y := odflt x (f x) in (y \in xs) && (y != x)) xs.
 
 Record fperm_type := FPerm {
@@ -53,39 +54,170 @@ Definition fun_of_fperm T (s : FPerm.fperm_type T) x :=
 
 Coercion fun_of_fperm : FPerm.fperm_type >-> Funclass.
 
-Definition fperm (T : ordType) (m : {partmap T -> T}) (Pm : FPerm.axiom m)
-                 : {fperm T} :=
-  FPerm.FPerm Pm.
-
 Section Operations.
 
 Variable T : ordType.
 
 Implicit Types (s : {fperm T}) (x : T).
 
-Lemma fperm_mul_subproof s1 s2 :
-  FPerm.axiom (mkpartmap (pmap (fun p => if s1 p.2 == p.1 then None
-                                         else Some (p.1, s1 p.2))
-                               (val s2))).
+Local Open Scope fset_scope.
+
+Lemma fperm_inj s : injective s.
 Proof.
-admit.
+move=> x y; rewrite /fun_of_fperm.
+case ex: (val s x) => [x'|]; case ey: (val s y) => [y'|] //.
+- move=> ?; subst y'; move: (andP (valP s)).1 => /injectivemP/(_ x).
+  by rewrite inE ex=> /(_ erefl y (esym ey)).
+- move=> ?; subst x'; move: (andP (valP s)).2 => /allP/(_ x).
+  by rewrite keysP inE ex /= keysP inE ey /= => /(_ erefl).
+move=> ?; subst y'; move: (andP (valP s)).2 => /allP/(_ y).
+by rewrite keysP inE ey /= keysP inE ex /= => /(_ erefl).
+Qed.
+
+Definition supp s := keys (val s).
+
+Lemma imfset_supp s : s @: supp s = supp s.
+Proof.
+apply/eqP; rewrite eqEfsize; apply/andP; split.
+  apply/fsubsetP=> x /imfsetP [y Py -> {x}].
+  move/allP/(_ _ Py): (andP (valP s)).2=> /=.
+  rewrite /fun_of_fperm /=; case: (val s y)=> [z|] //=.
+  by case/andP.
+suff /eqP -> : size (s @: keys (val s)) == size (keys (val s)).
+  by rewrite leqnn.
+by apply/imfset_injP=> ????; apply: fperm_inj.
+Qed.
+
+Lemma mem_supp s x : (x \in supp s) = (s x != x).
+Proof.
+rewrite /supp keysP inE /fun_of_fperm.
+case s_x: (val s x)=> [y|] //=; last by rewrite eqxx.
+apply/esym.
+have x_in_s : x \in keys (val s) by rewrite keysP inE s_x.
+by move: (allP (andP (valP s)).2 _ x_in_s); rewrite s_x /= => /andP [].
+Qed.
+
+Lemma fperm_supp s x : (s x \in supp s) = (x \in supp s).
+Proof.
+rewrite -{1}imfset_supp; apply/(sameP idP)/(iffP idP).
+  by apply: mem_imfset.
+by case/imfsetP=> x' hx' /fperm_inj ->.
+Qed.
+
+Lemma imfset_supp_sub s X : fsubset (supp s) X -> s @: X = X.
+Proof.
+move=> h_sub; apply/eq_fset=> x; have h_im_sub := imfsetS s h_sub.
+have [in_supp|nin_supp] := boolP (x \in supp s).
+  rewrite (fsubsetP _ _ h_sub _ in_supp); move/fsubsetP: h_im_sub; apply.
+  by rewrite imfset_supp.
+move: nin_supp; rewrite mem_supp negbK =>/eqP ex.
+apply/(sameP idP)/(iffP idP); first by rewrite -{2}ex; apply: mem_imfset.
+case/imfsetP=> [y Py ey]; rewrite {2}ey in ex.
+by move/fperm_inj in ex; rewrite ex.
+Qed.
+
+Section Build.
+
+Variables (f : T -> T) (X : {fset T}).
+
+Hypothesis stable : f @: X = X.
+
+Lemma fperm_subproof : FPerm.axiom (filterm (fun x y => x != y)
+                                            (mkpartmapf X f)).
+Proof.
+have f_inj: {in X &, injective f}.
+  by apply/imfset_injP; rewrite stable.
+apply/andP; split.
+  apply/injectivemP=> x1; rewrite inE !getm_filter !getm_mkpartmapf.
+  have [hx1|] //= := boolP (x1 \in X).
+  have [efx1|efx1 _ x2] //= := altP (x1 =P f x1).
+  rewrite getm_filter getm_mkpartmapf.
+  have [hx2|] //= := boolP (x2 \in X).
+  by have [efx2|efx2 []] //= := altP (x2 =P f x2); eauto.
+apply/allP=> x /=; rewrite !keysP !inE getm_filter getm_mkpartmapf.
+have [x_in_X|] //= := boolP (x \in X).
+have [??|nfx _] //= := altP (x =P f x).
+rewrite getm_filter getm_mkpartmapf /= -stable (mem_imfset f x_in_X) /=.
+rewrite (eq_sym _ x) nfx andbT; have [efx|] //= := altP (_ =P f (f x)).
+rewrite -(negbTE nfx) {nfx}; apply/eqP.
+suff fx_in_X: f x \in X by apply: f_inj x_in_X fx_in_X efx.
+by rewrite -stable (mem_imfset _ x_in_X).
+Qed.
+
+Definition fperm : {fperm T} := FPerm.FPerm fperm_subproof.
+
+Lemma fpermE x : fperm x = if x \in X then f x else x.
+Proof.
+rewrite /fun_of_fperm /fperm /= getm_filter getm_mkpartmapf.
+have [x_in_X|] //= := boolP (x \in X).
+by have [<-|] := altP (x =P f x).
+Qed.
+
+End Build.
+
+Section Inverse.
+
+Variable s : {fperm T}.
+
+Local Notation inv_def := (fun x => odflt x (fpick (pred1 x \o s) (supp s))).
+
+Lemma fperm_inv_subproof : inv_def @: supp s = supp s.
+Proof.
+apply/eq_fset=> x; apply/(sameP idP)/(iffP idP).
+  move=> x_in_supp; apply/imfsetP; exists (s x).
+    by rewrite -imfset_supp (mem_imfset _ x_in_supp).
+  case: fpickP=> [y' /= /eqP/esym e _|/(_ _ x_in_supp) /=].
+    exact: fperm_inj e.
+  by rewrite eqxx.
+by case/imfsetP=> [y Py -> {x}]; case: fpickP.
+Qed.
+
+Definition fperm_inv := fperm fperm_inv_subproof.
+
+Lemma fpermK : cancel s fperm_inv.
+Proof.
+move=> x; rewrite fpermE; case: ifPn=> [x_in_supp|].
+  rewrite fperm_supp in x_in_supp.
+  case: fpickP => [y /= /eqP/esym /fperm_inj-> //|/(_ _ x_in_supp) /=].
+  by rewrite eqxx.
+by rewrite fperm_supp mem_supp negbK=> /eqP.
+Qed.
+
+Lemma fpermKV : cancel fperm_inv s.
+Proof.
+move=> x; rewrite fpermE; case: ifPn=> [x_in_supp|].
+  case: fpickP=> [x' /= /eqP/esym -> //|/=].
+  rewrite -imfset_supp in x_in_supp; case/imfsetP: x_in_supp=> [x' Px' ->].
+  by move/(_ _ Px'); rewrite eqxx.
+by rewrite mem_supp negbK => /eqP.
+Qed.
+
+Lemma supp_inv : supp fperm_inv = supp s.
+Proof.
+apply/eq_fset=> x; apply/(sameP idP)/(iffP idP).
+  by rewrite !mem_supp; apply: contra => /eqP {1}<-; rewrite fpermKV eqxx.
+by rewrite !mem_supp; apply: contra=> /eqP {1}<-; rewrite fpermK eqxx.
+Qed.
+
+Lemma fperm_suppV x : (fperm_inv x \in supp s) = (x \in supp s).
+Proof. by rewrite -{1}supp_inv fperm_supp supp_inv. Qed.
+
+End Inverse.
+
+Lemma fperm_mul_subproof s1 s2 :
+  (s1 \o s2) @: (supp s1 :|: supp s2) = supp s1 :|: supp s2.
+Proof.
+by rewrite imfset_comp !imfset_supp_sub // ?fsubsetUr // fsubsetUl.
 Qed.
 
 Definition fperm_mul s1 s2 := fperm (fperm_mul_subproof s1 s2).
 
-Definition fperm_inv_subproof s :
-  FPerm.axiom (mkpartmap (map (fun p => (p.2, p.1)) (val s))).
+Lemma fpermM s1 s2 : fperm_mul s1 s2 =1 s1 \o s2.
 Proof.
-admit.
+move=> x; rewrite fpermE; have [|nin_supp] //= := boolP (x \in _).
+rewrite in_fsetU negb_or !mem_supp !negbK in nin_supp.
+by case/andP: nin_supp=> [/eqP h1 /eqP ->]; rewrite h1.
 Qed.
-
-Definition fpcycle s x :=
-  let fix loop y n :=
-    if n is n'.+1 then
-      y :: if s y == x then [::]
-           else loop (s y) n'
-    else [:: y] in
-  mkfset (loop x (size (val s))).
 
 End Operations.
 
@@ -101,9 +233,9 @@ Lemma eq_fperm s1 s2 : s1 =1 s2 -> s1 = s2.
 Proof.
 have Pval: forall s x, val s x != Some x.
   move=> {s1 s2} s x; apply/eqP=> Px.
-  have Px': x \in unzip1 (val s).
-    by apply/mapP; exists (x, x)=> //; apply/getm_in.
-  by move: (allP (valP s) x Px') => {Px'} /=; rewrite Px /= eqxx andbF.
+  have Px': x \in keys (val s).
+    by rewrite keysP inE Px.
+  by move: (allP (andP (valP s)).2 x Px') => {Px'} /=; rewrite Px /= eqxx andbF.
 move=> Ps1s2; apply/val_inj/eq_partmap => x.
 move: (Ps1s2 x); rewrite /fun_of_fperm.
 case Ps1: (val s1 x)=> [y1|] //; case Ps2: (val s2 x)=> [y2|] //.
