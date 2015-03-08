@@ -387,7 +387,7 @@ have [e_k [e_v]|n_k get_k] := altP (k =P k').
 by rewrite inE IH // orbT.
 Qed.
 
-Lemma mkpartmap_def (kvs : seq (T * S)) k v
+Lemma mkpartmap_Some (kvs : seq (T * S)) k v
   : mkpartmap kvs k = Some v -> (k, v) \in kvs.
 Proof.
 elim: kvs => [|[k' v'] kvs IH] //=; rewrite getm_set.
@@ -455,7 +455,7 @@ Implicit Type (m : {partmap T -> S}).
 
 Lemma getm_inv m k k' : invm m k = Some k' -> m k' = Some k.
 Proof.
-rewrite /invm =>/mkpartmap_def/mapP [[h h'] /getmP get_k /= [??]].
+rewrite /invm =>/mkpartmap_Some/mapP [[h h'] /getmP get_k /= [??]].
 by subst h h'.
 Qed.
 
@@ -480,7 +480,7 @@ Qed.
 Lemma invmE m k : obind m (invm m k) = if invm m k then Some k else None.
 Proof.
 case get_k: (invm m k) => [k'|] //=.
-rewrite /invm in get_k; move/mkpartmap_def/mapP in get_k.
+rewrite /invm in get_k; move/mkpartmap_Some/mapP in get_k.
 by case: get_k => [[h h'] /getmP get_k [??]]; subst k k'.
 Qed.
 
