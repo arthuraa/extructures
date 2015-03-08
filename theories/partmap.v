@@ -206,7 +206,7 @@ Proof.
 by rewrite mem_domm; case: (m k) => /=; constructor; eauto; case.
 Qed.
 
-Lemma getm_set m k v k' :
+Lemma setmE m k v k' :
   setm m k v k' =
   if k' == k then Some v else getm m k'.
 Proof.
@@ -216,42 +216,39 @@ have [->{k'}|Hne] := altP (k' =P k); case: (Ord.ltgtP k) => //.
 by move=> <-; rewrite (negbTE Hne).
 Qed.
 
-Lemma getm_rep m m' k f :
+Lemma repmE m m' k f :
   repm m k f = Some m' ->
   forall k', m' k' = if k' == k then omap f (m k) else getm m k'.
 Proof.
-rewrite /repm.
-case: (m k) => [v [<-]|] //= k'.
-by rewrite getm_set.
+by rewrite /repm; case: (m k) => [v [<-]|] //= k'; rewrite setmE.
 Qed.
 
 Lemma updm_set m m' k v :
   updm m k v = Some m' -> m' = setm m k v.
 Proof. by rewrite /updm; case: (getm m _) => [m''|] //= [<-]. Qed.
 
-Lemma getm_union m1 m2 k : unionm m1 m2 k = if m1 k then m1 k else m2 k.
+Lemma unionmE m1 m2 k : unionm m1 m2 k = if m1 k then m1 k else m2 k.
 Proof.
 case: m1 => [m1 Pm1]; rewrite /unionm {2 3}/getm /= {Pm1}.
 elim: m1 => [|p m1 IH] //=.
-by rewrite getm_set {}IH; case: (_ == _).
+by rewrite setmE {}IH; case: (_ == _).
 Qed.
 
 Lemma domm_union m1 m2 : domm (unionm m1 m2) = domm m1 :|: domm m2.
 Proof.
-apply/eq_fset=> k; rewrite in_fsetU !mem_domm getm_union.
-by case: (m1 k).
+by apply/eq_fset=> k; rewrite in_fsetU !mem_domm unionmE; case: (m1 k).
 Qed.
 
 Lemma emptymP : @emptym T S =1 [fun : T => None].
 Proof. by []. Qed.
 
-Lemma getm_map S' (f : S -> S') m : mapm f m =1 omap f \o m.
+Lemma mapmE S' (f : S -> S') m : mapm f m =1 omap f \o m.
 Proof.
 case: m=> [s Ps] k; rewrite /mapm /getm /=.
 by elim: s {Ps}=> [|[k' v] s IH] //=; rewrite {}IH ![in RHS]fun_if /=.
 Qed.
 
-Lemma getm_filter a m k :
+Lemma filtermE a m k :
   filterm a m k = obind (fun x => if a k x then Some x else None) (m k).
 Proof.
 case: m=> [s Ps]; rewrite /filterm /getm /=.
@@ -263,7 +260,7 @@ elim: s {Ps} (order_path_min (@Ord.lt_trans _) Ps)
 by move: lb; have [->|//] := altP (_ =P _); rewrite Ord.ltxx.
 Qed.
 
-Lemma getm_rem m k k' :
+Lemma remmE m k k' :
   remm m k k' =
   if k' == k then None else getm m k'.
 Proof.
@@ -282,20 +279,20 @@ Qed.
 Lemma domm_mkpartmap (kvs : seq (T * S)) : domm (mkpartmap kvs) =i unzip1 kvs.
 Proof.
 move=> k; rewrite mem_domm.
-elim: kvs => [|kv kvs IH] //=; rewrite !inE getm_set -{}IH.
+elim: kvs => [|kv kvs IH] //=; rewrite !inE setmE -{}IH.
 by case: (_ == _).
 Qed.
 
-Lemma getm_mkpartmap (kvs : seq (T * S)) : mkpartmap kvs =1 getm_def kvs.
+Lemma mkpartmapE (kvs : seq (T * S)) : mkpartmap kvs =1 getm_def kvs.
 Proof.
-by move=> k; elim: kvs=> [|p kvs IH] //=; rewrite getm_set IH.
+by move=> k; elim: kvs=> [|p kvs IH] //=; rewrite setmE IH.
 Qed.
 
-Lemma getm_mkpartmapf (ks : seq T) (f : T -> S) k :
+Lemma mkpartmapfE (ks : seq T) (f : T -> S) k :
   mkpartmapf ks f k = if k \in ks then Some (f k) else None.
 Proof.
 rewrite /mkpartmapf; elim: ks => [|k' ks IH] //=.
-by rewrite getm_set inE {}IH; have [<-|?] := altP (k =P k').
+by rewrite setmE inE {}IH; have [<-|?] := altP (k =P k').
 Qed.
 
 Lemma eq_partmap m1 m2 : m1 =1 m2 -> m1 = m2.
@@ -336,7 +333,7 @@ Qed.
 
 Lemma setmI m k v : m k = Some v -> setm m k v = m.
 Proof.
-move=> get_k; apply/eq_partmap=> k'; rewrite getm_set.
+move=> get_k; apply/eq_partmap=> k'; rewrite setmE.
 by have [->{k'}|//] := altP (_ =P _); rewrite get_k.
 Qed.
 
@@ -345,19 +342,19 @@ Proof. by []. Qed.
 
 Lemma unionm0 : right_id (@emptym T S) unionm.
 Proof.
-move=> m; apply: eq_partmap=> k; rewrite getm_union emptymP /=.
+move=> m; apply: eq_partmap=> k; rewrite unionmE emptymP /=.
 by case: (m k).
 Qed.
 
 Lemma unionmA : associative (@unionm T S).
 Proof.
-move=> m1 m2 m3; apply: eq_partmap=> k; rewrite !getm_union.
+move=> m1 m2 m3; apply: eq_partmap=> k; rewrite !unionmE.
 by case: (m1 k).
 Qed.
 
 Lemma unionmI : idempotent (@unionm T S).
 Proof.
-move=> m; apply: eq_partmap=> k; rewrite !getm_union.
+move=> m; apply: eq_partmap=> k; rewrite !unionmE.
 by case: (m k).
 Qed.
 
@@ -390,7 +387,7 @@ Qed.
 Lemma mkpartmap_Some (kvs : seq (T * S)) k v
   : mkpartmap kvs k = Some v -> (k, v) \in kvs.
 Proof.
-elim: kvs => [|[k' v'] kvs IH] //=; rewrite getm_set.
+elim: kvs => [|[k' v'] kvs IH] //=; rewrite setmE.
 have [-> [->]|_ H] := altP (_ =P _); first by rewrite inE eqxx.
 by rewrite inE IH // orbT.
 Qed.

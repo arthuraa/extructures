@@ -128,16 +128,16 @@ Proof.
 have f_inj: {in X &, injective f}.
   by apply/imfset_injP; rewrite stable.
 apply/andP; split.
-  apply/injectivemP=> x1; rewrite mem_domm !getm_filter !getm_mkpartmapf.
+  apply/injectivemP=> x1; rewrite mem_domm !filtermE !mkpartmapfE.
   have [hx1|] //= := boolP (x1 \in X).
   have [efx1|efx1 _ x2] //= := altP (x1 =P f x1).
-  rewrite getm_filter getm_mkpartmapf.
+  rewrite filtermE mkpartmapfE.
   have [hx2|] //= := boolP (x2 \in X).
   by have [efx2|efx2 []] //= := altP (x2 =P f x2); eauto.
-apply/allP=> x /=; rewrite !mem_domm getm_filter getm_mkpartmapf.
+apply/allP=> x /=; rewrite !mem_domm filtermE mkpartmapfE.
 have [x_in_X|] //= := boolP (x \in X).
 have [??|nfx _] //= := altP (x =P f x).
-rewrite getm_filter getm_mkpartmapf /= -stable (mem_imfset f x_in_X) /=.
+rewrite filtermE mkpartmapfE /= -stable (mem_imfset f x_in_X) /=.
 rewrite (eq_sym _ x) nfx andbT; have [efx|] //= := altP (_ =P f (f x)).
 rewrite -(negbTE nfx) {nfx}; apply/eqP.
 suff fx_in_X: f x \in X by apply: f_inj x_in_X fx_in_X efx.
@@ -148,7 +148,7 @@ Definition fperm : {fperm T} := FPerm.FPerm fperm_subproof.
 
 Lemma fpermE x : fperm x = if x \in X then f x else x.
 Proof.
-rewrite /fun_of_fperm /fperm /= getm_filter getm_mkpartmapf.
+rewrite /fun_of_fperm /fperm /= filtermE mkpartmapfE.
 have [x_in_X|] //= := boolP (x \in X).
 by have [<-|] := altP (x =P f x).
 Qed.
