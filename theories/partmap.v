@@ -74,24 +74,24 @@ Implicit Type k : T.
 
 Local Open Scope ord_scope.
 
-Fixpoint getm' s k : option S :=
+Fixpoint getm_def s k : option S :=
   if s is p :: s then
     if k == p.1 then Some p.2
-    else getm' s k
+    else getm_def s k
   else None.
 
-Definition getm (m : PartMap.partmap_type T S) k := getm' m k.
+Definition getm (m : PartMap.partmap_type T S) k := getm_def m k.
 
-Fixpoint setm' s k v : seq (T * S) :=
+Fixpoint setm_def s k v : seq (T * S) :=
   if s is p :: s' then
     if k < p.1 then (k, v) :: s
     else if k == p.1 then (k, v) :: s'
-    else p :: setm' s' k v
+    else p :: setm_def s' k v
   else [:: (k, v)].
 
-Lemma setm_proof m k v : sorted (@Ord.lt T) (unzip1 (setm' m k v)).
+Lemma setm_subproof m k v : sorted (@Ord.lt T) (unzip1 (setm_def m k v)).
 Proof.
-have E: forall s, [seq p.1 | p <- setm' s k v] =i k :: [seq p.1 | p <- s].
+have E: forall s, [seq p.1 | p <- setm_def s k v] =i k :: unzip1 s.
   elim=> // p s /= IH k'; rewrite ![in X in X = _]fun_if /= !inE.
   rewrite IH inE.
   case: (Ord.ltgtP k p.1) => // H; try by bool_congr.
@@ -105,7 +105,7 @@ by rewrite !(eq_all_r (E s)) {E} /= lb andbT.
 Qed.
 
 Definition setm (m : {partmap T -> S}) k v :=
-  partmap (setm_proof m k v).
+  partmap (setm_subproof m k v).
 
 Definition repm (m : {partmap T -> S}) k f : option {partmap T -> S} :=
   omap (setm m k \o f) (getm m k).
@@ -116,13 +116,13 @@ Definition updm (m : {partmap T -> S}) k v :=
 Definition unionm (m1 m2 : {partmap T -> S}) :=
   foldr (fun p m => setm m p.1 p.2) m2 m1.
 
-Lemma mapm_proof S' (f : S -> S') m :
+Lemma mapm_subproof S' (f : S -> S') m :
   sorted (@Ord.lt T) (unzip1 (map (fun p => (p.1, f p.2)) m)).
 Proof. by rewrite /unzip1 -!map_comp; apply: (valP m). Qed.
 
-Definition mapm S' (f : S -> S') m := partmap (mapm_proof f m).
+Definition mapm S' (f : S -> S') m := partmap (mapm_subproof f m).
 
-Lemma filterm_proof (a : T -> S -> bool) m :
+Lemma filterm_subproof (a : T -> S -> bool) m :
   sorted (@Ord.lt T) (unzip1 [seq p | p <- m & a p.1 p.2]).
 Proof.
 rewrite (subseq_sorted _ _ (valP m)) //; first exact: Ord.lt_trans.
@@ -133,14 +133,14 @@ by rewrite (subseq_trans IH) // subseq_cons.
 Qed.
 
 Definition filterm (a : T -> S -> bool) (m : {partmap T -> S}) :=
-  partmap (filterm_proof a m).
+  partmap (filterm_subproof a m).
 
-Fixpoint remm' (s : seq (T * S)) k :=
+Fixpoint remm_def (s : seq (T * S)) k :=
   if s is p :: s then
-    if p.1 == k then s else p :: remm' s k
+    if p.1 == k then s else p :: remm_def s k
   else [::].
 
-Lemma remm_proof m k : sorted (@Ord.lt T) (unzip1 (remm' m k)).
+Lemma remm_subproof m k : sorted (@Ord.lt T) (unzip1 (remm_def m k)).
 Proof.
 apply/(subseq_sorted _ _ (valP m)); first exact: Ord.lt_trans.
 rewrite /=; elim: {m} (PartMap.pmval m) => // p s IH.
@@ -150,7 +150,7 @@ by rewrite /= eqxx.
 Qed.
 
 Definition remm m k :=
-  partmap (remm_proof m k).
+  partmap (remm_subproof m k).
 
 Definition emptym : {partmap T -> S} :=
   @partmap T S [::] erefl.
@@ -161,12 +161,7 @@ Definition mkpartmap (kvs : seq (T * S)) : {partmap T -> S} :=
 Definition mkpartmapf (ks : seq T) (f : T -> S) : {partmap T -> S} :=
   mkpartmap [seq (k, f k) | k <- ks].
 
-Definition keys m := mkfset (unzip1 m).
-
-Definition mem_partmap (m : {partmap T -> S}) :=
-  [pred k : T | getm m k].
-
-Canonical mem_partmap_predType := mkPredType mem_partmap.
+Definition domm m := mkfset (unzip1 m).
 
 End Operations.
 
@@ -180,18 +175,35 @@ Notation "[ 'partmap' kv1 ; .. ; kvn ]" :=
   (at level 0, format "[ 'partmap'  '[' kv1 ; '/' .. ; '/' kvn ']' ]")
   : form_scope.
 
+Section PredPartMap.
+
+Variables (T : ordType) (S : eqType).
+
+Definition mem_partmap (m : {partmap T -> S}) :=
+  [pred p : T * S | p \in val m].
+
+Canonical mem_partmap_predType := mkPredType mem_partmap.
+
+End PredPartMap.
+
 Section Properties.
 
 Variables (T : ordType) (S : Type).
 Local Open Scope ord_scope.
+Local Open Scope fset_scope.
 
 Implicit Type m : {partmap T -> S}.
 
-Lemma getmE m : [pred k | m k] =i [seq p.1 | p <- val m].
+Lemma mem_domm m k : k \in domm m = m k.
 Proof.
-case: m => [s Ps] k; rewrite /getm /= {Ps} inE.
-elim: s=> [|p s IH] //=; rewrite !inE [in LHS]fun_if /= {}IH.
-by case: (_ == _).
+rewrite inE /domm /= in_mkfset.
+case: m => [s Ps] /=; rewrite /getm /=.
+by elim: s {Ps} => [|p s IH] //=; rewrite inE IH; case: (k == p.1).
+Qed.
+
+Lemma dommP m k : reflect (exists v, m k = Some v) (k \in domm m).
+Proof.
+by rewrite mem_domm; case: (m k) => /=; constructor; eauto; case.
 Qed.
 
 Lemma getm_set m k v k' :
@@ -217,20 +229,17 @@ Lemma updm_set m m' k v :
   updm m k v = Some m' -> m' = setm m k v.
 Proof. by rewrite /updm; case: (getm m _) => [m''|] //= [<-]. Qed.
 
-Lemma mem_unionm (m1 m2 : {partmap T -> S}) k :
-  k \in unionm m1 m2 = (k \in m1) || (k \in m2).
-Proof.
-rewrite /unionm /=; case: m1=> [m1 Pm1] /=.
-rewrite [in X in X || _]/in_mem /= [in X in X || _]/getm /= {Pm1}.
-elim: m1 => [|p m1 IH] //=; rewrite {1}/in_mem /= getm_set.
-by case: (_ == _).
-Qed.
-
 Lemma getm_union m1 m2 k : unionm m1 m2 k = if m1 k then m1 k else m2 k.
 Proof.
 case: m1 => [m1 Pm1]; rewrite /unionm {2 3}/getm /= {Pm1}.
 elim: m1 => [|p m1 IH] //=.
 by rewrite getm_set {}IH; case: (_ == _).
+Qed.
+
+Lemma domm_union m1 m2 : domm (unionm m1 m2) = domm m1 :|: domm m2.
+Proof.
+apply/eq_fset=> k; rewrite in_fsetU !mem_domm getm_union.
+by case: (m1 k).
 Qed.
 
 Lemma emptymP : @emptym T S =1 [fun : T => None].
@@ -270,14 +279,14 @@ have [-> {k'}|ne'] // := altP (k' =P k).
 by rewrite eq_sym (negbTE ne).
 Qed.
 
-Lemma mem_mkpartmap (kvs : seq (T * S)) :
-  mkpartmap kvs =i [seq kv.1 | kv <- kvs].
+Lemma domm_mkpartmap (kvs : seq (T * S)) : domm (mkpartmap kvs) =i unzip1 kvs.
 Proof.
-move=> k; elim: kvs => [|kv kvs IH] //=; rewrite !inE getm_set -{}IH.
+move=> k; rewrite mem_domm.
+elim: kvs => [|kv kvs IH] //=; rewrite !inE getm_set -{}IH.
 by case: (_ == _).
 Qed.
 
-Lemma getm_mkpartmap (kvs : seq (T * S)) : mkpartmap kvs =1 getm' kvs.
+Lemma getm_mkpartmap (kvs : seq (T * S)) : mkpartmap kvs =1 getm_def kvs.
 Proof.
 by move=> k; elim: kvs=> [|p kvs IH] //=; rewrite getm_set IH.
 Qed.
@@ -291,7 +300,7 @@ Qed.
 
 Lemma eq_partmap m1 m2 : m1 =1 m2 -> m1 = m2.
 Proof.
-have in_seq: forall s : seq (T * S), [pred k | getm' s k] =i [seq p.1 | p <- s].
+have in_seq: forall s : seq (T * S), [pred k | getm_def s k] =i [seq p.1 | p <- s].
   elim=> [|p s IH] k; rewrite /= !inE // -IH inE.
   by case: (k == p.1).
 case: m1 m2 => [s1 Ps1] [s2 Ps2]; rewrite /getm /= => s1_s2.
@@ -315,7 +324,7 @@ rewrite Ord.leq_eqVlt=> /orP [/eqP k1_k2|k1_k2].
   rewrite {}IH // => k; move: {s1_s2} (s1_s2 k).
   have [-> {k} _|ne ?] // := altP (_ =P _).
   move: (in_seq s1 k1) (in_seq s2 k1); rewrite !inE.
-  case: (getm' s1 k1) (getm' s2 k1) => [v1'|] [v2'|] //=.
+  case: (getm_def s1 k1) (getm_def s2 k1) => [v1'|] [v2'|] //=.
   - by move=> _ /esym/(allP lb2) /=; rewrite Ord.ltxx.
   - by move=> /esym/(allP lb1) /=; rewrite Ord.ltxx.
   by move=> _ /esym/(allP lb2) /=; rewrite Ord.ltxx.
@@ -352,16 +361,6 @@ move=> m; apply: eq_partmap=> k; rewrite !getm_union.
 by case: (m k).
 Qed.
 
-Lemma mem_unzip1_partmap m : unzip1 m =i m.
-Proof.
-move=> x; rewrite !inE; case: m => [s Ps] /=; rewrite /getm /=.
-elim: s {Ps} => [|k s IH] //=.
-by rewrite inE IH; case: (x == k.1).
-Qed.
-
-Lemma keysP m : keys m =i m.
-Proof. by move=> x; rewrite inE /keys/= in_mkfset mem_unzip1_partmap. Qed.
-
 End Properties.
 
 Section EqType.
@@ -369,14 +368,14 @@ Section EqType.
 Variables (T : ordType) (S : eqType).
 Implicit Types (m : {partmap T -> S}) (k : T) (v : S).
 
-Lemma getm_in m k v : reflect (m k = Some v) ((k, v) \in (m : seq (T * S))).
+Lemma getmP m k v : reflect (m k = Some v) ((k, v) \in m).
 Proof.
-case: m => [s Ps] /=; apply/(iffP idP); rewrite /getm /=.
+case: m => [s Ps] /=; apply/(iffP idP); rewrite /getm /= inE /=.
   elim: s Ps => [|[k' v'] s IH] //= sorted_s.
   move/(_ (path_sorted sorted_s)) in IH.
   rewrite inE => /orP [/eqP [e_k e_v]|in_s].
     by rewrite -{}e_k -{}e_v {k' v' sorted_s} eqxx.
-  have [e_k|n_k] := altP (k =P k'); last by auto.
+  have [e_k {IH} |n_k] := altP (k =P k'); last by auto.
   rewrite -{}e_k {k'} in sorted_s.
   suff : Ord.lt k k by rewrite Ord.ltxx.
   move/allP: (order_path_min (@Ord.lt_trans T) sorted_s); apply.
@@ -388,8 +387,7 @@ have [e_k [e_v]|n_k get_k] := altP (k =P k').
 by rewrite inE IH // orbT.
 Qed.
 
-(* Find a good name for this *)
-Lemma getm_mkpartmap' (kvs : seq (T * S)) k v
+Lemma mkpartmap_def (kvs : seq (T * S)) k v
   : mkpartmap kvs k = Some v -> (k, v) \in kvs.
 Proof.
 elim: kvs => [|[k' v'] kvs IH] //=; rewrite getm_set.
@@ -399,16 +397,16 @@ Qed.
 
 Definition injectivem m := uniq (unzip2 m).
 
-Lemma injectivemP m : reflect {in m, injective m} (injectivem m).
+Lemma injectivemP m : reflect {in domm m, injective m} (injectivem m).
 Proof.
 apply/(iffP idP).
-  move=> inj_m k1; rewrite inE; case m_k1: (m k1) => [v|] // _.
-  move/getm_in in m_k1; move=> k2 /esym/getm_in.
+  move=> inj_m k1; rewrite mem_domm; case m_k1: (m k1) => [v|] // _.
+  move/getmP in m_k1; move=> k2 /esym/getmP.
   move: inj_m m_k1; rewrite /injectivem.
   have: uniq (unzip1 m).
     apply (sorted_uniq (@Ord.lt_trans T) (@Ord.ltxx T)).
     exact: (valP m).
-  elim: (val m) => [|[k' v'] s IH] //=.
+  rewrite !inE /=; elim: (val m) => [|[k' v'] s IH] //=.
   move=>/andP [k'_nin_s /IH {IH} IH] /andP [v'_nin_s /IH {IH} IH].
   rewrite !inE -pair_eqE /=.
   have [k1k'|k1k'] /= := altP (k1 =P k').
@@ -430,8 +428,8 @@ rewrite /injectivem map_inj_in_uniq.
   apply: (@map_uniq _ _ (@fst T S)).
   apply: (sorted_uniq (@Ord.lt_trans T) (@Ord.ltxx T)).
   exact: (valP m).
-move=> [k1 v] [k2 v'] /= /getm_in k1_in_m /getm_in k2_in_m ?; subst v'.
-move: (inj_m k1); rewrite inE k1_in_m => /(_ erefl k2 (esym k2_in_m)).
+move=> [k1 v] [k2 v'] /= /getmP k1_in_m /getmP k2_in_m ?; subst v'.
+move: (inj_m k1); rewrite mem_domm k1_in_m => /(_ erefl k2 (esym k2_in_m)).
 congruence.
 Qed.
 
@@ -457,21 +455,21 @@ Implicit Type (m : {partmap T -> S}).
 
 Lemma getm_inv m k k' : invm m k = Some k' -> m k' = Some k.
 Proof.
-rewrite /invm=> /getm_mkpartmap'/mapP [[h h'] /getm_in get_k /= [??]].
+rewrite /invm =>/mkpartmap_def/mapP [[h h'] /getmP get_k /= [??]].
 by subst h h'.
 Qed.
 
-Lemma invmP m k : reflect (exists k', m k' = Some k) (k \in invm m).
+Lemma invmP m k : reflect (exists k', m k' = Some k) (k \in domm (invm m)).
 Proof.
 apply/(iffP idP).
-  rewrite inE; case im_k: (invm m k) => [k'|] //= _.
-  rewrite -(getm_inv im_k); eauto.
-move=> [k' /getm_in m_k'].
-rewrite /invm mem_mkpartmap; apply/mapP; exists (k, k') => //.
+  rewrite mem_domm; case im_k: (invm m k) => [k'|] //= _.
+  by rewrite -(getm_inv im_k); eauto.
+move=> [k' /getmP m_k'].
+rewrite /invm domm_mkpartmap; apply/mapP; exists (k, k') => //.
 by apply/mapP; exists (k', k).
 Qed.
 
-Lemma invmPn m k : reflect (forall k', m k' != Some k) (k \notin invm m).
+Lemma invmPn m k : reflect (forall k', m k' != Some k) (k \notin domm (invm m)).
 Proof.
 apply/(iffP idP).
   by move=> h k'; apply: contra h=> /eqP h; apply/invmP; eauto.
@@ -479,11 +477,11 @@ move=> h; apply/negP=> /invmP [k' h'].
 by move: (h k'); rewrite h' eqxx.
 Qed.
 
-Lemma invmE m k : obind m (invm m k) = if k \in invm m then Some k else None.
+Lemma invmE m k : obind m (invm m k) = if invm m k then Some k else None.
 Proof.
-rewrite inE; case get_k: (invm m k) => [k'|] //=.
-rewrite /invm in get_k; move/getm_mkpartmap'/mapP in get_k.
-by case: get_k => [[h h'] /getm_in get_k [??]]; subst k k'.
+case get_k: (invm m k) => [k'|] //=.
+rewrite /invm in get_k; move/mkpartmap_def/mapP in get_k.
+by case: get_k => [[h h'] /getmP get_k [??]]; subst k k'.
 Qed.
 
 End Cancel.
@@ -495,16 +493,15 @@ Variables (T S : ordType).
 Implicit Type (m : {partmap T -> S}).
 
 Lemma invmEV m k :
-  {in m, injective m} ->
-  obind (invm m) (m k) = if k \in m then Some k else None.
+  {in domm m, injective m} ->
+  obind (invm m) (m k) = if m k then Some k else None.
 Proof.
-move=> inj_m; rewrite inE; case m_k: (m k) => [k'|] //=.
+move=> inj_m; case m_k: (m k) => [k'|] //=.
 move: (invmE m k').
-rewrite inE.
 case im_k': (invm m k') => [k''|] //=.
   move=> m_k''; congr Some; apply: inj_m; last by congruence.
-  by rewrite inE m_k''.
-have /invmPn/(_ k) : k' \notin invm m by rewrite inE im_k'.
+  by rewrite mem_domm m_k''.
+have /invmPn/(_ k) : k' \notin domm (invm m) by rewrite mem_domm im_k'.
 by rewrite m_k eqxx.
 Qed.
 
@@ -514,25 +511,25 @@ Variables (T S : ordType).
 
 Implicit Type (m : {partmap T -> S}).
 
-Lemma invm_inj m : {in invm m, injective (invm m)}.
+Lemma invm_inj m : {in domm (invm m), injective (invm m)}.
 Proof.
-move=> k1 in_im k2 h.
+move=> k1 in_im k2 h; rewrite mem_domm in in_im.
 have {h}: obind m (invm m k1) = obind m (invm m k2) by congruence.
 rewrite invmE {}in_im.
 case im_k2: (invm m k2) => [k|] //=.
 by move/getm_inv in im_k2; congruence.
 Qed.
 
-Lemma invmK m : {in m, injective m} -> invm (invm m) = m.
+Lemma invmK m : {in domm m, injective m} -> invm (invm m) = m.
 Proof.
 move=> inj_m; apply/eq_partmap=> k.
-move: (invmEV k inj_m); rewrite inE.
+move: (invmEV k inj_m).
 case m_k: (m k) => [k'|] //= im_k'.
-  by move: (invmEV k' (@invm_inj m)); rewrite inE im_k' /=.
+  by move: (invmEV k' (@invm_inj m)); rewrite im_k' /=.
 move {im_k'}.
-suff : k \notin invm (invm m) by rewrite inE; case: (invm (invm m) k).
+suff : k \notin domm (invm (invm m)) by rewrite mem_domm; case: (invm (invm m) k).
 apply/invmPn=> k'; apply/eqP=> im_k'.
-by move: (invmE m k'); rewrite inE im_k' /= m_k.
+by move: (invmE m k'); rewrite im_k' /= m_k.
 Qed.
 
 End Inverse.

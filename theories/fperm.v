@@ -19,7 +19,7 @@ Variables (T : ordType).
 Local Open Scope ord_scope.
 
 Definition axiom (f : {partmap T -> T}) :=
-  let xs := keys f in
+  let xs := domm f in
   injectivem f &&
   all (fun x => let y := odflt x (f x) in (y \in xs) && (y != x)) xs.
 
@@ -67,14 +67,14 @@ Proof.
 move=> x y; rewrite /fun_of_fperm.
 case ex: (val s x) => [x'|]; case ey: (val s y) => [y'|] //.
 - move=> ?; subst y'; move: (andP (valP s)).1 => /injectivemP/(_ x).
-  by rewrite inE ex=> /(_ erefl y (esym ey)).
+  by rewrite mem_domm ex=> /(_ erefl y (esym ey)).
 - move=> ?; subst x'; move: (andP (valP s)).2 => /allP/(_ x).
-  by rewrite keysP inE ex /= keysP inE ey /= => /(_ erefl).
+  by rewrite mem_domm ex /= mem_domm ey /= => /(_ erefl).
 move=> ?; subst y'; move: (andP (valP s)).2 => /allP/(_ y).
-by rewrite keysP inE ey /= keysP inE ex /= => /(_ erefl).
+by rewrite mem_domm ey /= mem_domm ex /= => /(_ erefl).
 Qed.
 
-Definition supp s := keys (val s).
+Definition supp s := domm (val s).
 
 Lemma imfset_supp s : s @: supp s = supp s.
 Proof.
@@ -83,17 +83,17 @@ apply/eqP; rewrite eqEfsize; apply/andP; split.
   move/allP/(_ _ Py): (andP (valP s)).2=> /=.
   rewrite /fun_of_fperm /=; case: (val s y)=> [z|] //=.
   by case/andP.
-suff /eqP -> : size (s @: keys (val s)) == size (keys (val s)).
+suff /eqP -> : size (s @: domm (val s)) == size (domm (val s)).
   by rewrite leqnn.
 by apply/imfset_injP=> ????; apply: fperm_inj.
 Qed.
 
 Lemma mem_supp s x : (x \in supp s) = (s x != x).
 Proof.
-rewrite /supp keysP inE /fun_of_fperm.
+rewrite /supp mem_domm /fun_of_fperm.
 case s_x: (val s x)=> [y|] //=; last by rewrite eqxx.
 apply/esym.
-have x_in_s : x \in keys (val s) by rewrite keysP inE s_x.
+have x_in_s : x \in domm (val s) by rewrite mem_domm s_x.
 by move: (allP (andP (valP s)).2 _ x_in_s); rewrite s_x /= => /andP [].
 Qed.
 
@@ -128,13 +128,13 @@ Proof.
 have f_inj: {in X &, injective f}.
   by apply/imfset_injP; rewrite stable.
 apply/andP; split.
-  apply/injectivemP=> x1; rewrite inE !getm_filter !getm_mkpartmapf.
+  apply/injectivemP=> x1; rewrite mem_domm !getm_filter !getm_mkpartmapf.
   have [hx1|] //= := boolP (x1 \in X).
   have [efx1|efx1 _ x2] //= := altP (x1 =P f x1).
   rewrite getm_filter getm_mkpartmapf.
   have [hx2|] //= := boolP (x2 \in X).
   by have [efx2|efx2 []] //= := altP (x2 =P f x2); eauto.
-apply/allP=> x /=; rewrite !keysP !inE getm_filter getm_mkpartmapf.
+apply/allP=> x /=; rewrite !mem_domm getm_filter getm_mkpartmapf.
 have [x_in_X|] //= := boolP (x \in X).
 have [??|nfx _] //= := altP (x =P f x).
 rewrite getm_filter getm_mkpartmapf /= -stable (mem_imfset f x_in_X) /=.
@@ -233,8 +233,7 @@ Lemma eq_fperm s1 s2 : s1 =1 s2 -> s1 = s2.
 Proof.
 have Pval: forall s x, val s x != Some x.
   move=> {s1 s2} s x; apply/eqP=> Px.
-  have Px': x \in keys (val s).
-    by rewrite keysP inE Px.
+  have Px': x \in domm (val s) by rewrite mem_domm Px.
   by move: (allP (andP (valP s)).2 x Px') => {Px'} /=; rewrite Px /= eqxx andbF.
 move=> Ps1s2; apply/val_inj/eq_partmap => x.
 move: (Ps1s2 x); rewrite /fun_of_fperm.
