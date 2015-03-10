@@ -436,6 +436,13 @@ move=> [y Py {x}->]; rewrite /imfset in_mkfset.
 by apply/mapP; eauto.
 Qed.
 
+Lemma imfset_eq f1 f2 : f1 =1 f2 -> imfset f1 =1 imfset f2.
+Proof.
+move=> h_f s; apply/eq_fset=> x.
+by apply/(sameP idP)/(iffP idP)=> /imfsetP [y Py ->]; apply/imfsetP;
+eexists; eauto.
+Qed.
+
 Lemma mem_imfset f x s : x \in s -> f x \in imfset f s.
 Proof. by move=> Px; apply/imfsetP; eauto. Qed.
 
@@ -471,6 +478,13 @@ Variables T S R : ordType.
 
 Implicit Types (s : {fset T}) (f : T -> S) (g : S -> R).
 
+Lemma imfset_id s : id @: s = s.
+Proof.
+apply/eq_fset=> x; apply/(sameP idP)/(iffP idP).
+  by move=> x_in; apply/imfsetP; eauto.
+by case/imfsetP=> [/= ? ? ->].
+Qed.
+
 Lemma imfset_comp f g s : (g \o f) @: s = g @: (f @: s).
 Proof.
 apply/eq_fset=> x; apply/(sameP idP)/(iffP idP).
@@ -478,6 +492,22 @@ apply/eq_fset=> x; apply/(sameP idP)/(iffP idP).
   by apply/imfsetP; eauto.
 case/imfsetP=> [y /= Py ->]; apply/imfsetP; exists (f y)=> //.
 exact: mem_imfset.
+Qed.
+
+Lemma imfsetK f f_inv : cancel f f_inv -> cancel (imfset f) (imfset f_inv).
+Proof.
+move=> fK s; apply/eq_fset=> x; apply/(sameP idP)/(iffP idP).
+  move=> x_in; apply/imfsetP; exists (f x); first by apply mem_imfset.
+  by rewrite fK.
+case/imfsetP=> [y /imfsetP [z Pz ->] ->].
+by rewrite fK.
+Qed.
+
+Lemma imfset_inj f : injective f -> injective (imfset f).
+Proof.
+move=> f_inj s1 s2 e; apply/eq_fset=> x; apply/(sameP idP)/(iffP idP).
+  by move=> /(mem_imfset f); rewrite -{}e=> /imfsetP [y Py /f_inj ->].
+by move=> /(mem_imfset f); rewrite {}e=> /imfsetP [y Py /f_inj ->].
 Qed.
 
 Lemma imfsetS f s1 s2 : fsubset s1 s2 -> fsubset (f @: s1) (f @: s2).
