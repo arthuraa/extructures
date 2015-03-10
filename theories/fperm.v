@@ -74,6 +74,11 @@ move=> ?; subst y'; move: (andP (valP s)).2 => /allP/(_ y).
 by rewrite mem_domm ey /= mem_domm ex /= => /(_ erefl).
 Qed.
 
+Definition fperm_one : {fperm T} := @FPerm.FPerm T emptym erefl.
+
+Lemma fperm1 x : fperm_one x = x.
+Proof. by []. Qed.
+
 Definition supp s := domm (val s).
 
 Lemma imfset_supp s : s @: supp s = supp s.
@@ -219,16 +224,6 @@ rewrite in_fsetU negb_or !mem_supp !negbK in nin_supp.
 by case/andP: nin_supp=> [/eqP h1 /eqP ->]; rewrite h1.
 Qed.
 
-End Operations.
-
-Section Properties.
-
-Variables (T : ordType).
-Local Open Scope ord_scope.
-Local Open Scope fperm_scope.
-
-Implicit Types (s : {fperm T}) (x y : T).
-
 Lemma eq_fperm s1 s2 : s1 =1 s2 <-> s1 = s2.
 Proof.
 split; last congruence.
@@ -244,4 +239,19 @@ case Ps1: (val s1 x)=> [y1|] //; case Ps2: (val s2 x)=> [y2|] //.
 by move=> ? {Ps1}; subst y2; move: (Pval s2 x); rewrite Ps2 eqxx.
 Qed.
 
-End Properties.
+Lemma fperm_mul1s : left_id fperm_one fperm_mul.
+Proof. by move=> s; apply/eq_fperm=> x; rewrite fpermM. Qed.
+
+Lemma fperm_muls1 : right_id fperm_one fperm_mul.
+Proof. by move=> s; apply/eq_fperm=> x; rewrite fpermM. Qed.
+
+Lemma fperm_mulK : right_inverse fperm_one fperm_inv fperm_mul.
+Proof. by move=> s; apply/eq_fperm=> x; rewrite fpermM /= fpermKV. Qed.
+
+Lemma fperm_mulKV : left_inverse fperm_one fperm_inv fperm_mul.
+Proof. by move=> s; apply/eq_fperm=> x; rewrite fpermM /= fpermK. Qed.
+
+Lemma fperm_mulA : associative fperm_mul.
+Proof. by move=> s1 s2 s3; apply/eq_fperm=> x; rewrite !fpermM /= !fpermM. Qed.
+
+End Operations.
