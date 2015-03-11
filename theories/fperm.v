@@ -128,7 +128,7 @@ Variables (f : T -> T) (X : {fset T}).
 Hypothesis stable : f @: X = X.
 
 Lemma fperm_subproof : FPerm.axiom (filterm (fun x y => x != y)
-                                            (mkpartmapf X f)).
+                                            (mkpartmapf f X)).
 Proof.
 have f_inj: {in X &, injective f}.
   by apply/imfset_injP; rewrite stable.

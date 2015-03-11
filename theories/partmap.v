@@ -158,8 +158,11 @@ Definition emptym : {partmap T -> S} :=
 Definition mkpartmap (kvs : seq (T * S)) : {partmap T -> S} :=
   foldr (fun kv m => setm m kv.1 kv.2) emptym kvs.
 
-Definition mkpartmapf (ks : seq T) (f : T -> S) : {partmap T -> S} :=
+Definition mkpartmapf (f : T -> S) (ks : seq T) : {partmap T -> S} :=
   mkpartmap [seq (k, f k) | k <- ks].
+
+Definition mkpartmapfp (f : T -> option S) (ks : seq T) : {partmap T -> S} :=
+  mkpartmap (pmap (fun k => omap (pair k) (f k)) ks).
 
 Definition domm m := mkfset (unzip1 m).
 
@@ -288,11 +291,21 @@ Proof.
 by move=> k; elim: kvs=> [|p kvs IH] //=; rewrite setmE IH.
 Qed.
 
-Lemma mkpartmapfE (ks : seq T) (f : T -> S) k :
-  mkpartmapf ks f k = if k \in ks then Some (f k) else None.
+Lemma mkpartmapfE (f : T -> S) (ks : seq T) k :
+  mkpartmapf f ks k = if k \in ks then Some (f k) else None.
 Proof.
 rewrite /mkpartmapf; elim: ks => [|k' ks IH] //=.
 by rewrite setmE inE {}IH; have [<-|?] := altP (k =P k').
+Qed.
+
+Lemma mkpartmapfpE (f : T -> option S) (ks : seq T) k :
+  mkpartmapfp f ks k = if k \in ks then f k else None.
+Proof.
+rewrite /mkpartmapfp; elim: ks => [|k' ks IH] //=.
+case e: (f k') => [v|] //=.
+  by rewrite setmE inE {}IH; have [->|? //] := altP (k =P k'); rewrite e.
+rewrite inE {}IH; have [->|?] //= := altP (k =P k'); rewrite e.
+by case: ifP.
 Qed.
 
 Lemma eq_partmap m1 m2 : m1 =1 m2 <-> m1 = m2.
@@ -330,6 +343,18 @@ move/(_ k1)/esym: s1_s2 k1_k2; rewrite eqxx.
 have [->|_ s1_s2] := altP (_ =P _); first by rewrite Ord.ltxx.
 move/(_ s2 k1): in_seq; rewrite inE {}s1_s2 /= => /esym/(allP lb2)/Ord.ltW /=.
 by rewrite Ord.ltNge => ->.
+Qed.
+
+Lemma eq_mkpartmapf (f1 f2 : T -> S) :
+  f1 =1 f2 -> mkpartmapf f1 =1 mkpartmapf f2.
+Proof.
+by move=> e ks; apply/eq_partmap=> k; rewrite !mkpartmapfE e.
+Qed.
+
+Lemma eq_mkpartmapfp (f1 f2 : T -> option S) :
+  f1 =1 f2 -> mkpartmapfp f1 =1 mkpartmapfp f2.
+Proof.
+by move=> e ks; apply/eq_partmap=> k; rewrite !mkpartmapfpE e.
 Qed.
 
 Lemma setmI m k v : m k = Some v -> setm m k v = m.
