@@ -99,6 +99,8 @@ Canonical mem_fset_predType := mkPredType mem_fset.
 
 Definition fset_filter P s := mkfset [seq x <- s | P x].
 
+Definition fsetI s1 s2 := fset_filter (mem s1) s2.
+
 Definition fsetD1 s x := fset_filter (predC1 x) s.
 
 Definition fsetD s1 s2 := fset_filter [pred x | x \notin s2] s1.
@@ -106,10 +108,11 @@ Definition fsetD s1 s2 := fset_filter [pred x | x \notin s2] s1.
 End Operations.
 
 Arguments fset0 {_}.
-Prenex Implicits fsetU1 fsetU mkfset.
+Prenex Implicits fsetU1 fsetU fsetI mkfset.
 
 Notation "x |: s" := (fsetU1 s x) : fset_scope.
 Notation "s1 :|: s2" := (fsetU s1 s2) : fset_scope.
+Notation "s1 :&: s2" := (fsetI s1 s2) : fset_scope.
 Notation "s :\ x" := (fsetD1 s x) : fset_scope.
 Notation "s1 :\: s2" := (fsetD s1 s2) : fset_scope.
 
@@ -288,6 +291,27 @@ Proof. exact: (uniq_size_uniq (uniq_fset _) (fun x => in_mkfset x _)). Qed.
 
 Lemma in_fset_filter P s x : (x \in fset_filter P s) = P x && (x \in s).
 Proof. by rewrite /fset_filter in_mkfset mem_filter. Qed.
+
+Lemma in_fsetI x s1 s2 : (x \in s1 :&: s2) = (x \in s1) && (x \in s2).
+Proof. by rewrite in_fset_filter. Qed.
+
+Lemma fsetIP x s1 s2 : reflect (x \in s1 /\ x \in s2) (x \in s1 :&: s2).
+Proof. by rewrite in_fsetI; apply/andP. Qed.
+
+Lemma fsetIC : commutative (@fsetI T).
+Proof. by move=> s1 s2; apply/eq_fset=> x; rewrite !in_fsetI andbC. Qed.
+
+Lemma fsetIA : associative (@fsetI T).
+Proof. by move=> s1 s2 s3; apply/eq_fset=> x; rewrite !in_fsetI andbA. Qed.
+
+Lemma fsetIid : idempotent (@fsetI T).
+Proof. by move=> s; apply/eq_fset=> x; rewrite !in_fsetI andbb. Qed.
+
+Lemma fset0I : left_zero (@fset0 T) fsetI.
+Proof. by move=> s; apply/eq_fset=> x; rewrite in_fsetI !in_fset0. Qed.
+
+Lemma fsetI0 : right_zero (@fset0 T) fsetI.
+Proof. by move=> s; apply/eq_fset=> x; rewrite in_fsetI !in_fset0. Qed.
 
 Lemma in_fsetD1 x s y : (x \in s :\ y) = (x != y) && (x \in s).
 Proof. by rewrite in_fset_filter. Qed.
