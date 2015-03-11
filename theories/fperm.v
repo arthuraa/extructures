@@ -102,6 +102,12 @@ have x_in_s : x \in domm (val s) by rewrite mem_domm s_x.
 by move: (allP (andP (valP s)).2 _ x_in_s); rewrite s_x /= => /andP [].
 Qed.
 
+Lemma mem_suppN s x : (x \notin supp s) = (s x == x).
+Proof. by rewrite mem_supp negbK. Qed.
+
+Lemma suppPn s x : reflect (s x = x) (x \notin supp s).
+Proof. by rewrite mem_suppN; apply/eqP. Qed.
+
 Lemma fperm_supp s x : (s x \in supp s) = (x \in supp s).
 Proof.
 rewrite -{1}imfset_supp; apply/(sameP idP)/(iffP idP).
@@ -217,7 +223,11 @@ Qed.
 
 Definition fperm_mul s1 s2 := fperm (fperm_mul_subproof s1 s2).
 
-Lemma fpermM s1 s2 : fperm_mul s1 s2 =1 s1 \o s2.
+Notation "1" := fperm_one.
+Infix "*" := fperm_mul.
+Notation "x ^-1" := (fperm_inv x).
+
+Lemma fpermM s1 s2 : s1 * s2 =1 s1 \o s2.
 Proof.
 move=> x; rewrite fpermE; have [|nin_supp] //= := boolP (x \in _).
 rewrite in_fsetU negb_or !mem_supp !negbK in nin_supp.
@@ -239,22 +249,35 @@ case Ps1: (val s1 x)=> [y1|] //; case Ps2: (val s2 x)=> [y2|] //.
 by move=> ? {Ps1}; subst y2; move: (Pval s2 x); rewrite Ps2 eqxx.
 Qed.
 
-Lemma fperm_mul1s : left_id fperm_one fperm_mul.
+Lemma fperm_mul1s : left_id 1 fperm_mul.
 Proof. by move=> s; apply/eq_fperm=> x; rewrite fpermM. Qed.
 
-Lemma fperm_muls1 : right_id fperm_one fperm_mul.
+Lemma fperm_muls1 : right_id 1 fperm_mul.
 Proof. by move=> s; apply/eq_fperm=> x; rewrite fpermM. Qed.
 
-Lemma fperm_mulK : right_inverse fperm_one fperm_inv fperm_mul.
+Lemma fperm_mulsV : right_inverse 1 fperm_inv fperm_mul.
 Proof. by move=> s; apply/eq_fperm=> x; rewrite fpermM /= fpermKV. Qed.
 
-Lemma fperm_mulKV : left_inverse fperm_one fperm_inv fperm_mul.
+Lemma fperm_mulVs : left_inverse 1 fperm_inv fperm_mul.
 Proof. by move=> s; apply/eq_fperm=> x; rewrite fpermM /= fpermK. Qed.
 
 Lemma fperm_mulA : associative fperm_mul.
 Proof. by move=> s1 s2 s3; apply/eq_fperm=> x; rewrite !fpermM /= !fpermM. Qed.
 
+Lemma fperm_inv_mul : {morph fperm_inv : s1 s2 / s1 * s2 >-> s2 * s1}.
+Proof.
+move=> s1 s2 /=.
+rewrite -[s2^-1 * _]fperm_mul1s -(fperm_mulVs (s1 * s2)) -2!fperm_mulA.
+by rewrite (fperm_mulA s2) fperm_mulsV fperm_mul1s fperm_mulsV fperm_muls1.
+Qed.
+
 End Operations.
 
 Arguments fperm_one {_}.
 Prenex Implicits fperm_inv fperm_mul.
+
+Delimit Scope fperm_scope with fperm.
+
+Notation "1" := fperm_one : fperm_scope.
+Infix "*" := fperm_mul : fperm_scope.
+Notation "x ^-1" := (fperm_inv x) : fperm_scope.

@@ -560,6 +560,14 @@ move/fsubsetP=> h_sub; apply/fsubsetP=> x /imfsetP [y /h_sub Py ->].
 by apply: mem_imfset.
 Qed.
 
+Lemma mem_imfset_can f f_inv x s :
+  cancel f f_inv -> cancel f_inv f -> (x \in f @: s) = (f_inv x \in s).
+Proof.
+move=> fK fKV; apply/(sameP idP)/(iffP idP).
+  by move=> h_x; apply/imfsetP; eexists; eauto.
+by case/imfsetP=> [y Py ->]; rewrite fK.
+Qed.
+
 End ImageProps.
 
 Section CardImage.
