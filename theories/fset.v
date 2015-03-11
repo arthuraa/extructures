@@ -62,16 +62,16 @@ Definition fset0 := @fset T [::] erefl.
 
 Definition fset1 x := @fset T [:: x] erefl.
 
-Fixpoint fsetU1' (s : seq T) x : seq T :=
+Fixpoint fsetU1_def (s : seq T) x : seq T :=
   if s is x' :: s' then
     if x < x' then x :: s
     else if x == x' then s
-    else x' :: fsetU1' s' x
+    else x' :: fsetU1_def s' x
   else [:: x].
 
-Lemma fsetU1_proof s x : sorted (@Ord.lt T) (fsetU1' s x).
+Lemma fsetU1_proof s x : sorted (@Ord.lt T) (fsetU1_def s x).
 Proof.
-have E: forall s : seq T, fsetU1' s x =i x :: s.
+have E: forall s : seq T, fsetU1_def s x =i x :: s.
   elim=> {s} // x' s /= IH x''; rewrite ![in X in X = _]fun_if /= !inE.
   rewrite IH inE.
   case: (Ord.ltgtP x x') => // H; try by bool_congr.
