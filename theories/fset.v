@@ -313,6 +313,26 @@ Proof. by move=> s; apply/eq_fset=> x; rewrite in_fsetI !in_fset0. Qed.
 Lemma fsetI0 : right_zero (@fset0 T) fsetI.
 Proof. by move=> s; apply/eq_fset=> x; rewrite in_fsetI !in_fset0. Qed.
 
+Lemma fsetUIl : left_distributive (@fsetU T) fsetI.
+Proof.
+by move=> s1 s2 s3; apply/eq_fset=> x; rewrite !(in_fsetU,in_fsetI) !orb_andl.
+Qed.
+
+Lemma fsetUIr : right_distributive (@fsetU T) fsetI.
+Proof.
+by move=> s1 s2 s3; apply/eq_fset=> x; rewrite !(in_fsetU,in_fsetI) !orb_andr.
+Qed.
+
+Lemma fsetIUl : left_distributive (@fsetI T) fsetU.
+Proof.
+by move=> s1 s2 s3; apply/eq_fset=> x; rewrite !(in_fsetU,in_fsetI) !andb_orl.
+Qed.
+
+Lemma fsetIUr : right_distributive (@fsetI T) fsetU.
+Proof.
+by move=> s1 s2 s3; apply/eq_fset=> x; rewrite !(in_fsetU,in_fsetI) !andb_orr.
+Qed.
+
 Lemma in_fsetD1 x s y : (x \in s :\ y) = (x != y) && (x \in s).
 Proof. by rewrite in_fset_filter. Qed.
 
@@ -598,3 +618,19 @@ by apply: fsubset_leq_size.
 Qed.
 
 End Card.
+
+Section Properties2.
+
+Local Open Scope fset_scope.
+
+Variable T : ordType.
+
+Implicit Type (s : {fset T}).
+
+Lemma fsubset0 s : (fsubset s fset0) = (s == fset0).
+Proof. by rewrite eqEfsize size_fset0 andbT. Qed.
+
+Lemma fsetU_eq0 s1 s2 : (s1 :|: s2 == fset0) = (s1 == fset0) && (s2 == fset0).
+Proof. by rewrite -!fsubset0 fsubUset. Qed.
+
+End Properties2.
