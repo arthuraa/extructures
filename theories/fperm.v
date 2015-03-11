@@ -255,3 +255,6 @@ Lemma fperm_mulA : associative fperm_mul.
 Proof. by move=> s1 s2 s3; apply/eq_fperm=> x; rewrite !fpermM /= !fpermM. Qed.
 
 End Operations.
+
+Arguments fperm_one {_}.
+Prenex Implicits fperm_inv fperm_mul.
