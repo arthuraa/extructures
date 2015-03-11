@@ -350,6 +350,89 @@ Canonical seq_ordType := Eval hnf in OrdType (seq T) seq_ordMixin.
 
 End SeqOrd.
 
+Section SumPartOrd.
+
+Variables (T S : partOrdType).
+Local Open Scope ord_scope.
+
+Definition sum_leq (x y : T + S) :=
+  match x, y with
+  | inl x, inl y => x <= y
+  | inr x, inr y => x <= y
+  | inl _, inr _ => true
+  | inr _, inl _ => false
+  end.
+
+Lemma sum_leq_refl : reflexive sum_leq.
+Proof. by case=> [x|y] /=; rewrite Ord.leqxx. Qed.
+
+Lemma sum_leq_trans : transitive sum_leq.
+Proof. by case=> [x1|y1] [x2|y2] [x3|y3] //=; apply: Ord.leq_trans. Qed.
+
+Lemma anti_sum_leq : antisymmetric sum_leq.
+Proof. by case=> [x1|y1] [x2|y2] //= => /Ord.anti_leq ->. Qed.
+
+Definition sum_partOrdMixin :=
+  PartOrdMixin sum_leq_refl sum_leq_trans anti_sum_leq.
+Canonical sum_partOrdType :=
+  Eval hnf in PartOrdType (T + S) sum_partOrdMixin.
+
+End SumPartOrd.
+
+Section SumOrd.
+
+Variables (T S : ordType).
+Local Open Scope ord_scope.
+
+Lemma sum_leq_total : total (@sum_leq T S).
+Proof. by case=> [x1|y1] [x2|y2] //=; apply: Ord.leq_total. Qed.
+
+Definition sum_ordMixin := OrdMixin sum_leq_total.
+Canonical sum_ordType := Eval hnf in OrdType (T + S) sum_ordMixin.
+
+End SumOrd.
+
+Section OptionPartOrd.
+
+Variables (T : partOrdType).
+Local Open Scope ord_scope.
+
+Definition option_leq (x y : option T) :=
+  match x, y with
+  | Some x, Some y => x <= y
+  | None, _ => true
+  | Some _, None => false
+  end.
+
+Lemma option_leq_refl : reflexive option_leq.
+Proof. by case=> [x|] //=; rewrite Ord.leqxx. Qed.
+
+Lemma option_leq_trans : transitive option_leq.
+Proof. by case=> [x1|] [x2|] [x3|] //=; apply: Ord.leq_trans. Qed.
+
+Lemma anti_option_leq : antisymmetric option_leq.
+Proof. by case=> [x1|] [x2|] //= => /Ord.anti_leq ->. Qed.
+
+Definition option_partOrdMixin :=
+  PartOrdMixin option_leq_refl option_leq_trans anti_option_leq.
+Canonical option_partOrdType :=
+  Eval hnf in PartOrdType (option T) option_partOrdMixin.
+
+End OptionPartOrd.
+
+Section OptionOrd.
+
+Variables (T : ordType).
+Local Open Scope ord_scope.
+
+Lemma option_leq_total : total (@option_leq T).
+Proof. by case=> [x1|] [x2|] //=; apply: Ord.leq_total. Qed.
+
+Definition option_ordMixin := OrdMixin option_leq_total.
+Canonical option_ordType := Eval hnf in OrdType (option T) option_ordMixin.
+
+End OptionOrd.
+
 Section TransferPartOrdType.
 
 Variables (T : Type) (eT : partOrdType) (f : T -> eT).
@@ -441,10 +524,40 @@ Canonical ordinal_partOrdType n :=
 Definition ordinal_ordMixin n := [ordMixin of 'I_n by <:].
 Canonical ordinal_ordType n := Eval hnf in OrdType 'I_n (ordinal_ordMixin n).
 
-Lemma nat_of_boolK : cancel nat_of_bool (eq_op 1).
+Lemma implb_refl : reflexive implb.
 Proof. by case. Qed.
 
-Definition bool_partOrdMixin := CanPartOrdMixin nat_of_boolK.
+Lemma implb_trans : transitive implb.
+Proof. by case=> [] [] []. Qed.
+
+Lemma implb_anti : antisymmetric implb.
+Proof. by case=> [] []. Qed.
+
+Lemma implb_total : total implb.
+Proof. by case=> [] []. Qed.
+
+Definition bool_partOrdMixin :=
+  PartOrdMixin implb_refl implb_trans implb_anti.
 Canonical bool_partOrdType := Eval hnf in PartOrdType bool bool_partOrdMixin.
-Definition bool_ordMixin := CanOrdMixin nat_of_boolK.
+Definition bool_ordMixin := OrdMixin implb_total.
 Canonical bool_ordType := Eval hnf in OrdType bool bool_ordMixin.
+
+Definition unit_leq (x y : unit) := true.
+
+Lemma unit_leq_refl : reflexive unit_leq.
+Proof. by case. Qed.
+
+Lemma unit_leq_trans : transitive unit_leq.
+Proof. by case=> [] [] []. Qed.
+
+Lemma unit_leq_anti : antisymmetric unit_leq.
+Proof. by case=> [] []. Qed.
+
+Lemma unit_leq_total : total unit_leq.
+Proof. by case=> [] []. Qed.
+
+Definition unit_partOrdMixin :=
+  PartOrdMixin unit_leq_refl unit_leq_trans unit_leq_anti.
+Canonical unit_partOrdType := Eval hnf in PartOrdType unit unit_partOrdMixin.
+Definition unit_ordMixin := OrdMixin unit_leq_total.
+Canonical unit_ordType := Eval hnf in OrdType unit unit_ordMixin.
