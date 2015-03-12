@@ -6,7 +6,7 @@ Require Import MathComp.div MathComp.ssralg MathComp.finalg MathComp.zmodp.
 Require Import MathComp.bigop MathComp.tuple MathComp.finfun MathComp.binomial.
 Require Import MathComp.ssrint MathComp.intdiv MathComp.ssrnum.
 
-Require Import hseq ord.
+Require Import hseq ord nominal.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -67,6 +67,8 @@ Definition word_partOrdMixin := [partOrdMixin of word by <:].
 Canonical word_partOrdType := Eval hnf in PartOrdType word word_partOrdMixin.
 Definition word_ordMixin := [ordMixin of word by <:].
 Canonical word_ordType := Eval hnf in OrdType word word_ordMixin.
+Definition word_nominalMixin := TrivialNominalMixin word.
+Canonical word_nominalType := Eval hnf in NominalType word word_nominalMixin.
 
 Lemma card_word : #|{: word}| = 2 ^ k.
 Proof. by rewrite card_sub eq_cardT // -cardT card_ord. Qed.
