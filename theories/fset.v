@@ -108,7 +108,7 @@ Definition fsetD s1 s2 := fset_filter [pred x | x \notin s2] s1.
 End Operations.
 
 Arguments fset0 {_}.
-Prenex Implicits fsetU1 fsetU fsetI mkfset.
+Prenex Implicits fsetU1 fsetU fsetI mkfset fsubset.
 
 Notation "x |: s" := (fsetU1 s x) : fset_scope.
 Notation "s1 :|: s2" := (fsetU s1 s2) : fset_scope.
@@ -244,6 +244,11 @@ Qed.
 Lemma fsubsetxx s : fsubset s s.
 Proof. by apply/fsubsetP. Qed.
 
+Lemma fsubset_trans : transitive (@fsubset T).
+Proof.
+by move=> s1 s2 s3 /fsubsetP ? /fsubsetP ?; apply/fsubsetP=> x; eauto.
+Qed.
+
 Lemma fsubsetUl s1 s2 : fsubset s1 (s1 :|: s2).
 Proof. by rewrite /fsubset fsetUA fsetUid. Qed.
 
@@ -269,6 +274,13 @@ apply/(sameP idP)/(iffP idP).
   by rewrite in_fsetU=> /orP [hx|hx]; eauto.
 by move/fsubsetP=> h; apply/andP; split; apply/fsubsetP=> x hx; apply: h;
 rewrite in_fsetU hx ?orbT.
+Qed.
+
+Lemma fsubsetU s1 s2 s3 :
+  fsubset s1 s2 || fsubset s1 s3 -> fsubset s1 (s2 :|: s3).
+Proof.
+by case/orP=> [/fsubsetP h | /fsubsetP h]; apply/fsubsetP=> x hx;
+rewrite in_fsetU h /= ?orbT.
 Qed.
 
 Lemma in_mkfset x xs : (x \in mkfset xs) = (x \in xs).
@@ -331,6 +343,27 @@ Qed.
 Lemma fsetIUr : right_distributive (@fsetI T) fsetU.
 Proof.
 by move=> s1 s2 s3; apply/eq_fset=> x; rewrite !(in_fsetU,in_fsetI) !andb_orr.
+Qed.
+
+Lemma fsubsetIl s1 s2 : fsubset (s1 :&: s2) s1.
+Proof. by apply/fsubsetP=> x /fsetIP []. Qed.
+
+Lemma fsubsetIr s1 s2 : fsubset (s1 :&: s2) s2.
+Proof. by apply/fsubsetP=> x /fsetIP []. Qed.
+
+Lemma fsubsetI s1 s2 s3 :
+  fsubset s1 (s2 :&: s3) = (fsubset s1 s2) && (fsubset s1 s3).
+Proof.
+apply/(sameP idP)/(iffP idP).
+  move=> /andP [/fsubsetP h2 /fsubsetP h3]; apply/fsubsetP=> x hx.
+  by apply/fsetIP; eauto.
+by move=> /fsubsetP=> h; apply/andP; split; apply/fsubsetP=> x /h/fsetIP [??].
+Qed.
+
+Lemma fsubIset s1 s2 s3 :
+  fsubset s1 s3 || fsubset s2 s3 -> fsubset (s1 :&: s2) s3.
+Proof.
+by case/orP=> [/fsubsetP h|/fsubsetP h]; apply/fsubsetP=> x /fsetIP[]; eauto.
 Qed.
 
 Lemma in_fsetD1 x s y : (x \in s :\ y) = (x != y) && (x \in s).
