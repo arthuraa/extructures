@@ -151,6 +151,8 @@ Definition name_nominalMixin :=
   NominalMixin name_actionD name_free_namesP.
 Canonical name_nominalType := Eval hnf in NominalType name name_nominalMixin.
 
+Lemma actionnE s n : action s n = s n. Proof. by []. Qed.
+
 Lemma free_namesnP n' n : reflect (n' = n) (n' \in free_names n).
 Proof. rewrite in_fset1; exact/eqP. Qed.
 
@@ -227,6 +229,9 @@ Definition prod_nominalMixin := NominalMixin prod_actionD prod_free_namesP.
 Canonical prod_nominalType :=
   Eval hnf in NominalType (T * S) prod_nominalMixin.
 
+Lemma actionpE s p : action s p = (action s p.1, action s p.2).
+Proof. by []. Qed.
+
 End ProdNominalType.
 
 Section SeqNominalType.
@@ -258,6 +263,9 @@ Qed.
 
 Definition seq_nominalMixin := NominalMixin seq_actionD seq_free_namesP.
 Canonical seq_nominalType := Eval hnf in NominalType (seq T) seq_nominalMixin.
+
+Lemma actionsE s xs : action s xs = [seq action s x | x <- xs].
+Proof. by []. Qed.
 
 Lemma free_namessP n xs :
   reflect (exists2 x, x \in xs & n \in free_names x) (n \in free_names xs).
@@ -305,11 +313,7 @@ Section OptionNominalType.
 
 Implicit Type x : option S.
 
-Definition option_action s x :=
-  match x with
-  | Some x => Some (action s x)
-  | None => None
-  end.
+Definition option_action s x := omap (action s) x.
 
 Definition option_free_names x :=
   match x with
@@ -330,6 +334,9 @@ Definition option_nominalMixin :=
   NominalMixin option_actionD option_free_namesP.
 Canonical option_nominalType :=
   Eval hnf in NominalType (option S) option_nominalMixin.
+
+Lemma actionoE s x : action s x = omap (action s) x.
+Proof. by []. Qed.
 
 End OptionNominalType.
 
@@ -396,11 +403,29 @@ Definition partmap_nominalMixin :=
 Canonical partmap_nominalType :=
   Eval hnf in NominalType {partmap T -> S} partmap_nominalMixin.
 
-Lemma actionmE s m x : action s m x = action s (m (action s^-1 x)).
+Lemma actionmE s m k : action s m k = action s (m (action s^-1 k)).
 Proof.
 rewrite {1}/action /=/partmap_action mkpartmapfpE.
 rewrite (mem_imfset_can _ _ (actionK s) (actionKV s)) mem_domm.
 by case: (m (action _ _)).
+Qed.
+
+Lemma actionm_set s m k v :
+  action s (setm m k v) = setm (action s m) (action s k) (action s v).
+Proof.
+apply/eq_partmap=> k'; rewrite !actionmE !setmE.
+rewrite -{1}(actionK s k) (can_eq (actionKV s)).
+have [_{k'}|] //= := altP (k' =P _).
+by rewrite actionmE.
+Qed.
+
+Lemma actionm_rem s m k :
+  action s (remm m k) = remm (action s m) (action s k).
+Proof.
+apply/eq_partmap=> k'; rewrite !actionmE !remmE.
+rewrite -{1}(actionK s k) (can_eq (actionKV s)).
+have [_{k'}|] //= := altP (k' =P _).
+by rewrite actionmE.
 Qed.
 
 CoInductive partmap_free_names_spec n m : Prop :=
