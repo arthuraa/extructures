@@ -22,6 +22,19 @@ Canonical name_partOrdType := Eval hnf in PartOrdType name name_partOrdMixin.
 Definition name_ordMixin := [ordMixin of name by <:].
 Canonical name_ordType := Eval hnf in OrdType name name_ordMixin.
 
+Definition fresh (ns : {fset name}) : name :=
+  locked (Name (foldr maxn 0 [seq nat_of_name n | n <- ns]).+1).
+
+Lemma freshP ns : fresh ns \notin ns.
+Proof.
+suff ub: forall n, n \in ns -> nat_of_name n < nat_of_name (fresh ns).
+  by apply/negP=> /ub; rewrite ltnn.
+move=> [n] /=; rewrite /fresh; unlock=> /=; rewrite ltnS inE /=.
+elim: {ns} (val ns)=> [|[n'] ns IH] //=.
+rewrite inE=> /orP [/eqP[<-]{n'} |/IH h]; first exact: leq_maxl.
+by rewrite (leq_trans h) // leq_maxr.
+Qed.
+
 Module Nominal.
 
 Section ClassDef.
