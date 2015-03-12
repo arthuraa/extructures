@@ -151,6 +151,9 @@ Definition name_nominalMixin :=
   NominalMixin name_actionD name_free_namesP.
 Canonical name_nominalType := Eval hnf in NominalType name name_nominalMixin.
 
+Lemma free_namesnP n' n : reflect (n' = n) (n' \in free_names n).
+Proof. rewrite in_fset1; exact/eqP. Qed.
+
 End NameNominal.
 
 Section TrivialNominalType.
@@ -255,6 +258,16 @@ Qed.
 
 Definition seq_nominalMixin := NominalMixin seq_actionD seq_free_namesP.
 Canonical seq_nominalType := Eval hnf in NominalType (seq T) seq_nominalMixin.
+
+Lemma free_namessP n xs :
+  reflect (exists2 x, x \in xs & n \in free_names x) (n \in free_names xs).
+Proof.
+rewrite {2}/free_names/=/seq_free_names; apply/(iffP idP).
+  rewrite big_tnth=> /bigcupP [i _]; eexists; eauto.
+  exact/mem_tnth.
+move=> [x /(tnthP (in_tuple xs)) [i {x}->]].
+by rewrite big_tnth; move: n; apply/fsubsetP/bigcup_sup.
+Qed.
 
 End SeqNominalType.
 
@@ -388,6 +401,30 @@ Proof.
 rewrite {1}/action /=/partmap_action mkpartmapfpE.
 rewrite (mem_imfset_can _ _ (actionK s) (actionKV s)) mem_domm.
 by case: (m (action _ _)).
+Qed.
+
+CoInductive partmap_free_names_spec n m : Prop :=
+| PMFreeNamesKey k v of m k = Some v & n \in free_names k
+| PMFreeNamesVal k v of m k = Some v & n \in free_names v.
+
+Lemma free_namesmP n m :
+  reflect (partmap_free_names_spec n m) (n \in free_names m).
+Proof.
+rewrite /free_names/=/partmap_free_names; apply/(iffP idP).
+  case/fsetUP; rewrite big_tnth=> /bigcupP [i _].
+    move: (mem_tnth i (in_tuple (domm m)))=> /dommP [v Pv].
+    by apply: PMFreeNamesKey.
+  move: (mem_tnth i (in_tuple (domm (invm m))))=> /invmP [x m_x].
+  by apply: PMFreeNamesVal.
+case=> [k v m_k n_in|k v m_k n_in]; apply/fsetUP.
+  have /(tnthP (in_tuple (domm m))) [i i_in]: k \in domm m.
+    by rewrite mem_domm m_k.
+  left; rewrite big_tnth; apply/bigcupP.
+  by rewrite {}i_in in n_in; eexists; eauto.
+have /(tnthP (in_tuple (domm (invm m)))) [i i_in]: v \in domm (invm m).
+  by apply/invmP; eauto.
+right; rewrite big_tnth; apply/bigcupP.
+by rewrite {}i_in in n_in; eexists; eauto.
 Qed.
 
 End PartMapNominalType.
