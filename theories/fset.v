@@ -86,6 +86,8 @@ Qed.
 
 Definition fsetU1 s x := fset (fsetU1_proof s x).
 
+Definition fset2 x y := fsetU1 (fset1 x) y.
+
 Definition fsetU s1 s2 := foldr (fun x s => fsetU1 s x) s2 s1.
 
 Definition fsubset s1 s2 := fsetU s1 s2 == s2.
@@ -149,6 +151,22 @@ rewrite /= !inE /= ![in LHS]fun_if !inE.
 case: (Ord.ltgtP y z) =>[//|z_lt_y |<-].
   by rewrite IH ?(path_sorted Ps) //; bool_congr.
 by rewrite orbA orbb.
+Qed.
+
+Lemma in_fset2 x y z : x \in fset2 y z = (x == y) || (x == z).
+Proof. by rewrite in_fsetU1 in_fset1 orbC. Qed.
+
+Lemma fset21 x y : x \in fset2 x y.
+Proof. by rewrite in_fset2 eqxx. Qed.
+
+Lemma fset22 x y : y \in fset2 x y.
+Proof. by rewrite in_fset2 eqxx orbT. Qed.
+
+Lemma fset2P x y z : reflect (x = y \/ x = z) (x \in fset2 y z).
+Proof.
+rewrite in_fset2; apply/(iffP idP).
+  by case/orP=> [/eqP->|/eqP->]; auto.
+by case=> [->|->]; rewrite eqxx ?orbT.
 Qed.
 
 CoInductive fset_spec : {fset T} -> Type :=

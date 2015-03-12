@@ -271,6 +271,27 @@ rewrite -[s2^-1 * _]fperm_mul1s -(fperm_mulVs (s1 * s2)) -2!fperm_mulA.
 by rewrite (fperm_mulA s2) fperm_mulsV fperm_mul1s fperm_mulsV fperm_muls1.
 Qed.
 
+Lemma fperm2_subproof x y :
+  [fun z => z with x |-> y, y |-> x] @: (fset2 x y) = fset2 x y.
+Proof.
+apply/eq_fset=> z; apply/(sameP idP)/(iffP idP).
+  case/fset2P=> [->|->] /=; apply/imfsetP;
+  [exists y; try apply fset22|exists x; try apply fset21].
+    by rewrite /= eqxx; have [->|] //= := altP eqP.
+  by rewrite /= eqxx.
+case/imfsetP=> [w /fset2P [->|->] ->] /=; rewrite eqxx ?fset22 //.
+case: ifP=> ?; by [apply fset21|apply fset22].
+Qed.
+
+Definition fperm2 x y := fperm (fperm2_subproof x y).
+
+Lemma fperm2E x y : fperm2 x y =1 [fun z => z with x |-> y, y |-> x].
+Proof.
+move=> z; rewrite fpermE /= in_fset2.
+have [->|] := altP eqP => //= ?.
+by have [?|] := altP eqP => //= ?.
+Qed.
+
 End Operations.
 
 Arguments fperm_one {_}.
