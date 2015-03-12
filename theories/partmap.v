@@ -37,6 +37,14 @@ Definition partmap_eqMixin T (S : eqType) :=
   [eqMixin of partmap_type T S by <:].
 Canonical partmap_eqType T (S : eqType) :=
   Eval hnf in EqType (partmap_type T S) (partmap_eqMixin T S).
+Definition partmap_partOrdMixin T (S : partOrdType) :=
+  [partOrdMixin of partmap_type T S by <:].
+Canonical partmap_partOrdType T (S : ordType) :=
+  Eval hnf in PartOrdType (partmap_type T S) (partmap_partOrdMixin T S).
+Definition partmap_ordMixin T (S : ordType) :=
+  [ordMixin of partmap_type T S by <:].
+Canonical partmap_ordType T (S : ordType) :=
+  Eval hnf in OrdType (partmap_type T S) (partmap_ordMixin T S).
 
 (*
 
