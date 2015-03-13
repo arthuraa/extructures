@@ -357,10 +357,30 @@ Qed.
 End Operations.
 
 Arguments fperm_one {_}.
-Prenex Implicits fperm_inv fperm_mul.
+Prenex Implicits fperm_inv fperm_mul fperm2.
 
 Delimit Scope fperm_scope with fperm.
 
 Notation "1" := fperm_one : fperm_scope.
 Infix "*" := fperm_mul : fperm_scope.
 Notation "x ^-1" := (fperm_inv x) : fperm_scope.
+
+Section Trans.
+
+Local Open Scope fperm_scope.
+
+Lemma inj_fperm2 (T T' : ordType) (f : T -> T') x y z :
+  injective f -> f (fperm2 x y z) = fperm2 (f x) (f y) (f z).
+Proof.
+move=> f_inj; case: (fperm2P x)=> [->|->| ]; rewrite ?fperm2L ?fperm2R //.
+by move=>/eqP hx /eqP hy; apply/esym/fperm2D; rewrite (inj_eq f_inj).
+Qed.
+
+Lemma fperm2J (T : ordType) s (x y : T) :
+  s * fperm2 x y * s^-1 = fperm2 (s x) (s y).
+Proof.
+apply/eq_fperm=> z; rewrite !fpermM /= !fpermM /= inj_fperm2 ?fpermKV //.
+exact: fperm_inj.
+Qed.
+
+End Trans.
