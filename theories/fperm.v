@@ -271,6 +271,12 @@ rewrite -[s2^-1 * _]fperm_mul1s -(fperm_mulVs (s1 * s2)) -2!fperm_mulA.
 by rewrite (fperm_mulA s2) fperm_mulsV fperm_mul1s fperm_mulsV fperm_muls1.
 Qed.
 
+Lemma fperm_mulsK : right_loop fperm_inv fperm_mul.
+Proof. by move=> s1 s2; rewrite -fperm_mulA fperm_mulsV fperm_muls1. Qed.
+
+Lemma fperm_mulKs : left_loop fperm_inv fperm_mul.
+Proof. by move=> s1 s2; rewrite fperm_mulA fperm_mulVs fperm_mul1s. Qed.
+
 Lemma fperm2_subproof x y :
   [fun z => z with x |-> y, y |-> x] @: (fset2 x y) = fset2 x y.
 Proof.
@@ -290,6 +296,36 @@ Proof.
 move=> z; rewrite fpermE /= in_fset2.
 have [->|] := altP eqP => //= ?.
 by have [?|] := altP eqP => //= ?.
+Qed.
+
+Lemma fperm2V x y : (fperm2 x y)^-1 = fperm2 x y.
+Proof.
+rewrite -[in LHS](fperm_muls1 _^-1).
+apply/(canLR (fperm_mulKs (fperm2 x y)))/eq_fperm=> z.
+rewrite fperm1 fpermM /= !fperm2E /=; have [->{z}|] := altP (z =P x).
+  by rewrite eqxx; case: ifP=> // /eqP ->.
+have [->{z}|] := altP (z =P y); first by rewrite eqxx.
+by move=> /negbTE -> /negbTE ->.
+Qed.
+
+Lemma supp_fperm2 x y :
+  supp (fperm2 x y) = if x == y then fset0 else fset2 x y.
+Proof.
+have [<-{y}|ne] := altP eqP.
+  apply/eqP; rewrite -fsubset0; apply/fsubsetP=> y.
+  rewrite mem_supp in_fset0; apply: contraNT=> _.
+  apply/eqP; rewrite fperm2E /=.
+  by have [->|] := altP eqP.
+apply/eq_fset=> z; rewrite mem_supp fperm2E /= in_fset2.
+have [->{z}|] := altP (z =P x).
+  by rewrite eq_sym ne (negbTE ne).
+have [->{z}|hy] := altP (z =P y); last by rewrite eqxx.
+by rewrite ne.
+Qed.
+
+Lemma fsubset_supp_fperm2 x y : fsubset (supp (fperm2 x y)) (fset2 x y).
+Proof.
+by rewrite supp_fperm2 fun_if if_arg fsub0set fsubsetxx; case: (_ == _).
 Qed.
 
 End Operations.

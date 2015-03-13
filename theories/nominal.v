@@ -120,6 +120,17 @@ Proof. by move=> x; rewrite actionD fperm_mulVs action1. Qed.
 Lemma actionKV s : cancel (@action T s^-1) (action s).
 Proof. by move=> x; rewrite actionD fperm_mulsV action1. Qed.
 
+Lemma eq_in_action s1 s2 x :
+  {in free_names x, s1 =1 s2} ->
+  action s1 x = action s2 x.
+Proof.
+move=> e; apply: (canRL (actionKV s2)); rewrite actionD.
+apply/free_namesP/eqP; rewrite -fsubset0; apply/fsubsetP=> n.
+rewrite in_fsetI mem_supp in_fset0=> /andP [neq is_free].
+apply: contraNT neq => _; apply/eqP; rewrite fpermM /= (e _ is_free).
+by rewrite fpermK.
+Qed.
+
 End NominalTheory.
 
 Prenex Implicits actionD action1 actionK actionKV.

@@ -686,6 +686,9 @@ Variable T : ordType.
 
 Implicit Type (s : {fset T}).
 
+Lemma fsub0set s : fsubset fset0 s.
+Proof. by rewrite /fsubset fset0U. Qed.
+
 Lemma fsubset0 s : (fsubset s fset0) = (s == fset0).
 Proof. by rewrite eqEfsize size_fset0 andbT. Qed.
 
