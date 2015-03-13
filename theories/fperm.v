@@ -127,6 +127,12 @@ case/imfsetP=> [y Py ey]; rewrite {2}ey in ex.
 by move/fperm_inj in ex; rewrite ex.
 Qed.
 
+Lemma supp1 : supp fperm_one = fset0.
+Proof.
+apply/eqP; rewrite -fsubset0; apply/fsubsetP=> x.
+by rewrite mem_supp fperm1.
+Qed.
+
 Section Build.
 
 Variables (f : T -> T) (X : {fset T}).
@@ -291,12 +297,23 @@ Qed.
 
 Definition fperm2 x y := fperm (fperm2_subproof x y).
 
+CoInductive fperm2_spec x y z : T -> Type :=
+| FPerm2First  of z = x : fperm2_spec x y z y
+| FPerm2Second of z = y : fperm2_spec x y z x
+| FPerm2None   of z <> x & z <> y : fperm2_spec x y z z.
+
 Lemma fperm2E x y : fperm2 x y =1 [fun z => z with x |-> y, y |-> x].
 Proof.
 move=> z; rewrite fpermE /= in_fset2.
 have [->|] := altP eqP => //= ?.
 by have [?|] := altP eqP => //= ?.
 Qed.
+
+Lemma fperm2P x y z : fperm2_spec x y z (fperm2 x y z).
+Proof. rewrite fperm2E /=; do 2?[case: eqP=> //]; constructor; auto. Qed.
+
+Lemma fperm2C x y : fperm2 x y = fperm2 y x.
+Proof. apply/eq_fperm=> z; do 2?[case: fperm2P=> //]; congruence. Qed.
 
 Lemma fperm2V x y : (fperm2 x y)^-1 = fperm2 x y.
 Proof.
@@ -308,19 +325,19 @@ have [->{z}|] := altP (z =P y); first by rewrite eqxx.
 by move=> /negbTE -> /negbTE ->.
 Qed.
 
+Lemma fperm2xx x : fperm2 x x = 1.
+Proof.
+apply/eq_fperm=> y; rewrite fperm2E fperm1 /=.
+by have [->|] := altP (y =P x).
+Qed.
+
 Lemma supp_fperm2 x y :
   supp (fperm2 x y) = if x == y then fset0 else fset2 x y.
 Proof.
-have [<-{y}|ne] := altP eqP.
-  apply/eqP; rewrite -fsubset0; apply/fsubsetP=> y.
-  rewrite mem_supp in_fset0; apply: contraNT=> _.
-  apply/eqP; rewrite fperm2E /=.
-  by have [->|] := altP eqP.
-apply/eq_fset=> z; rewrite mem_supp fperm2E /= in_fset2.
-have [->{z}|] := altP (z =P x).
-  by rewrite eq_sym ne (negbTE ne).
-have [->{z}|hy] := altP (z =P y); last by rewrite eqxx.
-by rewrite ne.
+have [<-{y}|ne] := altP eqP; first by rewrite fperm2xx supp1.
+apply/eq_fset=> z; rewrite mem_supp /= in_fset2.
+case: fperm2P => [->|->|]; [rewrite eq_sym| |]; rewrite ?ne ?eqxx ?orbT //.
+by move=> /eqP/negbTE-> /eqP/negbTE->.
 Qed.
 
 Lemma fsubset_supp_fperm2 x y : fsubset (supp (fperm2 x y)) (fset2 x y).

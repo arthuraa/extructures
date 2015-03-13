@@ -144,6 +144,9 @@ Proof. by []. Qed.
 Lemma in_fset1 x y : x \in fset1 y = (x == y).
 Proof. by rewrite inE. Qed.
 
+Lemma fset1P x y : reflect (x = y) (x \in fset1 y).
+Proof. by rewrite in_fset1; apply/eqP. Qed.
+
 Lemma in_fsetU1 x y s : x \in y |: s = (x == y) || (x \in s).
 Proof.
 case: s => s Ps; rewrite !inE /=; elim: s Ps => [|z s IH /=] // Ps.
