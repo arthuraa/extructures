@@ -534,11 +534,19 @@ move=> [y Py {x}->]; rewrite /imfset in_mkfset.
 by apply/mapP; eauto.
 Qed.
 
-Lemma imfset_eq f1 f2 : f1 =1 f2 -> imfset f1 =1 imfset f2.
+Lemma eq_imfset f1 f2 : f1 =1 f2 -> imfset f1 =1 imfset f2.
 Proof.
 move=> h_f s; apply/eq_fset=> x.
 by apply/(sameP idP)/(iffP idP)=> /imfsetP [y Py ->]; apply/imfsetP;
 eexists; eauto.
+Qed.
+
+Lemma eq_in_imfset f1 f2 s : {in s, f1 =1 f2} -> imfset f1 s = imfset f2 s.
+Proof.
+move=> h_f; apply/eq_fset=> x.
+apply/(sameP idP)/(iffP idP)=> /imfsetP [y Py ->]; apply/imfsetP;
+eexists; eauto.
+by apply/esym/h_f.
 Qed.
 
 Lemma mem_imfset f x s : x \in s -> f x \in imfset f s.
