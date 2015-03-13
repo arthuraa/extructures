@@ -297,11 +297,6 @@ Qed.
 
 Definition fperm2 x y := fperm (fperm2_subproof x y).
 
-CoInductive fperm2_spec x y z : T -> Type :=
-| FPerm2First  of z = x : fperm2_spec x y z y
-| FPerm2Second of z = y : fperm2_spec x y z x
-| FPerm2None   of z <> x & z <> y : fperm2_spec x y z z.
-
 Lemma fperm2E x y : fperm2 x y =1 [fun z => z with x |-> y, y |-> x].
 Proof.
 move=> z; rewrite fpermE /= in_fset2.
@@ -309,8 +304,22 @@ have [->|] := altP eqP => //= ?.
 by have [?|] := altP eqP => //= ?.
 Qed.
 
+CoInductive fperm2_spec x y z : T -> Type :=
+| FPerm2First  of z = x : fperm2_spec x y z y
+| FPerm2Second of z = y : fperm2_spec x y z x
+| FPerm2None   of z <> x & z <> y : fperm2_spec x y z z.
+
 Lemma fperm2P x y z : fperm2_spec x y z (fperm2 x y z).
-Proof. rewrite fperm2E /=; do 2?[case: eqP=> //]; constructor; auto. Qed.
+Proof. by rewrite fperm2E /=; do 2?[case: eqP=> //]; constructor; auto. Qed.
+
+Lemma fperm2L x y : fperm2 x y x = y.
+Proof. by rewrite fperm2E /= eqxx. Qed.
+
+Lemma fperm2R x y : fperm2 x y y = x.
+Proof. by rewrite fperm2E /= eqxx; case: eqP=> [->|]. Qed.
+
+Lemma fperm2D x y z : z != x -> z != y -> fperm2 x y z = z.
+Proof. by rewrite fperm2E /= => /negbTE-> /negbTE->. Qed.
 
 Lemma fperm2C x y : fperm2 x y = fperm2 y x.
 Proof. apply/eq_fperm=> z; do 2?[case: fperm2P=> //]; congruence. Qed.
