@@ -46,7 +46,10 @@ Record mixin_of T := Mixin {
   action : {fperm name} -> T -> T;
   free_names : T -> {fset name};
   _ : forall s1 s2 x, action s1 (action s2 x) = action (s1 * s2) x;
-  _ : forall s x, supp s :&: free_names x = fset0 -> action s x = x
+  _ : forall s x, supp s :&: free_names x = fset0 -> action s x = x;
+  _ : forall n n' x,
+        n \in free_names x -> n' \notin free_names x ->
+        action (fperm2 n n') x <> x
 }.
 
 Record class_of T := Class {base : Ord.Total.class_of T; mixin : mixin_of T}.
@@ -111,6 +114,31 @@ Proof. by case: T s1 s2 x=> [? [? []] ?]. Qed.
 Lemma free_namesP s x : supp s :&: free_names x = fset0 -> action s x = x.
 Proof. by case: T s x=> [? [? []] ?]. Qed.
 
+Lemma free_namesP2 n1 n2 x :
+  n1 \notin free_names x ->
+  n2 \notin free_names x ->
+  action (fperm2 n1 n2) x = x.
+Proof.
+move=> h1 h2; apply/free_namesP; rewrite supp_fperm2 fun_if if_arg fset0I.
+case: (_ == _)=> //; apply/eqP; rewrite -fsubset0; apply/fsubsetP=> n.
+by case/fsetIP=> [/fset2P []->]; rewrite in_fset0; apply: contraTT.
+Qed.
+
+Lemma free_names_min n n' x :
+  n \in free_names x -> n' \notin free_names x ->
+  action (fperm2 n n') x <> x.
+Proof. by case: T n n' x=> [? [? []] ?]. Qed.
+
+Lemma free_names_fin n x (X : {fset name}) :
+  (forall n', n' \notin X -> action (fperm2 n n') x = x) ->
+  n \notin free_names x.
+Proof.
+move=> h; apply/negP=> n_fresh; set n' := fresh (free_names x :|: X).
+have /andP [n'_nin1 n'_nin2] : (n' \notin free_names x) && (n' \notin X).
+  by rewrite -negb_or -in_fsetU freshP.
+by apply: (free_names_min n_fresh n'_nin1); eauto.
+Qed.
+
 Lemma action1 x : action 1 x = x.
 Proof. by apply: free_namesP; rewrite fset0I. Qed.
 
@@ -158,8 +186,16 @@ suff: n \in supp s :&: fset1 n by rewrite h_dis in_fset0.
 by rewrite in_fsetI hn in_fset1 /=.
 Qed.
 
+Lemma name_free_names_min n n' n'' :
+  n \in name_free_names n'' -> n' \notin name_free_names n'' ->
+  name_action (fperm2 n n') n'' <> n''.
+Proof.
+rewrite /name_free_names=> /fset1P <- {n''}; rewrite in_fset1=> /eqP.
+by rewrite /name_action fperm2E /= eqxx=> e.
+Qed.
+
 Definition name_nominalMixin :=
-  NominalMixin name_actionD name_free_namesP.
+  NominalMixin name_actionD name_free_namesP name_free_names_min.
 Canonical name_nominalType := Eval hnf in NominalType name name_nominalMixin.
 
 Lemma actionnE s n : action s n = s n. Proof. by []. Qed.
@@ -190,11 +226,18 @@ Lemma trivial_free_namesP s x :
   supp s :&: trivial_free_names x = fset0 -> trivial_action s x = x.
 Proof. by []. Qed.
 
+Lemma trivial_free_names_min n n' x :
+  n \in trivial_free_names x ->
+  n' \notin trivial_free_names x ->
+  trivial_action (fperm2 n n') x <> x.
+Proof. by rewrite in_fset0. Qed.
+
 End TrivialNominalType.
 
 Notation TrivialNominalMixin T :=
   (NominalMixin (@trivial_actionD [ordType of T])
-                (@trivial_free_namesP [ordType of T])).
+                (@trivial_free_namesP [ordType of T])
+                (@trivial_free_names_min [ordType of T])).
 
 Definition unit_nominalMixin := TrivialNominalMixin unit.
 Canonical unit_nominalType := Eval hnf in NominalType unit unit_nominalMixin.
@@ -236,7 +279,18 @@ by rewrite /prod_action/prod_free_names fsetIUr fsetU_eq0 /=
   => /andP [/eqP/free_namesP -> /eqP/free_namesP ->].
 Qed.
 
-Definition prod_nominalMixin := NominalMixin prod_actionD prod_free_namesP.
+Lemma prod_free_names_min n n' p :
+  n \in prod_free_names p ->
+  n' \notin prod_free_names p ->
+  prod_action (fperm2 n n') p <> p.
+Proof.
+by case: p=> [x y]; rewrite !in_fsetU negb_or /prod_action
+  => /orP /= [h_in /andP[h_nin _]|h_in /andP [_ h_nin]] [? ?];
+apply: (free_names_min h_in h_nin).
+Qed.
+
+Definition prod_nominalMixin :=
+  NominalMixin prod_actionD prod_free_namesP prod_free_names_min.
 Canonical prod_nominalType :=
   Eval hnf in NominalType (T * S) prod_nominalMixin.
 
@@ -272,7 +326,21 @@ by rewrite /seq_action -[in RHS](map_id xs);
 apply/eq_in_map=> x /h/free_namesP.
 Qed.
 
-Definition seq_nominalMixin := NominalMixin seq_actionD seq_free_namesP.
+Lemma seq_free_names_min n n' xs :
+  n \in seq_free_names xs ->
+  n' \notin seq_free_names xs ->
+  seq_action (fperm2 n n') xs <> xs.
+Proof.
+rewrite /seq_free_names big_tnth => /bigcupP [i _ Pin Pnin].
+suff Pnin' : n' \notin free_names (tnth (in_tuple xs) i).
+  move=> e; apply: (free_names_min Pin Pnin')=> {Pin Pnin Pnin'}.
+  rewrite (tnth_nth (tnth (in_tuple xs) i)) /=.
+  by move: i (tnth _ _)=> [i Pi] /= x; rewrite -{2}e {e} (nth_map x).
+by apply: contra Pnin; move: n'; apply/fsubsetP/bigcup_sup.
+Qed.
+
+Definition seq_nominalMixin :=
+  NominalMixin seq_actionD seq_free_namesP seq_free_names_min.
 Canonical seq_nominalType := Eval hnf in NominalType (seq T) seq_nominalMixin.
 
 Lemma actionsE s xs : action s xs = [seq action s x | x <- xs].
@@ -315,7 +383,14 @@ Lemma sum_free_namesP s x :
   sum_action s x = x.
 Proof. by case: x=> [x|x] //= => /free_namesP ->. Qed.
 
-Definition sum_nominalMixin := NominalMixin sum_actionD sum_free_namesP.
+Lemma sum_free_names_min n n' x :
+  n \in sum_free_names x ->
+  n' \notin sum_free_names x ->
+  sum_action (fperm2 n n') x <> x.
+Proof. by case: x=> [x|x] /free_names_min Pin /Pin {Pin} e' [e]. Qed.
+
+Definition sum_nominalMixin :=
+  NominalMixin sum_actionD sum_free_namesP sum_free_names_min.
 Canonical sum_nominalType := Eval hnf in NominalType (T + S) sum_nominalMixin.
 
 End SumNominalType.
@@ -341,8 +416,14 @@ Lemma option_free_namesP s x :
   option_action s x = x.
 Proof. by case: x=> [x|] //= => /free_namesP ->. Qed.
 
+Lemma option_free_names_min n n' x :
+  n \in option_free_names x ->
+  n' \notin option_free_names x ->
+  option_action (fperm2 n n') x <> x.
+Proof. by case: x=> [x /free_names_min P /P e [?]|]. Qed.
+
 Definition option_nominalMixin :=
-  NominalMixin option_actionD option_free_namesP.
+  NominalMixin option_actionD option_free_namesP option_free_names_min.
 Canonical option_nominalType :=
   Eval hnf in NominalType (option S) option_nominalMixin.
 
@@ -350,6 +431,58 @@ Lemma actionoE s x : action s x = omap (action s) x.
 Proof. by []. Qed.
 
 End OptionNominalType.
+
+Section SetNominalType.
+
+Implicit Type X : {fset T}.
+
+Definition fset_action s X := action s @: X.
+
+Definition fset_free_names X :=
+  \bigcup_(x <- X) free_names x.
+
+Lemma fset_actionD s1 s2 X :
+  fset_action s1 (fset_action s2 X) = fset_action (s1 * s2) X.
+Proof.
+by rewrite /fset_action -imfset_comp; apply/eq_imfset/actionD.
+Qed.
+
+Lemma fset_free_namesP s X :
+  supp s :&: fset_free_names X = fset0 ->
+  fset_action s X = X.
+Proof.
+move=> h_dis; rewrite -[in RHS](imfset_id X).
+apply: eq_in_imfset=> x x_in; apply: free_namesP.
+apply/eqP; rewrite -fsubset0 -{}h_dis fsubsetI fsubsetIl /=.
+rewrite (fsubset_trans (fsubsetIr _ _)) // /fset_free_names big_tnth.
+by move/seq_tnthP: x_in=> [i ->]; apply/bigcup_sup.
+Qed.
+
+Lemma fset_free_names_min n n' X :
+  n \in fset_free_names X ->
+  n' \notin fset_free_names X ->
+  fset_action (fperm2 n n') X <> X.
+Proof.
+move=> n_free n'_fresh eX.
+suff: forall x, x \in X -> action (fperm2 n n') x \notin X.
+  have [x x_in] : exists x, x \in X by admit.
+  by move/(_ _ x_in)/negP; apply; rewrite -eX /fset_action; apply: mem_imfset.
+move=> x x_in by
+
+
+rewrite /fset_free_names /fset_action big_tnth=> /bigcupP [i _].
+set x := tnth (in_tuple X) i=> Pin Pnin e.
+have {e} /imfsetP [y Py] : x \in action (fperm2 n n') @: X.
+  by rewrite {}e /x; apply: mem_tnth.
+have [Pin'|Pnin'] := boolP (n \in free_names y); last first.
+  move=> exy; suff e: x = y by rewrite e in Pin; rewrite Pin in Pnin'.
+  rewrite {}exy; apply/free_namesP2=> //; apply: contra Pnin.
+  by case/seq_tnthP: Py=> [i' ->]; move: n'; apply/fsubsetP/bigcup_sup.
+
+
+(* Use the equation we get here to show that n' must be in the support of x *)
+
+End SetNominalType.
 
 Section PartMapNominalType.
 
@@ -407,6 +540,27 @@ rewrite mem_domm; case m_sx: (m _)=> [v|] //=.
 case m_x: (m x)=> [v|] //=.
 move: (dom_const _ _ m_x)=> [hx _].
 by rewrite -{}hx actionK m_x in m_sx.
+Qed.
+
+Lemma partmap_free_names_min n n' m :
+  n \in partmap_free_names m ->
+  n' \notin partmap_free_names m ->
+  partmap_action (fperm2 n n') m <> m.
+Proof.
+rewrite /partmap_free_names !in_fsetU negb_or=> /orP [] Pin /andP
+  => [[Pnin _]|[_ Pnin]]; rewrite big_tnth in Pin Pnin;
+move/bigcupP: Pin => [i _ Pin].
+  have {Pnin} Pnin: n' \notin free_names (tnth (in_tuple (domm m)) i).
+    by apply: contra Pnin; move: n'; apply/fsubsetP/bigcup_sup.
+  move=> e; apply: (free_names_min Pin Pnin).
+
+move/bigcupP: Pnin.
+
+
+case/fsetUP; rewrite big_tnth. ; case/bigcupP=> [i _ /free_names_min [n' Pn']];
+exists n'=> e; apply: Pn'.
+
+by case: x=> [x /free_names_min [n' Pn']|//]; exists n'=> - [?]; apply: Pn'.
 Qed.
 
 Definition partmap_nominalMixin :=
