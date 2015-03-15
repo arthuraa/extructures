@@ -290,6 +290,23 @@ Proof. by move=> s1 s2; rewrite -fperm_mulA fperm_mulsV fperm_muls1. Qed.
 Lemma fperm_mulKs : left_loop fperm_inv fperm_mul.
 Proof. by move=> s1 s2; rewrite fperm_mulA fperm_mulVs fperm_mul1s. Qed.
 
+Lemma fperm_mulsI : right_injective fperm_mul.
+Proof. by move=> s1 s2 s3 e; rewrite -(fperm_mulKs s1 s2) e fperm_mulKs. Qed.
+
+Lemma fperm_mulIs : left_injective fperm_mul.
+Proof. by move=> s1 s2 s3 e; rewrite -(fperm_mulsK s1 s2) e fperm_mulsK. Qed.
+
+Lemma fperm_invK : involutive fperm_inv.
+Proof.
+by move=> s; apply (@fperm_mulsI s^-1); rewrite fperm_mulsV fperm_mulVs.
+Qed.
+
+Lemma fperm_mulsKV : rev_right_loop fperm_inv fperm_mul.
+Proof. by move=> s1 s2; rewrite -{2}(fperm_invK s1) fperm_mulsK. Qed.
+
+Lemma fperm_mulKVs : rev_left_loop fperm_inv fperm_mul.
+Proof. by move=> s1 s2; rewrite -{1}(fperm_invK s1) fperm_mulKs. Qed.
+
 Lemma fperm2_subproof x y :
   [fun z => z with x |-> y, y |-> x] @: (fset2 x y) = fset2 x y.
 Proof.
