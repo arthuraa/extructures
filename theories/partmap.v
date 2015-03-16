@@ -316,6 +316,13 @@ rewrite inE {}IH; have [->|?] //= := altP (k =P k'); rewrite e.
 by case: ifP.
 Qed.
 
+Lemma domm_mkpartmapfp (f : T -> option S) (ks : seq T) :
+  domm (mkpartmapfp f ks) = mkfset [seq k <- ks | f k].
+Proof.
+apply/eq_fset=> k; rewrite mem_domm mkpartmapfpE in_mkfset mem_filter andbC.
+by case: (k \in ks).
+Qed.
+
 Lemma eq_partmap m1 m2 : m1 =1 m2 <-> m1 = m2.
 Proof.
 split; last congruence.

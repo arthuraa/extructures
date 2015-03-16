@@ -189,7 +189,7 @@ Qed.
 
 End NominalTheory.
 
-Prenex Implicits actionD action1 actionK actionKV.
+Prenex Implicits actionD action1 actionK actionKV action_inj.
 
 Section NameNominal.
 
@@ -462,7 +462,9 @@ End OptionNominalType.
 
 Section SetNominalType.
 
-Implicit Type X : {fset T}.
+Variable T' : nominalType.
+
+Implicit Type X : {fset T'}.
 
 Definition fset_action s X := action s @: X.
 
@@ -508,7 +510,10 @@ Qed.
 Definition fset_nominalMixin :=
   NominalMixin fset_actionD fset_free_namesP fset_free_names_min.
 Canonical fset_nominalType :=
-  Eval hnf in NominalType {fset T} fset_nominalMixin.
+  Eval hnf in NominalType {fset T'} fset_nominalMixin.
+
+Lemma free_namesfsE X : free_names X = \bigcup_(x <- X) free_names x.
+Proof. by []. Qed.
 
 End SetNominalType.
 
@@ -521,8 +526,7 @@ Definition partmap_action s m :=
               (action s @: domm m).
 
 Definition partmap_free_names m :=
-  (\bigcup_(x <- domm m) free_names x)
-  :|: \bigcup_(x <- domm (invm m)) free_names x.
+  free_names (domm m) :|: free_names (domm (invm m)).
 
 Lemma partmap_actionD s1 s2 m :
   partmap_action s1 (partmap_action s2 m) = partmap_action (s1 * s2) m.
@@ -555,11 +559,11 @@ have {h_dis} h_sub:
 have dom_const: forall x v, m x = Some v -> action s x = x /\ action s v = v.
   move=> x v m_x; split; apply: free_namesP; apply: h_sub.
     have {m_x} /seq_tnthP [i ->]: x \in domm m by rewrite mem_domm m_x.
-    rewrite /partmap_free_names big_tnth; apply/fsubsetU/orP; left.
-    exact: bigcup_sup.
+    rewrite /partmap_free_names free_namesfsE big_tnth; apply/fsubsetU/orP.
+    left; exact: bigcup_sup.
   have {m_x} /seq_tnthP [/= i ->]: v \in domm (invm m) by apply/invmP; eauto.
-  rewrite /partmap_free_names [in X in _ :|: X]big_tnth; apply/fsubsetU/orP.
-  right; exact: bigcup_sup.
+  rewrite /partmap_free_names !free_namesfsE [in X in _ :|: X]big_tnth.
+  apply/fsubsetU/orP; right; exact: bigcup_sup.
 apply/eq_partmap=> x {h_sub}; rewrite /partmap_action mkpartmapfpE.
 rewrite (mem_imfset_can _ _ (actionK s) (actionKV s)).
 rewrite mem_domm; case m_sx: (m _)=> [v|] //=.
@@ -575,24 +579,30 @@ Lemma partmap_free_names_min n n' m :
   n' \notin partmap_free_names m ->
   partmap_action (fperm2 n n') m <> m.
 Proof.
-rewrite /partmap_free_names !in_fsetU negb_or=> /orP [] Pin /andP
-  => [[Pnin _]|[_ Pnin]]; rewrite big_tnth in Pin Pnin;
-move/bigcupP: Pin => [i _ Pin].
-  have {Pnin} Pnin: n' \notin free_names (tnth (in_tuple (domm m)) i).
-    by apply: contra Pnin; move: n'; apply/fsubsetP/bigcup_sup.
-  move=> e; apply: (free_names_min Pin Pnin).
-
-move/bigcupP: Pnin.
-
-
-case/fsetUP; rewrite big_tnth. ; case/bigcupP=> [i _ /free_names_min [n' Pn']];
-exists n'=> e; apply: Pn'.
-
-by case: x=> [x /free_names_min [n' Pn']|//]; exists n'=> - [?]; apply: Pn'.
+move=> n_free n'_fresh; apply/eqP; apply: contraNN n'_fresh=> /eqP <-.
+case/fsetUP: n_free=> [n_free|n_free]; apply/fsetUP; [left|right].
+  rewrite (_ : domm _ = action (fperm2 n n') (domm m)); last first.
+    rewrite domm_mkpartmapfp; apply/eq_fset=> x; rewrite in_mkfset.
+    rewrite mem_filter (mem_imfset_can _ _ (actionK _) (actionKV _)).
+    by rewrite mem_domm; case: (m _).
+  rewrite free_names_action (mem_imfset_can _ _ (actionK _) (actionKV _)).
+  by rewrite fperm2V actionnE fperm2R.
+rewrite (_ : domm _ = action (fperm2 n n') (domm (invm m))); last first.
+  apply/eq_fset=> y; rewrite (mem_imfset_can _ _ (actionK _) (actionKV _)).
+  apply/(sameP idP)/(iffP idP).
+    move/invmP=> [x Px]; apply/invmP; exists (action (fperm2 n n') x).
+    rewrite mkpartmapfpE actionK (mem_imfset_inj _ _ (@action_inj _ _)).
+    by rewrite mem_domm Px /= actionoE /= actionKV.
+  case/invmP=> [x Px]; apply/invmP; exists (action (fperm2 n n') x).
+  move: Px; rewrite mkpartmapfpE (mem_imfset_can _ _ (actionK _) (actionKV _)).
+  rewrite mem_domm; case e: (m (action _ x))=> [?|] //=; rewrite actionoE /=.
+  by move=> [<-]; rewrite -{1}fperm2V e actionK.
+rewrite free_names_action (mem_imfset_can _ _ (actionK _) (actionKV _)).
+by rewrite fperm2V actionnE fperm2R.
 Qed.
 
 Definition partmap_nominalMixin :=
-  NominalMixin partmap_actionD partmap_free_namesP.
+  NominalMixin partmap_actionD partmap_free_namesP partmap_free_names_min.
 Canonical partmap_nominalType :=
   Eval hnf in NominalType {partmap T -> S} partmap_nominalMixin.
 
@@ -629,7 +639,7 @@ Lemma free_namesmP n m :
   reflect (partmap_free_names_spec n m) (n \in free_names m).
 Proof.
 rewrite /free_names/=/partmap_free_names; apply/(iffP idP).
-  case/fsetUP; rewrite big_tnth=> /bigcupP [i _].
+  case/fsetUP; rewrite !free_namesfsE big_tnth=> /bigcupP [i _].
     move: (mem_tnth i (in_tuple (domm m)))=> /dommP [v Pv].
     by apply: PMFreeNamesKey.
   move: (mem_tnth i (in_tuple (domm (invm m))))=> /invmP [x m_x].
@@ -637,11 +647,11 @@ rewrite /free_names/=/partmap_free_names; apply/(iffP idP).
 case=> [k v m_k n_in|k v m_k n_in]; apply/fsetUP.
   have /(tnthP (in_tuple (domm m))) [i i_in]: k \in domm m.
     by rewrite mem_domm m_k.
-  left; rewrite big_tnth; apply/bigcupP.
+  left; rewrite free_namesfsE big_tnth; apply/bigcupP.
   by rewrite {}i_in in n_in; eexists; eauto.
 have /(tnthP (in_tuple (domm (invm m)))) [i i_in]: v \in domm (invm m).
   by apply/invmP; eauto.
-right; rewrite big_tnth; apply/bigcupP.
+right; rewrite free_namesfsE big_tnth; apply/bigcupP.
 by rewrite {}i_in in n_in; eexists; eauto.
 Qed.
 
