@@ -380,7 +380,8 @@ Qed.
 
 Lemma fperm2_rect (P : {fperm T} -> Type) :
   P 1 ->
-  (forall x y s, x \notin supp s -> P s -> P (fperm2 x y * s)) ->
+  (forall x y s, x \notin supp s -> y \in supp (fperm2 x y * s) ->
+                 P s -> P (fperm2 x y * s)) ->
   forall s, P s.
 Proof.
 move=> P1 PM s; move: {2}(size _) (leqnn (size (supp s)))=> n.
@@ -389,6 +390,7 @@ case e: (supp s) / fsetP=>[|x X Px].
   by move/eqP: e; rewrite supp_eq0=> /eqP ->.
 rewrite size_fsetU1 Px ltnS -(fperm_mulKs (fperm2 x (s x)) s) fperm2V=> es.
 apply: PM; first by apply/suppPn; rewrite fpermM /= fperm2R.
+  by rewrite -{1}fperm2V fperm_mulKs fperm_supp e in_fsetU1 eqxx.
 apply: IH; rewrite (leq_trans _ es) // {es}; apply/fsubset_leq_size/fsubsetP.
 move=> y; rewrite mem_supp fpermM /=; case: fperm2P.
 - move=> ex ny; have: y \in supp s.
