@@ -36,6 +36,12 @@ Canonical fset_subType T := [subType for @fsval T].
 Definition fset_eqMixin T := [eqMixin of fset_type T by <:].
 Canonical fset_eqType T :=
   Eval hnf in EqType (fset_type T) (fset_eqMixin T).
+Definition fset_partOrdMixin T := [partOrdMixin of fset_type T by <:].
+Canonical fset_partOrdType T :=
+  Eval hnf in PartOrdType (fset_type T) (fset_partOrdMixin T).
+Definition fset_ordMixin T := [ordMixin of fset_type T by <:].
+Canonical fset_ordType T :=
+  Eval hnf in OrdType (fset_type T) (fset_ordMixin T).
 
 End Exports.
 
