@@ -109,6 +109,8 @@ Definition fset_filter P s := mkfset [seq x <- s | P x].
 
 Definition fsetI s1 s2 := fset_filter (mem s1) s2.
 
+Definition fdisjoint s1 s2 := fsetI s1 s2 == fset0.
+
 Definition fsetD1 s x := fset_filter (predC1 x) s.
 
 Definition fsetD s1 s2 := fset_filter [pred x | x \notin s2] s1.
@@ -391,6 +393,19 @@ Lemma fsubIset s1 s2 s3 :
   fsubset s1 s3 || fsubset s2 s3 -> fsubset (s1 :&: s2) s3.
 Proof.
 by case/orP=> [/fsubsetP h|/fsubsetP h]; apply/fsubsetP=> x /fsetIP[]; eauto.
+Qed.
+
+Lemma fdisjointC : commutative (@fdisjoint T).
+Proof. by move=> s1 s2; rewrite /fdisjoint fsetIC. Qed.
+
+Lemma fdisjointP s1 s2 : reflect (forall x, x \in s1 -> x \notin s2)
+                                 (fdisjoint s1 s2).
+Proof.
+apply/(iffP eqP)=> [e x h1|].
+  apply/negP=> h2; have: x \in s1 :&: s2 by apply/fsetIP; split.
+  by rewrite e in_fset0.
+move=> dis; apply/eq_fset=> x; rewrite in_fset0 in_fsetI.
+by have [h|//] := boolP (x \in s1); rewrite (negbTE (dis _ h)).
 Qed.
 
 Lemma in_fsetD1 x s y : (x \in s :\ y) = (x != y) && (x \in s).
