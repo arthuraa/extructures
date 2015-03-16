@@ -586,29 +586,27 @@ Qed.
 Let partmap_names_dom s m :
   domm (partmap_action s m) = action s @: domm m.
 Proof.
-apply/eq_fset=> n; rewrite (mem_imfset_can _ _ (actionK _) (actionKV _)).
+apply/eq_fset=> x; rewrite (mem_imfset_can _ _ (actionK _) (actionKV _)).
 apply/(sameP (dommP _ _))/(iffP (dommP _ _)).
-admit. admit.
+  move=> [y Py]; exists (action s y); rewrite mkpartmapfpE.
+  by rewrite (mem_imfset_can _ _ (actionK _) (actionKV _)) mem_domm Py /=.
+case=> [y]; rewrite mkpartmapfpE (mem_imfset_can _ _ (actionK _) (actionKV _)).
+rewrite mem_domm actionoE; case e: (m (action s^-1 x))=> [y'|] //=.
+by move=> [e']; exists (action s^-1 y); rewrite -e' actionK.
 Qed.
 
 Let partmap_names_codom s m :
   domm (invm (partmap_action s m)) = action s @: domm (invm m).
 Proof.
-admit.
+apply/eq_fset=> y; rewrite (mem_imfset_can _ _ (actionK _) (actionKV _)).
+apply/(sameP (invmP _ _))/(iffP (invmP _ _)).
+  move=> [x Px]; exists (action s x); rewrite mkpartmapfpE.
+  rewrite (mem_imfset_inj _ _ (@action_inj _ _)) mem_domm Px /= actionK Px.
+  by rewrite actionoE /= actionKV.
+case=> [x]; rewrite mkpartmapfpE (mem_imfset_can _ _ (actionK _) (actionKV _)).
+rewrite mem_domm actionoE; case e: (m (action s^-1 x))=> [x'|] //=.
+by move=> [e']; exists (action s^-1 x); rewrite -e' actionK.
 Qed.
-
-(*
-
-rewrite actionfsE.  imfsetU; congr fsetU.
-  apply/eq_fset=> n''; apply/(sameP (namesfsP _ _)).
-  rewrite (mem_imfset_can _ _ (actionK _) (actionKV _)) fperm2V.
-  apply/(iffP (namesfsP _ _ )).
-    move=> [x /dommP [y Px] Pn'']; exists (action (fperm2 n n') x).
-      rewrite mem_domm mkpartmapfpE (mem_imfset_inj _ _ (@action_inj _ _)).
-      by rewrite mem_domm Px /= actionK Px.
-    rewrite names_action (mem_imfset_can _ _ (actionK _) (actionKV _)).
-    by rewrite fperm2V.
-*)
 
 Lemma partmap_namesTeq n n' m :
   n \in partmap_names m ->
