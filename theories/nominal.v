@@ -492,23 +492,23 @@ Lemma fset_free_names_min n n' X :
   fset_action (fperm2 n n') X <> X.
 Proof.
 move=> n_free n'_fresh eX.
-suff: forall x, x \in X -> action (fperm2 n n') x \notin X.
-  have [x x_in] : exists x, x \in X by admit.
-  by move/(_ _ x_in)/negP; apply; rewrite -eX /fset_action; apply: mem_imfset.
-move=> x x_in by
+have {n'_fresh} n'_fresh: forall x, x \in X -> n' \notin free_names x.
+  move=> x /seq_tnthP [i ->]; apply: contra n'_fresh.
+  rewrite /fset_free_names big_tnth /=; move: n' {eX}.
+  by apply/fsubsetP/bigcup_sup.
+have {n_free} [x x_in n_free]: exists2 x, x \in X & n \in free_names x.
+  move: n_free; rewrite /fset_free_names big_tnth /=; move/bigcupP=> [i _ Pi].
+  by eexists; eauto; apply/mem_tnth.
+move: x_in; rewrite -{}eX; case/imfsetP=> y /n'_fresh {n'_fresh} n'_fresh.
+move=> /(canLR (actionK _)); rewrite fperm2V=> Py; move/negP: n'_fresh; apply.
+rewrite -{}Py free_names_action (mem_imfset_can _ _ (actionK _) (actionKV _)).
+by rewrite fperm2V actionnE fperm2R.
+Qed.
 
-
-rewrite /fset_free_names /fset_action big_tnth=> /bigcupP [i _].
-set x := tnth (in_tuple X) i=> Pin Pnin e.
-have {e} /imfsetP [y Py] : x \in action (fperm2 n n') @: X.
-  by rewrite {}e /x; apply: mem_tnth.
-have [Pin'|Pnin'] := boolP (n \in free_names y); last first.
-  move=> exy; suff e: x = y by rewrite e in Pin; rewrite Pin in Pnin'.
-  rewrite {}exy; apply/free_namesP2=> //; apply: contra Pnin.
-  by case/seq_tnthP: Py=> [i' ->]; move: n'; apply/fsubsetP/bigcup_sup.
-
-
-(* Use the equation we get here to show that n' must be in the support of x *)
+Definition fset_nominalMixin :=
+  NominalMixin fset_actionD fset_free_namesP fset_free_names_min.
+Canonical fset_nominalType :=
+  Eval hnf in NominalType {fset T} fset_nominalMixin.
 
 End SetNominalType.
 
@@ -536,7 +536,7 @@ have domm_m1: domm m1 = action s2 @: domm m.
     exists (action s2 v); rewrite /m1 mkpartmapfpE (mem_imfset (action s2) Py).
     by rewrite actionK m_y.
   by move/dommP=> [v]; rewrite mkpartmapfpE; case: ifP.
-rewrite domm_m1 -imfset_comp (imfset_eq (actionD _ _)).
+rewrite domm_m1 -imfset_comp (eq_imfset (actionD _ _)).
 congr getm; apply/eq_mkpartmapfp=> y; rewrite mkpartmapfpE.
 rewrite (mem_imfset_can _ _ (actionK s2) (actionKV s2)) actionD.
 rewrite -fperm_inv_mul mem_domm; case e: (m (action _ y)) => [z|] //=.
