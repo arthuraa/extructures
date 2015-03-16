@@ -36,6 +36,12 @@ Canonical fset_subType T := [subType for @fsval T].
 Definition fset_eqMixin T := [eqMixin of fset_type T by <:].
 Canonical fset_eqType T :=
   Eval hnf in EqType (fset_type T) (fset_eqMixin T).
+Definition fset_partOrdMixin T := [partOrdMixin of fset_type T by <:].
+Canonical fset_partOrdType T :=
+  Eval hnf in PartOrdType (fset_type T) (fset_partOrdMixin T).
+Definition fset_ordMixin T := [ordMixin of fset_type T by <:].
+Canonical fset_ordType T :=
+  Eval hnf in OrdType (fset_type T) (fset_ordMixin T).
 
 End Exports.
 
@@ -102,6 +108,8 @@ Canonical mem_fset_predType := mkPredType mem_fset.
 Definition fset_filter P s := mkfset [seq x <- s | P x].
 
 Definition fsetI s1 s2 := fset_filter (mem s1) s2.
+
+Definition fdisjoint s1 s2 := fsetI s1 s2 == fset0.
 
 Definition fsetD1 s x := fset_filter (predC1 x) s.
 
@@ -387,6 +395,19 @@ Proof.
 by case/orP=> [/fsubsetP h|/fsubsetP h]; apply/fsubsetP=> x /fsetIP[]; eauto.
 Qed.
 
+Lemma fdisjointC : commutative (@fdisjoint T).
+Proof. by move=> s1 s2; rewrite /fdisjoint fsetIC. Qed.
+
+Lemma fdisjointP s1 s2 : reflect (forall x, x \in s1 -> x \notin s2)
+                                 (fdisjoint s1 s2).
+Proof.
+apply/(iffP eqP)=> [e x h1|].
+  apply/negP=> h2; have: x \in s1 :&: s2 by apply/fsetIP; split.
+  by rewrite e in_fset0.
+move=> dis; apply/eq_fset=> x; rewrite in_fset0 in_fsetI.
+by have [h|//] := boolP (x \in s1); rewrite (negbTE (dis _ h)).
+Qed.
+
 Lemma in_fsetD1 x s y : (x \in s :\ y) = (x != y) && (x \in s).
 Proof. by rewrite in_fset_filter. Qed.
 
@@ -628,6 +649,13 @@ Proof.
 move=> fK fKV; apply/(sameP idP)/(iffP idP).
   by move=> h_x; apply/imfsetP; eexists; eauto.
 by case/imfsetP=> [y Py ->]; rewrite fK.
+Qed.
+
+Lemma mem_imfset_inj f y s :
+  injective f -> (f y \in f @: s) = (y \in s).
+Proof.
+move=> f_inj; apply/(sameP (imfsetP f s _))/(iffP idP); first by eauto.
+by move=> [y' Py' /f_inj ->].
 Qed.
 
 End ImageProps.

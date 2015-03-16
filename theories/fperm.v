@@ -62,6 +62,21 @@ Implicit Types (s : {fperm T}) (x : T).
 
 Local Open Scope fset_scope.
 
+Lemma eq_fperm s1 s2 : s1 =1 s2 <-> s1 = s2.
+Proof.
+split; last congruence.
+have Pval: forall s x, val s x != Some x.
+  move=> {s1 s2} s x; apply/eqP=> Px.
+  have Px': x \in domm (val s) by rewrite mem_domm Px.
+  by move: (allP (andP (valP s)).2 x Px') => {Px'} /=; rewrite Px /= eqxx andbF.
+move=> Ps1s2; apply/val_inj/eq_partmap => x.
+move: (Ps1s2 x); rewrite /fun_of_fperm.
+case Ps1: (val s1 x)=> [y1|] //; case Ps2: (val s2 x)=> [y2|] //.
+- by move=> ->.
+- by move=> ? {Ps2}; subst y1; move: (Pval s1 x); rewrite Ps1 eqxx.
+by move=> ? {Ps1}; subst y2; move: (Pval s2 x); rewrite Ps2 eqxx.
+Qed.
+
 Lemma fperm_inj s : injective s.
 Proof.
 move=> x y; rewrite /fun_of_fperm.
@@ -75,8 +90,9 @@ by rewrite mem_domm ey /= mem_domm ex /= => /(_ erefl).
 Qed.
 
 Definition fperm_one : {fperm T} := @FPerm.FPerm T emptym erefl.
+Notation "1" := fperm_one.
 
-Lemma fperm1 x : fperm_one x = x.
+Lemma fperm1 x : 1 x = x.
 Proof. by []. Qed.
 
 Definition supp s := domm (val s).
@@ -127,10 +143,17 @@ case/imfsetP=> [y Py ey]; rewrite {2}ey in ex.
 by move/fperm_inj in ex; rewrite ex.
 Qed.
 
-Lemma supp1 : supp fperm_one = fset0.
+Lemma supp1 : supp 1 = fset0.
 Proof.
 apply/eqP; rewrite -fsubset0; apply/fsubsetP=> x.
 by rewrite mem_supp fperm1.
+Qed.
+
+Lemma supp_eq0 s : (supp s == fset0) = (s == 1).
+Proof.
+apply/(sameP idP)/(iffP idP)=> [/eqP->|]; first by rewrite supp1.
+move=> /eqP e; apply/eqP/eq_fperm=> x; rewrite fperm1; apply/suppPn.
+by rewrite e in_fset0.
 Qed.
 
 Section Build.
@@ -229,7 +252,6 @@ Qed.
 
 Definition fperm_mul s1 s2 := fperm (fperm_mul_subproof s1 s2).
 
-Notation "1" := fperm_one.
 Infix "*" := fperm_mul.
 Notation "x ^-1" := (fperm_inv x).
 
@@ -238,21 +260,6 @@ Proof.
 move=> x; rewrite fpermE; have [|nin_supp] //= := boolP (x \in _).
 rewrite in_fsetU negb_or !mem_supp !negbK in nin_supp.
 by case/andP: nin_supp=> [/eqP h1 /eqP ->]; rewrite h1.
-Qed.
-
-Lemma eq_fperm s1 s2 : s1 =1 s2 <-> s1 = s2.
-Proof.
-split; last congruence.
-have Pval: forall s x, val s x != Some x.
-  move=> {s1 s2} s x; apply/eqP=> Px.
-  have Px': x \in domm (val s) by rewrite mem_domm Px.
-  by move: (allP (andP (valP s)).2 x Px') => {Px'} /=; rewrite Px /= eqxx andbF.
-move=> Ps1s2; apply/val_inj/eq_partmap => x.
-move: (Ps1s2 x); rewrite /fun_of_fperm.
-case Ps1: (val s1 x)=> [y1|] //; case Ps2: (val s2 x)=> [y2|] //.
-- by move=> ->.
-- by move=> ? {Ps2}; subst y1; move: (Pval s1 x); rewrite Ps1 eqxx.
-by move=> ? {Ps1}; subst y2; move: (Pval s2 x); rewrite Ps2 eqxx.
 Qed.
 
 Lemma fperm_mul1s : left_id 1 fperm_mul.
@@ -282,6 +289,23 @@ Proof. by move=> s1 s2; rewrite -fperm_mulA fperm_mulsV fperm_muls1. Qed.
 
 Lemma fperm_mulKs : left_loop fperm_inv fperm_mul.
 Proof. by move=> s1 s2; rewrite fperm_mulA fperm_mulVs fperm_mul1s. Qed.
+
+Lemma fperm_mulsI : right_injective fperm_mul.
+Proof. by move=> s1 s2 s3 e; rewrite -(fperm_mulKs s1 s2) e fperm_mulKs. Qed.
+
+Lemma fperm_mulIs : left_injective fperm_mul.
+Proof. by move=> s1 s2 s3 e; rewrite -(fperm_mulsK s1 s2) e fperm_mulsK. Qed.
+
+Lemma fperm_invK : involutive fperm_inv.
+Proof.
+by move=> s; apply (@fperm_mulsI s^-1); rewrite fperm_mulsV fperm_mulVs.
+Qed.
+
+Lemma fperm_mulsKV : rev_right_loop fperm_inv fperm_mul.
+Proof. by move=> s1 s2; rewrite -{2}(fperm_invK s1) fperm_mulsK. Qed.
+
+Lemma fperm_mulKVs : rev_left_loop fperm_inv fperm_mul.
+Proof. by move=> s1 s2; rewrite -{1}(fperm_invK s1) fperm_mulKs. Qed.
 
 Lemma fperm2_subproof x y :
   [fun z => z with x |-> y, y |-> x] @: (fset2 x y) = fset2 x y.
@@ -352,6 +376,29 @@ Qed.
 Lemma fsubset_supp_fperm2 x y : fsubset (supp (fperm2 x y)) (fset2 x y).
 Proof.
 by rewrite supp_fperm2 fun_if if_arg fsub0set fsubsetxx; case: (_ == _).
+Qed.
+
+Lemma fperm2_rect (P : {fperm T} -> Type) :
+  P 1 ->
+  (forall x y s, x \notin supp s -> y \in supp (fperm2 x y * s) ->
+                 P s -> P (fperm2 x y * s)) ->
+  forall s, P s.
+Proof.
+move=> P1 PM s; move: {2}(size _) (leqnn (size (supp s)))=> n.
+elim: n s=> [|n IH] s; first by rewrite leqn0 sizes_eq0 supp_eq0=> /eqP ->.
+case e: (supp s) / fsetP=>[|x X Px].
+  by move/eqP: e; rewrite supp_eq0=> /eqP ->.
+rewrite size_fsetU1 Px ltnS -(fperm_mulKs (fperm2 x (s x)) s) fperm2V=> es.
+apply: PM; first by apply/suppPn; rewrite fpermM /= fperm2R.
+  by rewrite -{1}fperm2V fperm_mulKs fperm_supp e in_fsetU1 eqxx.
+apply: IH; rewrite (leq_trans _ es) // {es}; apply/fsubset_leq_size/fsubsetP.
+move=> y; rewrite mem_supp fpermM /=; case: fperm2P.
+- move=> ex ny; have: y \in supp s.
+    by have [//|/suppPn ey] := boolP (y \in _); rewrite -ex !ey eqxx in ny.
+  by rewrite e; case/fsetU1P=> [ey|//]; rewrite -ey ex ey eqxx in ny.
+- by move/fperm_inj=> ->; rewrite eqxx.
+move=> _ /eqP; rewrite (inj_eq (@fperm_inj _))=> e2.
+by rewrite -mem_supp e in_fsetU1 (negbTE e2).
 Qed.
 
 End Operations.
