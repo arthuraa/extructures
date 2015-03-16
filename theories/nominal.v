@@ -130,13 +130,13 @@ Lemma free_names_min n n' x :
 Proof. by case: T n n' x=> [? [? []] ?]. Qed.
 
 Lemma free_names_fin n x (X : {fset name}) :
-  (forall n', n' \notin X -> action (fperm2 n n') x = x) ->
-  n \notin free_names x.
+  (forall n', n' \notin X -> action (fperm2 n n') x != x) ->
+  n \in free_names x.
 Proof.
-move=> h; apply/negP=> n_fresh; set n' := fresh (free_names x :|: X).
-have /andP [n'_nin1 n'_nin2] : (n' \notin free_names x) && (n' \notin X).
-  by rewrite -negb_or -in_fsetU freshP.
-by apply: (free_names_min n_fresh n'_nin1); eauto.
+move/(_ (fresh (free_names x :|: X)))=> h.
+move: (freshP (free_names x :|: X)).
+rewrite in_fsetU negb_or=> /andP [P /h {h}].
+by apply: contraNT=> Pn; apply/eqP; rewrite free_namesP2.
 Qed.
 
 Lemma action1 x : action 1 x = x.
@@ -148,6 +148,18 @@ Proof. by move=> x; rewrite actionD fperm_mulVs action1. Qed.
 Lemma actionKV s : cancel (@action T s^-1) (action s).
 Proof. by move=> x; rewrite actionD fperm_mulsV action1. Qed.
 
+Lemma action_inj s : injective (@action T s).
+Proof. exact: (can_inj (actionK s)). Qed.
+
+Lemma mem_free_names n x :
+  reflect (forall n', action (fperm2 n n') x = x -> n' \in free_names x)
+          (n \in free_names x).
+Proof.
+apply/(iffP idP).
+  by move=> n_in n' /eqP; apply: contraTT=> n'_nin; apply/eqP/free_names_min.
+by apply; rewrite fperm2xx action1.
+Qed.
+
 Lemma eq_in_action s1 s2 x :
   {in free_names x, s1 =1 s2} ->
   action s1 x = action s2 x.
@@ -157,6 +169,22 @@ apply/free_namesP/eqP; rewrite -fsubset0; apply/fsubsetP=> n.
 rewrite in_fsetI mem_supp in_fset0=> /andP [neq is_free].
 apply: contraNT neq => _; apply/eqP; rewrite fpermM /= (e _ is_free).
 by rewrite fpermK.
+Qed.
+
+Lemma free_names_action s x :
+  free_names (action s x) = s @: free_names x.
+Proof.
+apply/(canRL (imfsetK (fpermKV s))); apply/eq_fset=> n.
+rewrite (mem_imfset_can _ _ (fpermKV s) (fpermK s)).
+apply/(sameP idP)/(iffP idP)=> Pn.
+  apply/(@free_names_fin _ _ (free_names x :|: supp s))=> n'.
+  rewrite in_fsetU negb_or=> /andP [n'_fresh /suppPn n'_fix].
+  rewrite actionD -n'_fix -fperm2J fperm_mulsKV -actionD.
+  by rewrite (inj_eq (@action_inj s)); apply/eqP/free_names_min.
+apply/(@free_names_fin _ _ (free_names (action s x) :|: supp s))=> n'.
+rewrite in_fsetU negb_or=> /andP [n'_fresh /suppPn n'_fix].
+rewrite -(inj_eq (@action_inj s)) actionD -(fperm_mulsKV s (_ * _)).
+by rewrite fperm2J n'_fix -actionD; apply/eqP/free_names_min.
 Qed.
 
 End NominalTheory.
