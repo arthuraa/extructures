@@ -630,6 +630,13 @@ move=> fK fKV; apply/(sameP idP)/(iffP idP).
 by case/imfsetP=> [y Py ->]; rewrite fK.
 Qed.
 
+Lemma mem_imfset_inj f y s :
+  injective f -> (f y \in f @: s) = (y \in s).
+Proof.
+move=> f_inj; apply/(sameP (imfsetP f s _))/(iffP idP); first by eauto.
+by move=> [y' Py' /f_inj ->].
+Qed.
+
 End ImageProps.
 
 Section CardImage.
