@@ -734,4 +734,16 @@ Proof. by rewrite eqEfsize size_fset0 andbT. Qed.
 Lemma fsetU_eq0 s1 s2 : (s1 :|: s2 == fset0) = (s1 == fset0) && (s2 == fset0).
 Proof. by rewrite -!fsubset0 fsubUset. Qed.
 
+Lemma fdisjointUl s1 s2 s3 :
+  fdisjoint (s1 :|: s2) s3 = (fdisjoint s1 s3) && (fdisjoint s2 s3).
+Proof.
+by rewrite /fdisjoint fsetIUl -fsubset0 fsubUset 2!fsubset0.
+Qed.
+
+Lemma fdisjointUr s1 s2 s3 :
+  fdisjoint s1 (s2 :|: s3) = (fdisjoint s1 s2) && (fdisjoint s1 s3).
+Proof.
+by rewrite /fdisjoint fsetIUr -fsubset0 fsubUset 2!fsubset0.
+Qed.
+
 End Properties2.

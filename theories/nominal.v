@@ -626,6 +626,9 @@ Definition partmap_nominalMixin :=
 Canonical partmap_nominalType :=
   Eval hnf in NominalType {partmap T -> S} partmap_nominalMixin.
 
+Lemma namesmE m : names m = names (domm m) :|: names (domm (invm m)).
+Proof. by []. Qed.
+
 Lemma renamemE s m k : rename s m k = rename s (m (rename s^-1 k)).
 Proof.
 rewrite {1}/rename /=/partmap_rename mkpartmapfpE.
