@@ -85,7 +85,7 @@ Proof. by move=> ub; rewrite /= modz_nat absz_nat modn_mod modn_small //. Qed.
 (* Signed conversion to integers *)
 Definition int_of_word (w : word) : int :=
   if w < 2 ^ k.-1 then w : int
-  else (w - 2 ^ k)%Z.
+  else (w%:Z - (2 ^ k)%N%:Z)%R.
 
 Definition addw (w1 w2 : word) := as_word (w1 + w2)%N.
 Definition oppw (w : word) := as_word (2 ^ k - w)%N.
@@ -107,6 +107,14 @@ Qed.
 Lemma valwK (w : word) : as_word w = w.
 Proof.
 by do 2!apply: val_inj; rewrite /= modz_nat absz_nat modn_mod modn_small.
+Qed.
+
+Lemma int_of_wordK : cancel int_of_word as_word.
+Proof.
+rewrite /cancel /int_of_word /as_word => - [[w w_lt]] /=.
+do 2! apply: val_inj => /=.
+by case: ifP => _; last rewrite GRing.addrC -GRing.mulN1r modzMDl;
+rewrite modz_nat absz_nat modn_mod modn_small.
 Qed.
 
 Lemma add0w : left_id zerow addw.
