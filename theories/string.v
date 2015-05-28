@@ -5,6 +5,8 @@ Require Import Coq.Strings.Ascii Coq.Strings.String.
 
 Require Import ord.
 
+Notation string := string.
+
 Definition tuple_of_ascii c :=
   let: Ascii x1 x2 x3 x4 x5 x6 x7 x8 := c in
   (x1, x2, x3, x4, x5, x6, x7, x8).
