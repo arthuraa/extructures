@@ -654,6 +654,15 @@ have [_{k'}|] //= := altP (k' =P _).
 by rewrite renamemE.
 Qed.
 
+Lemma renamem_filter s p m :
+  rename s (filterm p m) =
+  filterm (fun k v => p (rename s^-1 k) (rename s^-1 v)) (rename s m).
+Proof.
+apply/eq_partmap=> k; rewrite renamemE 2!filtermE renamemE.
+case: (m _)=> [v|] //=.
+by rewrite renameK; have [|] := boolP (p _ _).
+Qed.
+
 CoInductive partmap_names_spec n m : Prop :=
 | PMFreeNamesKey k v of m k = Some v & n \in names k
 | PMFreeNamesVal k v of m k = Some v & n \in names v.
