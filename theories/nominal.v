@@ -663,6 +663,19 @@ case: (m _)=> [v|] //=.
 by rewrite renameK; have [|] := boolP (p _ _).
 Qed.
 
+Lemma domm_rename m s :
+  domm (rename s m) = rename s (domm m).
+Proof.
+apply/eq_fset=> k; apply/(sameP idP)/(iffP idP).
+  rewrite renamefsE=> /imfsetP [{k} k Pk ->].
+  move/dommP: Pk=> [v Pv]; apply/dommP; exists (rename s v).
+  by rewrite renamemE renameK Pv.
+move=> /dommP [v]; rewrite renamemE renamefsE=> Pv.
+apply/imfsetP; exists (rename s^-1 k); last by rewrite renameKV.
+apply/dommP; exists (rename s^-1 v).
+by move: Pv; case: (m _)=> // v' [<-]; rewrite renameK.
+Qed.
+
 CoInductive partmap_names_spec n m : Prop :=
 | PMFreeNamesKey k v of m k = Some v & n \in names k
 | PMFreeNamesVal k v of m k = Some v & n \in names v.
