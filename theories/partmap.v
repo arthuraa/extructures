@@ -372,6 +372,15 @@ Proof.
 by move=> e ks; apply/eq_partmap=> k; rewrite !mkpartmapfpE e.
 Qed.
 
+Lemma eq_filterm f1 f2 m :
+  (f1 =2 f2) ->
+  filterm f1 m = filterm f2 m.
+Proof.
+move=> e; apply/eq_partmap=> k; rewrite 2!filtermE.
+case: (m k) => [v|] //=.
+by rewrite e.
+Qed.
+
 Lemma setmI m k v : m k = Some v -> setm m k v = m.
 Proof.
 move=> get_k; apply/eq_partmap=> k'; rewrite setmE.
