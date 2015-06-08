@@ -250,6 +250,15 @@ Proof.
 by apply/eq_fset=> k; rewrite in_fsetU !mem_domm unionmE; case: (m1 k).
 Qed.
 
+Lemma domm_set m k v : domm (setm m k v) = k |: domm m.
+Proof.
+apply/eq_fset=> k'; apply/(sameP (dommP _ _))/(iffP idP);
+rewrite setmE in_fsetU1.
+  case/orP=> [->|]; first by eauto.
+  by move=> /dommP [v' ->]; case: eq_op; eauto.
+by have [-> //|] := altP eqP => _ /= [v']; rewrite mem_domm => ->.
+Qed.
+
 Lemma emptymP : @emptym T S =1 [fun : T => None].
 Proof. by []. Qed.
 
@@ -358,6 +367,13 @@ move/(_ k1)/esym: s1_s2 k1_k2; rewrite eqxx.
 have [->|_ s1_s2] := altP (_ =P _); first by rewrite Ord.ltxx.
 move/(_ s2 k1): in_seq; rewrite inE {}s1_s2 /= => /esym/(allP lb2)/Ord.ltW /=.
 by rewrite Ord.ltNge => ->.
+Qed.
+
+Lemma setm_union m1 m2 k v :
+  setm (unionm m1 m2) k v = unionm (setm m1 k v) m2.
+Proof.
+apply/eq_partmap=> k'; rewrite !(setmE, unionmE).
+by have [->{k'}|] := altP (k' =P k).
 Qed.
 
 Lemma eq_mkpartmapf (f1 f2 : T -> S) :

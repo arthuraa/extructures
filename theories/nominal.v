@@ -291,7 +291,8 @@ Implicit Type (s : {fperm name}).
 
 Section ProdNominalType.
 
-Implicit Type (p : T * S).
+Variables T' S' : nominalType.
+Implicit Type (p : T' * S').
 
 Definition prod_rename s p := (rename s p.1, rename s p.2).
 
@@ -324,7 +325,7 @@ Qed.
 Definition prod_nominalMixin :=
   NominalMixin prod_renameD prod_namesNNE prod_namesTeq.
 Canonical prod_nominalType :=
-  Eval hnf in NominalType (T * S) prod_nominalMixin.
+  Eval hnf in NominalType (T' * S') prod_nominalMixin.
 
 Lemma renamepE s p : rename s p = (rename s p.1, rename s p.2).
 Proof. by []. Qed.
@@ -333,7 +334,8 @@ End ProdNominalType.
 
 Section SeqNominalType.
 
-Implicit Type (xs : seq T).
+Variable T' : nominalType.
+Implicit Type (xs : seq T').
 
 Definition seq_rename s xs := map (rename s) xs.
 
@@ -341,7 +343,7 @@ Definition seq_names xs := \bigcup_(x <- xs) names x.
 
 Lemma seq_renameD s1 s2 xs :
   seq_rename s1 (seq_rename s2 xs) = seq_rename (s1 * s2) xs.
-Proof. by rewrite /seq_rename -map_comp (eq_map (@renameD T s1 s2)). Qed.
+Proof. by rewrite /seq_rename -map_comp (eq_map (@renameD T' s1 s2)). Qed.
 
 Lemma seq_namesNNE n n' xs :
   n \notin seq_names xs -> n' \notin seq_names xs ->
@@ -369,7 +371,7 @@ Qed.
 
 Definition seq_nominalMixin :=
   NominalMixin seq_renameD seq_namesNNE seq_namesTeq.
-Canonical seq_nominalType := Eval hnf in NominalType (seq T) seq_nominalMixin.
+Canonical seq_nominalType := Eval hnf in NominalType (seq T') seq_nominalMixin.
 
 Lemma renamesE s xs : rename s xs = [seq rename s x | x <- xs].
 Proof. by []. Qed.
@@ -531,6 +533,9 @@ apply/(iffP idP).
 by move=> P; apply/namesfsP=> - [x /P/negbTE ->].
 Qed.
 
+Lemma namesfsU X Y : names (X :|: Y) = names X :|: names Y.
+Proof. by rewrite namesfsE bigcup_fsetU. Qed.
+
 End SetNominalType.
 
 Section PartMapNominalType.
@@ -661,6 +666,30 @@ Proof.
 apply/eq_partmap=> k; rewrite renamemE 2!filtermE renamemE.
 case: (m _)=> [v|] //=.
 by rewrite renameK; have [|] := boolP (p _ _).
+Qed.
+
+Lemma renamem_union s m1 m2 :
+  rename s (unionm m1 m2) = unionm (rename s m1) (rename s m2).
+Proof.
+apply/eq_partmap=> k; rewrite renamemE 2!unionmE 2!renamemE.
+by rewrite [in LHS]fun_if; case: (m1 _).
+Qed.
+
+Lemma renamem_mkpartmap s kvs :
+  rename s (mkpartmap kvs) =
+  mkpartmap (rename s kvs) :> {partmap T -> S}.
+Proof.
+by elim: kvs=> [|[k v] kvs IH] //=; rewrite renamem_set IH.
+Qed.
+
+Lemma renamem_mkpartmapf s f ks :
+  rename s (mkpartmapf f ks) =
+  mkpartmapf (fun k => rename s (f (rename s^-1 k))) (rename s ks).
+Proof.
+apply/eq_partmap=> k; rewrite renamemE 2!mkpartmapfE.
+rewrite [in LHS]fun_if (_ : (rename s^-1 k \in ks) = (k \in rename s ks)) //.
+rewrite -[in RHS](renameKV s k) mem_map //.
+exact: @rename_inj.
 Qed.
 
 Lemma domm_rename m s :

@@ -312,6 +312,12 @@ by case/orP=> [/fsubsetP h | /fsubsetP h]; apply/fsubsetP=> x hx;
 rewrite in_fsetU h /= ?orbT.
 Qed.
 
+Lemma fsub1set x s1 : fsubset (fset1 x) s1 = (x \in s1).
+Proof.
+apply/(sameP (fsubsetP _ _))/(iffP idP); last by [apply; rewrite in_fset1].
+by move=> x_in x' /fset1P ->.
+Qed.
+
 Lemma in_mkfset x xs : (x \in mkfset xs) = (x \in xs).
 Proof. by elim: xs => [|x' xs IH] //=; rewrite in_fsetU1 IH inE. Qed.
 
@@ -515,12 +521,14 @@ Notation "\bigcup_ ( i 'in' A ) F" :=
 
 Section BigSetOps.
 
+Local Open Scope fset_scope.
+
+Section Finite.
+
 Variable T : ordType.
 Variable I : finType.
 
 Implicit Types (U : pred T) (P : pred I) (F :  I -> {fset T}).
-
-Local Open Scope fset_scope.
 
 Lemma bigcup_sup j P F : P j -> fsubset (F j) (\bigcup_(i | P i) F i).
 Proof. by move=> Pj; rewrite (bigD1 j) //= fsubsetUl. Qed.
@@ -531,6 +539,28 @@ Proof.
 apply/(iffP idP)=> [|[i Pi]]; last first.
   apply: fsubsetP x; exact: bigcup_sup.
 by elim/big_rec: _ => [|i _ Pi _ /fsetUP[|//]]; [rewrite inE | exists i].
+Qed.
+
+End Finite.
+
+Variables I T : ordType.
+Variable F : I -> {fset T}.
+
+Lemma bigcup_fsetU1 i0 s :
+  \bigcup_(i <- i0 |: s) F i = F i0 :|: \bigcup_(i <- s) F i.
+Proof.
+have e: i0 |: s =i i0 :: s.
+  by move=> i; rewrite in_fsetU1 [in RHS]inE.
+rewrite (eq_big_idem _ _ _ e) /= ?big_cons //.
+exact: fsetUid.
+Qed.
+
+Lemma bigcup_fsetU s1 s2 :
+  \bigcup_(i <- s1 :|: s2) F i =
+  (\bigcup_(i <- s1) F i) :|: (\bigcup_(i <- s2) F i).
+Proof.
+elim/fset_ind: s1 => [|i s1 _ IH]; first by rewrite big_nil 2!fset0U.
+by rewrite fsetU1E -fsetUA -fsetU1E !bigcup_fsetU1 IH fsetUA.
 Qed.
 
 End BigSetOps.
