@@ -376,6 +376,18 @@ apply/eq_partmap=> k'; rewrite !(setmE, unionmE).
 by have [->{k'}|] := altP (k' =P k).
 Qed.
 
+Lemma filterm_union p m1 m2 :
+  fdisjoint (domm m1) (domm m2) ->
+  filterm p (unionm m1 m2) =
+  unionm (filterm p m1) (filterm p m2).
+Proof.
+move=> dis; apply/eq_partmap=> k; rewrite filtermE !unionmE !filtermE.
+case get_k1: (m1 k)=> [v|] //=.
+have: k \in domm m1 by rewrite mem_domm get_k1.
+move/fdisjointP: dis=> dis /dis; rewrite mem_domm.
+by case: (m2 k)=> //= _; case: ifP.
+Qed.
+
 Lemma eq_mkpartmapf (f1 f2 : T -> S) :
   f1 =1 f2 -> mkpartmapf f1 =1 mkpartmapf f2.
 Proof.
@@ -395,6 +407,13 @@ Proof.
 move=> e; apply/eq_partmap=> k; rewrite 2!filtermE.
 case: (m k) => [v|] //=.
 by rewrite e.
+Qed.
+
+Lemma domm_filter p m :
+  fsubset (domm (filterm p m)) (domm m).
+Proof.
+apply/fsubsetP=> k; rewrite !mem_domm filtermE.
+by case: (m k).
 Qed.
 
 Lemma setmI m k v : m k = Some v -> setm m k v = m.
