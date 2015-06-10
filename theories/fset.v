@@ -312,6 +312,24 @@ by case/orP=> [/fsubsetP h | /fsubsetP h]; apply/fsubsetP=> x hx;
 rewrite in_fsetU h /= ?orbT.
 Qed.
 
+Lemma fsetUS s1 s2 s3 :
+  fsubset s1 s2 -> fsubset (s3 :|: s1) (s3 :|: s2).
+Proof.
+rewrite fsubUset fsubsetUl /= => sub; rewrite fsubsetU //.
+by rewrite sub orbT.
+Qed.
+
+Lemma fsetSU s1 s2 s3 :
+  fsubset s1 s2 -> fsubset (s1 :|: s3) (s2 :|: s3).
+Proof. by rewrite !(fsetUC _ s3); apply: fsetUS. Qed.
+
+Lemma fsetUSS s1 s2 s3 s4 :
+  fsubset s1 s2 -> fsubset s3 s4 ->
+  fsubset (s1 :|: s3) (s2 :|: s4).
+Proof.
+by move=> P1 P2; rewrite (fsubset_trans (fsetSU _ P1)) // fsetUS.
+Qed.
+
 Lemma fsub1set x s1 : fsubset (fset1 x) s1 = (x \in s1).
 Proof.
 apply/(sameP (fsubsetP _ _))/(iffP idP); last by [apply; rewrite in_fset1].
@@ -399,6 +417,24 @@ Lemma fsubIset s1 s2 s3 :
   fsubset s1 s3 || fsubset s2 s3 -> fsubset (s1 :&: s2) s3.
 Proof.
 by case/orP=> [/fsubsetP h|/fsubsetP h]; apply/fsubsetP=> x /fsetIP[]; eauto.
+Qed.
+
+Lemma fsetIS s1 s2 s3 :
+  fsubset s1 s2 -> fsubset (s3 :&: s1) (s3 :&: s2).
+Proof.
+by rewrite fsubsetI fsubsetIl /= => sub; rewrite fsubIset // sub orbT.
+Qed.
+
+Lemma fsetSI s1 s2 s3 :
+  fsubset s1 s2 -> fsubset (s1 :&: s3) (s2 :&: s3).
+Proof. by rewrite 2!(fsetIC _ s3); apply: fsetIS. Qed.
+
+Lemma fsetISS s1 s2 s3 s4 :
+  fsubset s1 s2 -> fsubset s3 s4 ->
+  fsubset (s1 :&: s3) (s2 :&: s4).
+Proof.
+move=> sub1 sub2; rewrite (fsubset_trans (fsetIS _ sub2)) //.
+by rewrite fsetSI.
 Qed.
 
 Lemma fdisjointC : commutative (@fdisjoint T).

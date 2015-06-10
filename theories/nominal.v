@@ -104,6 +104,8 @@ Section NominalTheory.
 Local Open Scope fset_scope.
 Local Open Scope fperm_scope.
 
+Section Basics.
+
 Variable T : nominalType.
 
 Implicit Types (s : {fperm name}) (x : T).
@@ -190,6 +192,26 @@ rewrite -(inj_eq (@rename_inj s)) renameD -(fperm_mulsKV s (_ * _)).
 rewrite fperm2J n'_fix -renameD; apply: contra n'_fresh=> /eqP.
 by apply/namesTeq.
 Qed.
+
+End Basics.
+
+Section Equivariance.
+
+Variables T S : nominalType.
+
+Definition equivariant (f : T -> S) :=
+  forall s x, rename s (f x) = f (rename s x).
+
+Lemma equivariant_names f :
+  equivariant f ->
+  forall x, fsubset (names (f x)) (names x).
+Proof.
+move=> equi x; apply/fsubsetP=> n Pn.
+apply: (@mem_names _ _ _ (names (f x))) => n'; apply: contra=> /eqP ex.
+by rewrite -ex -equi names_rename -{1}(@fperm2L _ n n') mem_imfset.
+Qed.
+
+End Equivariance.
 
 End NominalTheory.
 
@@ -536,6 +558,11 @@ Qed.
 Lemma namesfsU X Y : names (X :|: Y) = names X :|: names Y.
 Proof. by rewrite namesfsE bigcup_fsetU. Qed.
 
+Lemma namesfs_subset X Y :
+  fsubset X Y ->
+  fsubset (names X) (names Y).
+Proof. by move=> /eqP <-; rewrite namesfsU /fsubset fsetUA fsetUid. Qed.
+
 End SetNominalType.
 
 Section PartMapNominalType.
@@ -692,10 +719,10 @@ rewrite -[in RHS](renameKV s k) mem_map //.
 exact: @rename_inj.
 Qed.
 
-Lemma domm_rename m s :
-  domm (rename s m) = rename s (domm m).
+Lemma renamem_dom m s :
+  rename s (domm m) = domm (rename s m).
 Proof.
-apply/eq_fset=> k; apply/(sameP idP)/(iffP idP).
+apply/esym/eq_fset=> k; apply/(sameP idP)/(iffP idP).
   rewrite renamefsE=> /imfsetP [{k} k Pk ->].
   move/dommP: Pk=> [v Pv]; apply/dommP; exists (rename s v).
   by rewrite renamemE renameK Pv.
@@ -727,6 +754,67 @@ have /(tnthP (in_tuple (domm (invm m)))) [i i_in]: v \in domm (invm m).
   by apply/invmP; eauto.
 right; rewrite namesfsE big_tnth; apply/bigcupP.
 by rewrite {}i_in in n_in; eexists; eauto.
+Qed.
+
+(* FIXME: Use equivariant_names for these results *)
+Lemma namesm_set m k v :
+  fsubset (names (setm m k v)) (names m :|: names k :|: names v).
+Proof.
+apply/fsubsetP=> n; case/namesmP=> [k' v'|k' v']; rewrite setmE;
+have [Pk'|Pk'] := altP eqP; try subst k'.
+- by move=> _; rewrite !in_fsetU=> ->; rewrite orbT.
+- move=> get_k' Pn; rewrite 2!in_fsetU (_ : n \in names m) //.
+  by apply/namesmP; eapply PMFreeNamesKey; eauto.
+- by move=> [<-]; rewrite 2!in_fsetU=> ->; rewrite orbT.
+move=> get_k' Pn; rewrite 2!in_fsetU (_ : n \in names m) //.
+by apply/namesmP; eapply PMFreeNamesVal; eauto.
+Qed.
+
+Lemma namesm_union m1 m2 :
+  fsubset (names (unionm m1 m2)) (names m1 :|: names m2).
+Proof.
+apply/fsubsetP=> n; case/namesmP=> [k v|k v]; rewrite unionmE;
+case get_k: (m1 k)=> [v'|] //=.
+- move=> _ Pn; apply/fsetUP; left; apply/namesmP.
+  by eapply PMFreeNamesKey; eauto.
+- move=> get_k' Pn; apply/fsetUP; right; apply/namesmP.
+  by eapply PMFreeNamesKey; eauto.
+- move=> [<-] Pn; apply/fsetUP; left; apply/namesmP.
+  by eapply PMFreeNamesVal; eauto.
+move=> get_k' Pn; apply/fsetUP; right; apply/namesmP.
+by eapply PMFreeNamesVal; eauto.
+Qed.
+
+Lemma namesm_union_disjoint m1 m2 :
+  fdisjoint (domm m1) (domm m2) ->
+  names (unionm m1 m2) = names m1 :|: names m2.
+Proof.
+move=> /fdisjointP dis; apply/eqP; rewrite eqEfsubset namesm_union /=.
+apply/fsubsetP=> n /fsetUP []; case/namesmP=> [k v|k v] get_k Pn.
+- apply/namesmP; eapply PMFreeNamesKey; eauto.
+  by rewrite unionmE get_k.
+- have {get_k} get_k: unionm m1 m2 k = Some v by rewrite unionmE get_k.
+  by apply/namesmP; eapply PMFreeNamesVal; eauto.
+- case get_k': (m1 k) => [v'|] //=.
+    have: k \in domm m1 by rewrite mem_domm get_k'.
+    by move=> /dis; rewrite mem_domm get_k.
+  have {get_k} get_k: unionm m1 m2 k = Some v by rewrite unionmE get_k'.
+  by apply/namesmP; eapply PMFreeNamesKey; eauto.
+case get_k': (m1 k) => [v'|] //=.
+  have: k \in domm m1 by rewrite mem_domm get_k'.
+  by move=> /dis; rewrite mem_domm get_k.
+have {get_k} get_k: unionm m1 m2 k = Some v by rewrite unionmE get_k'.
+by apply/namesmP; eapply PMFreeNamesVal; eauto.
+Qed.
+
+Lemma namesm_filter p m :
+  fsubset (names (filterm p m)) (names m).
+Proof.
+apply/fsubsetP=> n; case/namesmP=> [k v|k v];
+rewrite filtermE; case get_k: (m k)=> [v'|] //=;
+case: p=> //= - [?] Pn; subst v'; apply/namesmP.
+  by eapply PMFreeNamesKey; eauto.
+by eapply PMFreeNamesVal; eauto.
 Qed.
 
 End PartMapNominalType.
