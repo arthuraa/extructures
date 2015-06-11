@@ -1,6 +1,6 @@
 Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
 Require Import Ssreflect.ssrnat Ssreflect.eqtype Ssreflect.seq.
-Require Import Ssreflect.fintype.
+Require Import Ssreflect.choice Ssreflect.fintype.
 
 Require Import MathComp.tuple MathComp.bigop.
 
@@ -17,6 +17,8 @@ Definition nat_of_name (n : name) := let: Name n := n in n.
 Canonical name_newType := Eval hnf in [newType for nat_of_name].
 Definition name_eqMixin := [eqMixin of name by <:].
 Canonical name_eqType := Eval hnf in EqType name name_eqMixin.
+Definition name_choiceMixin := [choiceMixin of name by <:].
+Canonical name_choiceType := Eval hnf in ChoiceType name name_choiceMixin.
 Definition name_partOrdMixin := [partOrdMixin of name by <:].
 Canonical name_partOrdType := Eval hnf in PartOrdType name name_partOrdMixin.
 Definition name_ordMixin := [ordMixin of name by <:].
@@ -68,6 +70,7 @@ Definition pack m :=
 
 (* Inheritance *)
 Definition eqType := @Equality.Pack cT xclass xT.
+Definition choiceType := @Choice.Pack cT xclass xT.
 Definition ordType := @Ord.Total.Pack cT class xT.
 
 End ClassDef.
@@ -78,6 +81,8 @@ Coercion mixin : class_of >-> mixin_of.
 Coercion sort : type >-> Sortclass.
 Coercion eqType : type >-> Equality.type.
 Canonical eqType.
+Coercion choiceType : type >-> Choice.type.
+Canonical choiceType.
 Coercion ordType : type >-> Ord.Total.type.
 Canonical ordType.
 Notation nominalType := type.

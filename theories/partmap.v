@@ -37,6 +37,10 @@ Definition partmap_eqMixin T (S : eqType) :=
   [eqMixin of partmap_type T S by <:].
 Canonical partmap_eqType T (S : eqType) :=
   Eval hnf in EqType (partmap_type T S) (partmap_eqMixin T S).
+Definition partmap_choiceMixin T (S : choiceType) :=
+  [choiceMixin of partmap_type T S by <:].
+Canonical partmap_choiceType T (S : choiceType) :=
+  Eval hnf in ChoiceType (partmap_type T S) (partmap_choiceMixin T S).
 Definition partmap_partOrdMixin T (S : partOrdType) :=
   [partOrdMixin of partmap_type T S by <:].
 Canonical partmap_partOrdType T (S : ordType) :=
@@ -50,10 +54,6 @@ Canonical partmap_ordType T (S : ordType) :=
 
 Still need to rethink the interface hierarchy to allow this...
 
-Definition partmap_choiceMixin T (S : choiceType) :=
-  [choiceMixin of type T S by <:].
-Canonical partmap_choiceType T (S : choiceType) :=
-  Eval hnf in ChoiceType (type T S) (partmap_choiceMixin T S).
 Definition partmap_countMixin T (S : countType) :=
   [countMixin of type T S by <:].
 Canonical partmap_countType T (S : countType) :=

@@ -1,6 +1,6 @@
 Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
 Require Import Ssreflect.ssrnat Ssreflect.eqtype Ssreflect.seq.
-Require Import Ssreflect.fintype.
+Require Import Ssreflect.choice Ssreflect.fintype.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -23,8 +23,8 @@ Record mixin_of T := Mixin {
   _ : antisymmetric leq
 }.
 
-Record class_of T := Class {base : Equality.class_of T; mixin : mixin_of T}.
-Local Coercion base : class_of >->  Equality.class_of.
+Record class_of T := Class {base : Choice.class_of T; mixin : mixin_of T}.
+Local Coercion base : class_of >->  Choice.class_of.
 
 Structure type := Pack {sort; _ : class_of sort; _ : Type}.
 Local Coercion sort : type >-> Sortclass.
@@ -35,19 +35,23 @@ Let xT := let: Pack T _ _ := cT in T.
 Notation xclass := (class : class_of xT).
 
 Definition pack m :=
-  fun b bT & phant_id (Equality.class bT) b => Pack (@Class T b m) T.
+  fun b bT & phant_id (Choice.class bT) b => Pack (@Class T b m) T.
 
 (* Inheritance *)
 Definition eqType := @Equality.Pack cT xclass xT.
 
+Definition choiceType := @Choice.Pack cT xclass xT.
+
 End ClassDef.
 
 Module Import Exports.
-Coercion base : class_of >-> Equality.class_of.
+Coercion base : class_of >-> Choice.class_of.
 Coercion mixin : class_of >-> mixin_of.
 Coercion sort : type >-> Sortclass.
 Coercion eqType : type >-> Equality.type.
 Canonical eqType.
+Coercion choiceType : type >-> Choice.type.
+Canonical choiceType.
 Notation partOrdType := type.
 Notation partOrdMixin := mixin_of.
 Notation PartOrdMixin := Mixin.
@@ -147,6 +151,7 @@ Definition pack b0 (m0 : mixin_of (@Partial.Pack T b0 T)) :=
 
 (* Inheritance *)
 Definition eqType := @Equality.Pack cT xclass xT.
+Definition choiceType := @Choice.Pack cT xclass xT.
 Definition partOrdType := @Partial.Pack cT xclass xT.
 
 End ClassDef.
@@ -157,6 +162,8 @@ Coercion mixin : class_of >-> mixin_of.
 Coercion sort : type >-> Sortclass.
 Coercion eqType : type >-> Equality.type.
 Canonical eqType.
+Coercion choiceType : type >-> Choice.type.
+Canonical choiceType.
 Coercion partOrdType : type >-> Partial.type.
 Canonical partOrdType.
 Notation ordType := type.
@@ -479,7 +486,7 @@ Notation "[ 'partOrdMixin' 'of' T 'by' <: ]" :=
 
 Section TransferOrdType.
 
-Variables (T : eqType) (eT : ordType) (f : T -> eT).
+Variables (T : choiceType) (eT : ordType) (f : T -> eT).
 Local Open Scope ord_scope.
 
 Section Inj.

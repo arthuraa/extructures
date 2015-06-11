@@ -1,5 +1,5 @@
 Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
-Require Import Ssreflect.eqtype Ssreflect.seq.
+Require Import Ssreflect.eqtype Ssreflect.choice Ssreflect.seq.
 
 Require Import Coq.Strings.Ascii Coq.Strings.String.
 
@@ -20,6 +20,8 @@ Proof. by case. Qed.
 
 Definition ascii_eqMixin := CanEqMixin tuple_of_asciiK.
 Canonical ascii_eqType := Eval hnf in EqType ascii ascii_eqMixin.
+Definition ascii_choiceMixin := CanChoiceMixin tuple_of_asciiK.
+Canonical ascii_choiceType := Eval hnf in ChoiceType ascii ascii_choiceMixin.
 Definition ascii_partOrdMixin := CanPartOrdMixin tuple_of_asciiK.
 Canonical ascii_partOrdType :=
   Eval hnf in PartOrdType ascii ascii_partOrdMixin.
@@ -40,6 +42,9 @@ Proof. by elim=> [|c s /= ->]. Qed.
 
 Definition string_eqMixin := CanEqMixin seq_of_stringK.
 Canonical string_eqType := Eval hnf in EqType string string_eqMixin.
+Definition string_choiceMixin := CanChoiceMixin seq_of_stringK.
+Canonical string_choiceType :=
+  Eval hnf in ChoiceType string string_choiceMixin.
 Definition string_partOrdMixin := CanPartOrdMixin seq_of_stringK.
 Canonical string_partOrdType :=
   Eval hnf in PartOrdType string string_partOrdMixin.
