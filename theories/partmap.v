@@ -2,7 +2,7 @@ Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
 Require Import Ssreflect.ssrnat Ssreflect.eqtype Ssreflect.seq.
 Require Import Ssreflect.choice Ssreflect.fintype.
 
-Require Import MathComp.path.
+Require Import MathComp.path MathComp.bigop.
 
 Require Import ord fset.
 
@@ -205,6 +205,43 @@ Local Open Scope fset_scope.
 
 Implicit Type m : {partmap T -> S}.
 
+Lemma eq_partmap m1 m2 : m1 =1 m2 <-> m1 = m2.
+Proof.
+split; last congruence.
+have in_seq: forall s : seq (T * S), [pred k | getm_def s k] =i [seq p.1 | p <- s].
+  elim=> [|p s IH] k; rewrite /= !inE // -IH inE.
+  by case: (k == p.1).
+case: m1 m2 => [s1 Ps1] [s2 Ps2]; rewrite /getm /= => s1_s2.
+apply: val_inj=> /=.
+elim: s1 Ps1 s2 Ps2 s1_s2
+      => [_|[k1 v1] s1 IH /= Ps1] [_|[k2 v2] s2 /= Ps2] //
+      => [/(_ k2)|/(_ k1)| ]; try by rewrite eqxx.
+have lb1 := order_path_min (@Ord.lt_trans _) Ps1.
+have lb2 := order_path_min (@Ord.lt_trans _) Ps2.
+move: {Ps1 Ps2} (path_sorted Ps2) (path_sorted Ps1) => Ps1 Ps2.
+move: IH => /(_ Ps2 _ Ps1) {Ps1 Ps2} IH s1_s2.
+wlog: k1 k2 v1 v2 s1 s2 lb1 lb2 s1_s2 IH / k1 <= k2.
+  move=> H.
+  have [|k2_k1] := orP (Ord.leq_total k1 k2); first by eauto.
+  symmetry; apply: H; eauto.
+    by move=> k /=; rewrite s1_s2.
+  by move=> H'; rewrite IH //.
+rewrite Ord.leq_eqVlt=> /orP [/eqP k1_k2|k1_k2].
+  rewrite -{}k1_k2 {k2} in lb2 s1_s2 *.
+  move: (s1_s2 k1); rewrite eqxx=> - [->].
+  rewrite {}IH // => k; move: {s1_s2} (s1_s2 k).
+  have [-> {k} _|ne ?] // := altP (_ =P _).
+  move: (in_seq s1 k1) (in_seq s2 k1); rewrite !inE.
+  case: (getm_def s1 k1) (getm_def s2 k1) => [v1'|] [v2'|] //=.
+  - by move=> _ /esym/(allP lb2) /=; rewrite Ord.ltxx.
+  - by move=> /esym/(allP lb1) /=; rewrite Ord.ltxx.
+  by move=> _ /esym/(allP lb2) /=; rewrite Ord.ltxx.
+move/(_ k1)/esym: s1_s2 k1_k2; rewrite eqxx.
+have [->|_ s1_s2] := altP (_ =P _); first by rewrite Ord.ltxx.
+move/(_ s2 k1): in_seq; rewrite inE {}s1_s2 /= => /esym/(allP lb2)/Ord.ltW /=.
+by rewrite Ord.ltNge => ->.
+Qed.
+
 Lemma mem_domm m k : k \in domm m = m k.
 Proof.
 rewrite inE /domm /= in_mkfset.
@@ -217,6 +254,11 @@ Proof.
 by rewrite mem_domm; case: (m k) => /=; constructor; eauto; case.
 Qed.
 
+Lemma dommPn m k : reflect (m k = None) (k \notin domm m).
+Proof.
+by rewrite mem_domm; case: (m k)=> /=; constructor.
+Qed.
+
 Lemma setmE m k v k' :
   setm m k v k' =
   if k' == k then Some v else getm m k'.
@@ -226,6 +268,17 @@ rewrite ![in LHS](fun_if, if_arg) /= {}IH; last exact: path_sorted Ps.
 have [->{k'}|Hne] := altP (k' =P k); case: (Ord.ltgtP k) => //.
 by move=> <-; rewrite (negbTE Hne).
 Qed.
+
+Lemma setmC m k v k' v' : k != k' ->
+  setm (setm m k v) k' v' = setm (setm m k' v') k v.
+Proof.
+move=> ne; apply/eq_partmap=> k''; rewrite !setmE.
+have [->{k''}|//] := altP (k'' =P k').
+by rewrite eq_sym (negbTE ne).
+Qed.
+
+Lemma setmxx m k v v' : setm (setm m k v) k v' = setm m k v'.
+Proof. by apply/eq_partmap=> k'; rewrite !setmE; case: eqP. Qed.
 
 Lemma repmE m m' k f :
   repm m k f = Some m' ->
@@ -259,8 +312,14 @@ rewrite setmE in_fsetU1.
 by have [-> //|] := altP eqP => _ /= [v']; rewrite mem_domm => ->.
 Qed.
 
-Lemma emptymP : @emptym T S =1 [fun : T => None].
+Lemma emptymE k : @emptym T S k = None.
 Proof. by []. Qed.
+
+Lemma domm0 : domm (@emptym T S) = fset0.
+Proof.
+by apply/eq_fset=> k; rewrite mem_domm.
+Qed.
+
 
 Lemma mapmE S' (f : S -> S') m : mapm f m =1 omap f \o m.
 Proof.
@@ -294,6 +353,11 @@ have [-> lb|ne lb] := altP (_ =P _).
   by move: lb; have [->|//] := altP (_ =P _); rewrite Ord.ltxx.
 have [-> {k'}|ne'] // := altP (k' =P k).
 by rewrite eq_sym (negbTE ne).
+Qed.
+
+Lemma domm_rem m k : domm (remm m k) = domm m :\ k.
+Proof.
+by apply/eq_fset=> k'; rewrite in_fsetD1 !mem_domm remmE; case: eqP.
 Qed.
 
 Lemma domm_mkpartmap (kvs : seq (T * S)) : domm (mkpartmap kvs) =i unzip1 kvs.
@@ -330,43 +394,6 @@ Lemma domm_mkpartmapfp (f : T -> option S) (ks : seq T) :
 Proof.
 apply/eq_fset=> k; rewrite mem_domm mkpartmapfpE in_mkfset mem_filter andbC.
 by case: (k \in ks).
-Qed.
-
-Lemma eq_partmap m1 m2 : m1 =1 m2 <-> m1 = m2.
-Proof.
-split; last congruence.
-have in_seq: forall s : seq (T * S), [pred k | getm_def s k] =i [seq p.1 | p <- s].
-  elim=> [|p s IH] k; rewrite /= !inE // -IH inE.
-  by case: (k == p.1).
-case: m1 m2 => [s1 Ps1] [s2 Ps2]; rewrite /getm /= => s1_s2.
-apply: val_inj=> /=.
-elim: s1 Ps1 s2 Ps2 s1_s2
-      => [_|[k1 v1] s1 IH /= Ps1] [_|[k2 v2] s2 /= Ps2] //
-      => [/(_ k2)|/(_ k1)| ]; try by rewrite eqxx.
-have lb1 := order_path_min (@Ord.lt_trans _) Ps1.
-have lb2 := order_path_min (@Ord.lt_trans _) Ps2.
-move: {Ps1 Ps2} (path_sorted Ps2) (path_sorted Ps1) => Ps1 Ps2.
-move: IH => /(_ Ps2 _ Ps1) {Ps1 Ps2} IH s1_s2.
-wlog: k1 k2 v1 v2 s1 s2 lb1 lb2 s1_s2 IH / k1 <= k2.
-  move=> H.
-  have [|k2_k1] := orP (Ord.leq_total k1 k2); first by eauto.
-  symmetry; apply: H; eauto.
-    by move=> k /=; rewrite s1_s2.
-  by move=> H'; rewrite IH //.
-rewrite Ord.leq_eqVlt=> /orP [/eqP k1_k2|k1_k2].
-  rewrite -{}k1_k2 {k2} in lb2 s1_s2 *.
-  move: (s1_s2 k1); rewrite eqxx=> - [->].
-  rewrite {}IH // => k; move: {s1_s2} (s1_s2 k).
-  have [-> {k} _|ne ?] // := altP (_ =P _).
-  move: (in_seq s1 k1) (in_seq s2 k1); rewrite !inE.
-  case: (getm_def s1 k1) (getm_def s2 k1) => [v1'|] [v2'|] //=.
-  - by move=> _ /esym/(allP lb2) /=; rewrite Ord.ltxx.
-  - by move=> /esym/(allP lb1) /=; rewrite Ord.ltxx.
-  by move=> _ /esym/(allP lb2) /=; rewrite Ord.ltxx.
-move/(_ k1)/esym: s1_s2 k1_k2; rewrite eqxx.
-have [->|_ s1_s2] := altP (_ =P _); first by rewrite Ord.ltxx.
-move/(_ s2 k1): in_seq; rewrite inE {}s1_s2 /= => /esym/(allP lb2)/Ord.ltW /=.
-by rewrite Ord.ltNge => ->.
 Qed.
 
 Lemma setm_union m1 m2 k v :
@@ -427,7 +454,7 @@ Proof. by []. Qed.
 
 Lemma unionm0 : right_id (@emptym T S) unionm.
 Proof.
-move=> m; apply/eq_partmap=> k; rewrite unionmE emptymP /=.
+move=> m; apply/eq_partmap=> k; rewrite unionmE emptymE /=.
 by case: (m k).
 Qed.
 
@@ -515,6 +542,14 @@ move: (inj_m k1); rewrite mem_domm k1_in_m => /(_ erefl k2 (esym k2_in_m)).
 congruence.
 Qed.
 
+Lemma eq_domm0 (S' : eqType) (m : {partmap T -> S'}) :
+  (domm m == fset0) = (m == emptym).
+Proof.
+apply/(sameP idP)/(iffP idP)=> [/eqP->|/eqP Pdom]; first by rewrite domm0.
+apply/eqP/eq_partmap=> k; rewrite emptymE; apply/dommPn.
+by rewrite Pdom in_fset0.
+Qed.
+
 End EqType.
 
 Section Inverse.
@@ -559,6 +594,15 @@ apply/(iffP idP).
   by move=> h k'; apply: contra h=> /eqP h; apply/codommP; eauto.
 move=> h; apply/negP=> /codommP [k' h'].
 by move: (h k'); rewrite h' eqxx.
+Qed.
+
+Lemma codomm0 : codomm (@emptym T S) = fset0.
+Proof. by []. Qed.
+
+Lemma codomm_rem m k : fsubset (codomm (remm m k)) (codomm m).
+Proof.
+apply/fsubsetP=> v /codommP [k']; rewrite remmE.
+by case: eqP=> // _ Pv; apply/codommP; eauto.
 Qed.
 
 Lemma invmE m k : obind m (invm m k) = if invm m k then Some k else None.
@@ -617,3 +661,96 @@ by move: (invmE m k'); rewrite im_k' /= m_k.
 Qed.
 
 End Inverse.
+
+Section Enumeration.
+
+Variable T S : ordType.
+Implicit Type (m : {partmap T -> S}).
+Implicit Types (xs : {fset T}) (ys : {fset S}).
+
+Local Open Scope fset_scope.
+
+Let bindings ys x (ms : {fset {partmap T -> S}}) :=
+  ms :|: \bigcup_(m <- ms) setm m x @: ys.
+
+Let bindingsP m ys x ms :
+  reflect (m \in ms \/ exists p, [/\ p.1 \in ys,
+                                     p.2 \in ms &
+                                     m = setm p.2 x p.1 ])
+          (m \in bindings ys x ms).
+Proof.
+rewrite in_fsetU; apply(iffP orP)=> [[|]|[|]]; try by intuition.
+  case/bigcupP=> [m' m'_in _ /imfsetP [y y_in ->]]; right.
+  by exists (y, m'); split.
+case=> [[y m'] /= [y_in m'_in ->]]; right.
+by apply/bigcupP; econstructor; eauto; rewrite mem_imfset.
+Qed.
+
+Definition enum_partmap xs ys :=
+  foldr (bindings ys) (fset1 emptym) xs.
+
+Lemma enum_partmap_fsetU1 x xs ys :
+  enum_partmap (x |: xs) ys =
+  bindings ys x (enum_partmap xs ys).
+Proof.
+case: xs=> [xs Pxs] /=; rewrite /fsetU1 /enum_partmap /=.
+elim: xs Pxs=> [|x' xs IH] //= Pxs.
+move/(_ (path_sorted Pxs)) in IH.
+case: Ord.ltgtP=> [lt|gt|<-{x' Pxs}] //=.
+  rewrite {}IH; move: (foldr _ _ _)=> {xs Pxs} ms.
+  rewrite /bindings -!fsetUA; congr fsetU.
+  rewrite 2!bigcup_fsetU 2!fsetUA; congr fsetU; first by rewrite fsetUC.
+  rewrite 2!bigcup_bigcup; apply: eq_bigr=> m _.
+  rewrite 2?big_idem_imfset /=; try apply: fsetUid.
+  apply/eq_fset=> m'; apply/(sameP (bigcupP _ _ _ _))/(iffP idP).
+    case/bigcupP=> y y_in _ /imfsetP [y' y'_in ->{m'}].
+    econstructor; eauto; apply/imfsetP; exists y=> //.
+    by rewrite setmC //; apply: contraTN gt=> /eqP ->; rewrite Ord.ltxx.
+  case=> y y_in _ /imfsetP [y' y'_in ->{m'}].
+  apply/bigcupP; econstructor; eauto; apply/imfsetP.
+  exists y; eauto; rewrite setmC //; apply: contraTN gt=> /eqP ->.
+  by rewrite Ord.ltxx.
+move: {IH} (foldr _ _ _)=> {xs} ms; rewrite /bindings.
+rewrite bigcup_fsetU fsetUA -(fsetUA ms) fsetUid bigcup_bigcup -fsetUA.
+congr fsetU; rewrite -[LHS]fsetUid; congr fsetU; apply/eq_bigr=> m _.
+apply/eq_fset=> m'; apply/(sameP idP)/(iffP idP).
+  case/bigcupP=> [m'' /imfsetP [y y_in ->] {m''} _].
+  by rewrite (@eq_imfset _ _ _ (setm m x)) // => y'; rewrite setmxx.
+move=> /imfsetP [y y_in ->]; rewrite big_idem_imfset /=; last exact: fsetUid.
+apply/bigcupP; econstructor; eauto; apply/imfsetP; exists y=> //.
+by rewrite setmxx.
+Qed.
+
+Lemma enum_partmapE m xs ys :
+  m \in enum_partmap xs ys
+  = (fsubset (domm m) xs) && (fsubset (codomm m) ys).
+Proof.
+elim/fset_ind: xs m=> [|x xs Px IH] m.
+  rewrite in_fset1 fsubset0 eq_domm0.
+  apply/(sameP idP)/(iffP idP)=> [/andP [] //|/eqP ->].
+  by rewrite codomm0 fsub0set.
+rewrite enum_partmap_fsetU1.
+apply/bindingsP/andP.
+  rewrite IH; case=> [/andP [/fsubsetP Pxs Pys]|]; first split=> //.
+    by apply/fsubsetP=> x' /Pxs; rewrite in_fsetU1 orbC=> ->.
+  case=> [[y m'] /= [y_in m'_in ->]].
+  rewrite IH in m'_in; case/andP: m'_in=> [Pdom Pcodom].
+  rewrite domm_set 2!fsetU1E fsetUS //; split=> //.
+  apply/fsubsetP=> y' /codommP [x']; rewrite setmE.
+  have [_{x'}[<-]//|_ Px'] := altP eqP.
+  by move/fsubsetP/(_ y'): Pcodom; apply; apply/codommP; eauto.
+have [x_in|/dommPn x_nin] := boolP (x \in domm m).
+  rewrite -fsubD1set -domm_rem.
+  case/dommP: (x_in)=> [y Py] [Pdom Pcodom].
+  have /(fsubsetP _ _ Pcodom) Py': y \in codomm m by apply/codommP; eauto.
+  have Pcodom' : fsubset (codomm (remm m x)) ys.
+    by rewrite (fsubset_trans (codomm_rem _ _)).
+  right; exists (y, remm m x)=> /=; split=>//; first by rewrite IH Pdom.
+  apply/eq_partmap=> x'; rewrite setmE remmE.
+  by case: eqP=> // ->.
+case=> [Pdom Pcodom]; left; rewrite IH Pcodom andbT.
+apply/fsubsetP=> x' Px'; move: Px' (fsubsetP _ _ Pdom _ Px').
+by rewrite mem_domm in_fsetU1; case: eqP => // ->; rewrite x_nin.
+Qed.
+
+End Enumeration.

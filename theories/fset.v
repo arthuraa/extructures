@@ -469,6 +469,12 @@ rewrite add0n; congr size; congr val; apply/eq_fset=> x'.
 by rewrite in_fsetD1; have [->|] //= := altP eqP; apply/negbTE.
 Qed.
 
+Lemma fsubD1set s1 x s2 : fsubset (s1 :\ x) s2 = fsubset s1 (x |: s2).
+Proof.
+by apply/fsubsetP/fsubsetP=> h x';
+move/(_ x'): h; rewrite in_fsetD1 in_fsetU1; case: eqP.
+Qed.
+
 Lemma fsubset_leq_size s1 s2 : fsubset s1 s2 -> size s1 <= size s2.
 Proof.
 elim/fset_ind: s1 s2 => [|x s1 Px IH] s2; first by rewrite leq0n.
