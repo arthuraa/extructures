@@ -562,6 +562,41 @@ Section BigSetOps.
 
 Local Open Scope fset_scope.
 
+Section General.
+
+Variable T : ordType.
+Variable I : eqType.
+
+Implicit Types (U : pred T) (P : pred I) (F :  I -> {fset T}).
+
+Lemma bigcup_sup j s P F :
+  j \in s -> P j -> fsubset (F j) (\bigcup_(i <- s | P i) F i).
+Proof.
+elim: s=> [|j' s IH] //=; rewrite inE=> /orP [/eqP <-|]; rewrite big_cons.
+  by move=> ->; rewrite fsubsetUl.
+case: ifP => // _ /IH {IH} IH /IH {IH} IH.
+by rewrite (fsubset_trans IH) // fsubsetUr.
+Qed.
+
+CoInductive bigcup_spec x (s : seq I) P F : Prop :=
+| BigCupSpec i of i \in s & P i & x \in F i.
+
+Lemma bigcupP x s P F :
+  reflect (bigcup_spec x s P F) (x \in \bigcup_(i <- s | P i) F i).
+Proof.
+apply/(iffP idP)=> [|[i Ps Pi]]; last first.
+  apply: fsubsetP x; exact: bigcup_sup.
+elim: s=> [|i s IH]; first by rewrite big_nil.
+rewrite big_cons; case: ifP=> [Pi /fsetUP [x_in|]|_].
+- by apply: BigCupSpec; eauto; rewrite inE eqxx.
+- case/IH=> [i' i'_in Pi' x_in]; apply: BigCupSpec; eauto.
+  by rewrite inE i'_in orbT.
+case/IH=> [i' i'_in Pi' x_in]; apply: BigCupSpec; eauto.
+by rewrite inE i'_in orbT.
+Qed.
+
+End General.
+
 Section Finite.
 
 Variable T : ordType.
@@ -569,38 +604,18 @@ Variable I : finType.
 
 Implicit Types (U : pred T) (P : pred I) (F :  I -> {fset T}).
 
-Lemma bigcup_sup j P F : P j -> fsubset (F j) (\bigcup_(i | P i) F i).
-Proof. by move=> Pj; rewrite (bigD1 j) //= fsubsetUl. Qed.
+Lemma bigcup_fin_sup j P F :
+  P j -> fsubset (F j) (\bigcup_(i | P i) F i).
+Proof. by apply: bigcup_sup; rewrite mem_index_enum. Qed.
 
-Lemma bigcupP x P F :
+Lemma bigcup_finP x P F :
   reflect (exists2 i, P i & x \in F i) (x \in \bigcup_(i | P i) F i).
 Proof.
-apply/(iffP idP)=> [|[i Pi]]; last first.
-  apply: fsubsetP x; exact: bigcup_sup.
-by elim/big_rec: _ => [|i _ Pi _ /fsetUP[|//]]; [rewrite inE | exists i].
+apply/(iffP (bigcupP _ _ _ _))=> [[i _ Pi x_in]|[i Pi x_in]]; eauto.
+by econstructor; eauto.
 Qed.
 
 End Finite.
-
-Variables I T : ordType.
-Variable F : I -> {fset T}.
-
-Lemma bigcup_fsetU1 i0 s :
-  \bigcup_(i <- i0 |: s) F i = F i0 :|: \bigcup_(i <- s) F i.
-Proof.
-have e: i0 |: s =i i0 :: s.
-  by move=> i; rewrite in_fsetU1 [in RHS]inE.
-rewrite (eq_big_idem _ _ _ e) /= ?big_cons //.
-exact: fsetUid.
-Qed.
-
-Lemma bigcup_fsetU s1 s2 :
-  \bigcup_(i <- s1 :|: s2) F i =
-  (\bigcup_(i <- s1) F i) :|: (\bigcup_(i <- s2) F i).
-Proof.
-elim/fset_ind: s1 => [|i s1 _ IH]; first by rewrite big_nil 2!fset0U.
-by rewrite fsetU1E -fsetUA -fsetU1E !bigcup_fsetU1 IH fsetUA.
-Qed.
 
 End BigSetOps.
 
@@ -816,3 +831,88 @@ by rewrite /fdisjoint fsetIUr -fsubset0 fsubUset 2!fsubset0.
 Qed.
 
 End Properties2.
+
+Section BigOpIdempotent.
+
+Variables (R : Type) (idx : R).
+Local Notation "1" := idx.
+
+Variable op : Monoid.com_law 1.
+Local Notation "*%M" := op (at level 0).
+Local Notation "x * y" := (op x y).
+
+Hypothesis opxx : idempotent op.
+
+Local Open Scope fset_scope.
+
+Section Basic.
+
+Variables (I : ordType) (J : Type).
+Variables (F : I -> R) (G : J -> {fset I}).
+
+Lemma big_idem_fsetU1 i0 s :
+  \big[*%M/1]_(i <- i0 |: s) F i = F i0 * \big[*%M/1]_(i <- s) F i.
+Proof.
+have e: i0 |: s =i i0 :: s.
+  by move=> i; rewrite in_fsetU1 [in RHS]inE.
+by rewrite (eq_big_idem _ _ _ e) /= ?big_cons.
+Qed.
+
+Lemma big_idem_fsetU s1 s2 :
+  \big[*%M/1]_(i <- s1 :|: s2) F i =
+  (\big[*%M/1]_(i <- s1) F i) * (\big[*%M/1]_(i <- s2) F i).
+Proof.
+elim/fset_ind: s1 => [|i s1 _ IH]; first by rewrite big_nil 2!Monoid.mul1m.
+by rewrite fsetU1E -fsetUA -fsetU1E !big_idem_fsetU1 // IH Monoid.mulmA.
+Qed.
+
+Lemma big_idem_bigcup s :
+  \big[*%M/1]_(i <- \bigcup_(j <- s) G j) F i
+  = \big[*%M/1]_(j <- s) \big[*%M/1]_(i <- G j) F i.
+Proof.
+elim: s => [|j s IH]; first by rewrite 3!big_nil.
+by rewrite 2!big_cons big_idem_fsetU IH.
+Qed.
+
+End Basic.
+
+Section Image.
+
+Variables (I J : ordType).
+Variables (F : I -> R) (G : J -> I).
+
+Lemma big_idem_imfset s :
+  \big[*%M/1]_(i <- G @: s) F i
+  = \big[*%M/1]_(i <- s) F (G i).
+Proof.
+elim/fset_ind: s => [|j s _ IH]; first by rewrite imfset0 2!big_nil.
+by rewrite imfsetU1 2!big_idem_fsetU1 IH.
+Qed.
+
+End Image.
+
+End BigOpIdempotent.
+
+Section BigOpUnion.
+
+(* Specialize previous lemmas to unions *)
+
+Variables (I J R : ordType) (F : I -> {fset R}) (G : J -> {fset I}).
+
+Local Open Scope fset_scope.
+
+Lemma bigcup_fsetU1 i0 s :
+  \bigcup_(i <- i0 |: s) F i = F i0 :|: \bigcup_(i <- s) F i.
+Proof. apply: big_idem_fsetU1; exact: fsetUid. Qed.
+
+Lemma bigcup_fsetU s1 s2 :
+  \bigcup_(i <- s1 :|: s2) F i =
+  (\bigcup_(i <- s1) F i) :|: (\bigcup_(i <- s2) F i).
+Proof. apply: big_idem_fsetU; exact: fsetUid. Qed.
+
+Lemma bigcup_bigcup s :
+  \bigcup_(i <- \bigcup_(j <- s) G j) F i =
+  \bigcup_(j <- s) \bigcup_(i <- G j) F i.
+Proof. apply: big_idem_bigcup; exact: fsetUid. Qed.
+
+End BigOpUnion.

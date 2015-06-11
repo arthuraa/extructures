@@ -389,7 +389,7 @@ Lemma seq_namesTeq n n' xs :
   seq_rename (fperm2 n n') xs = xs ->
   n' \in seq_names xs.
 Proof.
-rewrite /seq_names big_tnth => /bigcupP [i _ Pin e].
+rewrite /seq_names big_tnth => /bigcup_finP [i _ Pin e].
 suff e': rename (fperm2 n n') (tnth (in_tuple xs) i) = tnth (in_tuple xs) i.
   by move: {e e'} n' (namesTeq Pin e'); apply/fsubsetP/bigcup_sup.
 rewrite (tnth_nth (tnth (in_tuple xs) i)) /=.
@@ -525,7 +525,7 @@ Lemma fset_namesTeq n n' X :
   fset_rename (fperm2 n n') X = X ->
   n' \in fset_names X.
 Proof.
-rewrite /fset_names /fset_rename big_tnth => /bigcupP [i _ Pi] e.
+rewrite /fset_names /fset_rename big_tnth => /bigcup_finP [i _ Pi] e.
 have {i Pi} [x x_in Pn] : exists2 x, x \in X & n \in names x.
   by eexists; eauto; apply: mem_tnth.
 move: x_in Pn; rewrite -{1}e => /imfsetP [y Py ->]; rewrite names_rename.
@@ -547,7 +547,7 @@ Proof. by []. Qed.
 Lemma namesfsP n X : reflect (exists2 x, x \in X & n \in names x)
                              (n \in names X).
 Proof.
-rewrite namesfsE big_tnth; apply/(iffP (bigcupP _ _ _)).
+rewrite namesfsE big_tnth; apply/(iffP (bigcup_finP _ _ _)).
   by move=> [i _ Pi]; eexists; eauto; apply/mem_tnth.
 by case=> [x /seq_tnthP [/= i ->]]; eexists; eauto.
 Qed.
@@ -745,7 +745,7 @@ Lemma namesmP n m :
   reflect (partmap_names_spec n m) (n \in names m).
 Proof.
 rewrite /names/=/partmap_names; apply/(iffP idP).
-  case/fsetUP; rewrite !namesfsE big_tnth=> /bigcupP [i _].
+  case/fsetUP; rewrite !namesfsE big_tnth=> /bigcup_finP [i _].
     move: (mem_tnth i (in_tuple (domm m)))=> /dommP [v Pv].
     by apply: PMFreeNamesKey.
   move: (mem_tnth i (in_tuple (domm (invm m))))=> /codommP [x m_x].
