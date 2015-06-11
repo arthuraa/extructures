@@ -527,6 +527,8 @@ Implicit Type (m : {partmap T -> S}).
 
 Definition invm m := mkpartmap [seq (p.2, p.1) | p <- m].
 
+Definition codomm m := domm (invm m).
+
 End Def.
 
 Section Cancel.
@@ -541,9 +543,9 @@ rewrite /invm =>/mkpartmap_Some/mapP [[h h'] /getmP get_k /= [??]].
 by subst h h'.
 Qed.
 
-Lemma invmP m k : reflect (exists k', m k' = Some k) (k \in domm (invm m)).
+Lemma codommP m k : reflect (exists k', m k' = Some k) (k \in codomm m).
 Proof.
-apply/(iffP idP).
+rewrite /codomm; apply/(iffP idP).
   rewrite mem_domm; case im_k: (invm m k) => [k'|] //= _.
   by rewrite -(getm_inv im_k); eauto.
 move=> [k' /getmP m_k'].
@@ -551,11 +553,11 @@ rewrite /invm domm_mkpartmap; apply/mapP; exists (k, k') => //.
 by apply/mapP; exists (k', k).
 Qed.
 
-Lemma invmPn m k : reflect (forall k', m k' != Some k) (k \notin domm (invm m)).
+Lemma codommPn m k : reflect (forall k', m k' != Some k) (k \notin codomm m).
 Proof.
 apply/(iffP idP).
-  by move=> h k'; apply: contra h=> /eqP h; apply/invmP; eauto.
-move=> h; apply/negP=> /invmP [k' h'].
+  by move=> h k'; apply: contra h=> /eqP h; apply/codommP; eauto.
+move=> h; apply/negP=> /codommP [k' h'].
 by move: (h k'); rewrite h' eqxx.
 Qed.
 
@@ -583,7 +585,7 @@ move: (invmE m k').
 case im_k': (invm m k') => [k''|] //=.
   move=> m_k''; congr Some; apply: inj_m; last by congruence.
   by rewrite mem_domm m_k''.
-have /invmPn/(_ k) : k' \notin domm (invm m) by rewrite mem_domm im_k'.
+have /codommPn/(_ k) : k' \notin domm (invm m) by rewrite mem_domm im_k'.
 by rewrite m_k eqxx.
 Qed.
 
@@ -593,7 +595,7 @@ Variables (T S : ordType).
 
 Implicit Type (m : {partmap T -> S}).
 
-Lemma invm_inj m : {in domm (invm m), injective (invm m)}.
+Lemma invm_inj m : {in codomm m, injective (invm m)}.
 Proof.
 move=> k1 in_im k2 h; rewrite mem_domm in in_im.
 have {h}: obind m (invm m k1) = obind m (invm m k2) by congruence.
@@ -610,7 +612,7 @@ case m_k: (m k) => [k'|] //= im_k'.
   by move: (invmEV k' (@invm_inj m)); rewrite im_k' /=.
 move {im_k'}.
 suff : k \notin domm (invm (invm m)) by rewrite mem_domm; case: (invm (invm m) k).
-apply/invmPn=> k'; apply/eqP=> im_k'.
+apply/codommPn=> k'; apply/eqP=> im_k'.
 by move: (invmE m k'); rewrite im_k' /= m_k.
 Qed.
 

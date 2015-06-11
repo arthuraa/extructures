@@ -579,7 +579,7 @@ Definition partmap_rename s m :=
               (rename s @: domm m).
 
 Definition partmap_names m :=
-  names (domm m) :|: names (domm (invm m)).
+  names (domm m) :|: names (codomm m).
 
 Lemma partmap_renameD s1 s2 m :
   partmap_rename s1 (partmap_rename s2 m) = partmap_rename (s1 * s2) m.
@@ -612,7 +612,7 @@ rewrite (mem_imfset_can _ _ (renameK _) (renameKV _)) fperm2V mem_domm.
 case e: (m x)=> [y|].
   have x_def: x \in domm m by rewrite mem_domm e.
   rewrite namesNNE; eauto; rewrite e /= renameoE /=.
-  have y_def: y \in domm (invm m) by apply/invmP; eauto.
+  have y_def: y \in domm (invm m) by apply/codommP; eauto.
   by rewrite namesNNE; eauto.
 case e': (m _)=> [y|] //=.
 have x_def: rename (fperm2 n n') x \in domm m by rewrite mem_domm e'.
@@ -633,10 +633,10 @@ by move=> [e']; exists (rename s^-1 y); rewrite -e' renameK.
 Qed.
 
 Let partmap_names_codom s m :
-  domm (invm (partmap_rename s m)) = rename s @: domm (invm m).
+  codomm (partmap_rename s m) = rename s @: codomm m.
 Proof.
 apply/eq_fset=> y; rewrite (mem_imfset_can _ _ (renameK _) (renameKV _)).
-apply/(sameP (invmP _ _))/(iffP (invmP _ _)).
+apply/(sameP (codommP _ _))/(iffP (codommP _ _)).
   move=> [x Px]; exists (rename s x); rewrite mkpartmapfpE.
   rewrite (mem_imfset_inj _ _ (@rename_inj _ _)) mem_domm Px /= renameK Px.
   by rewrite renameoE /= renameKV.
@@ -663,7 +663,7 @@ Definition partmap_nominalMixin :=
 Canonical partmap_nominalType :=
   Eval hnf in NominalType {partmap T -> S} partmap_nominalMixin.
 
-Lemma namesmE m : names m = names (domm m) :|: names (domm (invm m)).
+Lemma namesmE m : names m = names (domm m) :|: names (codomm m).
 Proof. by []. Qed.
 
 Lemma renamemE s m k : rename s m k = rename s (m (rename s^-1 k)).
@@ -748,7 +748,7 @@ rewrite /names/=/partmap_names; apply/(iffP idP).
   case/fsetUP; rewrite !namesfsE big_tnth=> /bigcupP [i _].
     move: (mem_tnth i (in_tuple (domm m)))=> /dommP [v Pv].
     by apply: PMFreeNamesKey.
-  move: (mem_tnth i (in_tuple (domm (invm m))))=> /invmP [x m_x].
+  move: (mem_tnth i (in_tuple (domm (invm m))))=> /codommP [x m_x].
   by apply: PMFreeNamesVal.
 case=> [k v m_k n_in|k v m_k n_in]; apply/fsetUP.
   have /(tnthP (in_tuple (domm m))) [i i_in]: k \in domm m.
@@ -756,7 +756,7 @@ case=> [k v m_k n_in|k v m_k n_in]; apply/fsetUP.
   left; rewrite namesfsE big_tnth; apply/bigcupP.
   by rewrite {}i_in in n_in; eexists; eauto.
 have /(tnthP (in_tuple (domm (invm m)))) [i i_in]: v \in domm (invm m).
-  by apply/invmP; eauto.
+  by apply/codommP; eauto.
 right; rewrite namesfsE big_tnth; apply/bigcupP.
 by rewrite {}i_in in n_in; eexists; eauto.
 Qed.
