@@ -790,6 +790,14 @@ move=> get_k' Pn; apply/fsetUP; right; apply/namesmP.
 by eapply PMFreeNamesVal; eauto.
 Qed.
 
+Lemma namesm_unionl m1 m2 : fsubset (names m1) (names (unionm m1 m2)).
+Proof.
+apply/fsubsetP=> n; case/namesmP=> [k v|k v] get_k Pn;
+apply/namesmP; have get_k' : unionm m1 m2 k = Some v by rewrite unionmE get_k.
+  by eapply PMFreeNamesKey; eauto.
+by eapply PMFreeNamesVal; eauto.
+Qed.
+
 Lemma namesm_union_disjoint m1 m2 :
   fdisjoint (domm m1) (domm m2) ->
   names (unionm m1 m2) = names m1 :|: names m2.
