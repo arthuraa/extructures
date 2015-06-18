@@ -40,6 +40,15 @@ Canonical fperm_subType T := [subType for @fpval T].
 Definition fperm_eqMixin T := [eqMixin of fperm_type T by <:].
 Canonical fperm_eqType T :=
   Eval hnf in EqType (fperm_type T) (fperm_eqMixin T).
+Definition fperm_choiceMixin T := [choiceMixin of fperm_type T by <:].
+Canonical fperm_choiceType T :=
+  Eval hnf in ChoiceType (fperm_type T) (fperm_choiceMixin T).
+Definition fperm_partOrdMixin T := [partOrdMixin of fperm_type T by <:].
+Canonical fperm_partOrdType T :=
+  Eval hnf in PartOrdType (fperm_type T) (fperm_partOrdMixin T).
+Definition fperm_ordMixin T := [ordMixin of fperm_type T by <:].
+Canonical fperm_ordType T :=
+  Eval hnf in OrdType (fperm_type T) (fperm_ordMixin T).
 
 End Exports.
 
@@ -58,7 +67,7 @@ Section Operations.
 
 Variable T : ordType.
 
-Implicit Types (s : {fperm T}) (x : T).
+Implicit Types (s : {fperm T}) (x : T) (X Y : {fset T}).
 
 Local Open Scope fset_scope.
 
@@ -399,6 +408,21 @@ move=> y; rewrite mem_supp fpermM /=; case: fperm2P.
 - by move/fperm_inj=> ->; rewrite eqxx.
 move=> _ /eqP; rewrite (inj_eq (@fperm_inj _))=> e2.
 by rewrite -mem_supp e in_fsetU1 (negbTE e2).
+Qed.
+
+Definition enum_fperm X : {fset {fperm T}} :=
+  mkfset (pmap insub (enum_partmap X X)).
+
+Lemma enum_fpermE X s : fsubset (supp s) X = (s \in enum_fperm X).
+Proof.
+rewrite /enum_fperm in_mkfset mem_pmap; apply/idP/mapP.
+  move=> supp_s; exists (val s); last by rewrite valK.
+  rewrite enum_partmapE supp_s /=.
+  apply/fsubsetP=> x /codommP [x' Px']; move/fsubsetP: supp_s; apply.
+  case/andP: (valP s)=> [_ /allP /(_ x')].
+  by rewrite mem_domm /= Px'=> /(_ erefl) /= /andP [-> _].
+move=> [s' Ps' Pss']; move: Ps'; rewrite enum_partmapE.
+by rewrite -(insubK [subType of {fperm T}] s') -Pss' /= => /andP [].
 Qed.
 
 End Operations.
