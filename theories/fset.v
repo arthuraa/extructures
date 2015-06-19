@@ -635,8 +635,10 @@ Local Open Scope fset_scope.
 
 Definition imfset (f : T -> S) s := mkfset (map f s).
 
+Local Notation "f @: s" := (imfset f s) (at level 24).
+
 Lemma imfsetP f s x :
-  reflect (exists2 y, y \in s & x = f y) (x \in imfset f s).
+  reflect (exists2 y, y \in s & x = f y) (x \in f @: s).
 Proof.
 apply/(iffP idP).
   rewrite /imfset in_mkfset=> /mapP [y Py ->].
@@ -652,7 +654,7 @@ by apply/(sameP idP)/(iffP idP)=> /imfsetP [y Py ->]; apply/imfsetP;
 eexists; eauto.
 Qed.
 
-Lemma eq_in_imfset f1 f2 s : {in s, f1 =1 f2} -> imfset f1 s = imfset f2 s.
+Lemma eq_in_imfset f1 f2 s : {in s, f1 =1 f2} -> f1 @: s = f2 @: s.
 Proof.
 move=> h_f; apply/eq_fset=> x.
 apply/(sameP idP)/(iffP idP)=> /imfsetP [y Py ->]; apply/imfsetP;
@@ -660,16 +662,16 @@ eexists; eauto.
 by apply/esym/h_f.
 Qed.
 
-Lemma mem_imfset f x s : x \in s -> f x \in imfset f s.
+Lemma mem_imfset f x s : x \in s -> f x \in f @: s.
 Proof. by move=> Px; apply/imfsetP; eauto. Qed.
 
-Lemma imfset0 f : imfset f fset0 = fset0.
+Lemma imfset0 f : f @: fset0 = fset0.
 Proof. by []. Qed.
 
-Lemma imfset1 f x : imfset f (fset1 x) = fset1 (f x).
+Lemma imfset1 f x : f @: fset1 x = fset1 (f x).
 Proof. by apply/eq_fset=> y; rewrite in_fset1. Qed.
 
-Lemma imfsetU f s1 s2 : imfset f (s1 :|: s2) = imfset f s1 :|: imfset f s2.
+Lemma imfsetU f s1 s2 : f @: (s1 :|: s2) = f @: s1 :|: f @: s2.
 Proof.
 apply/eq_fset=> y; apply/(sameP idP)/(iffP idP)=> [/fsetUP|/imfsetP].
   move=> [|] => /imfsetP [x' x'_in_s ->{y}]; apply/imfsetP;
@@ -678,7 +680,7 @@ by move=> [y' /fsetUP [?|?] -> {y}]; apply/fsetUP; [left|right]; apply/imfsetP;
 eauto.
 Qed.
 
-Lemma imfsetU1 f x s : imfset f (x |: s) = f x |: imfset f s.
+Lemma imfsetU1 f x s : f @: (x |: s) = f x |: f @: s.
 Proof. by rewrite fsetU1E imfsetU imfset1 fsetU1E. Qed.
 
 End Image.
