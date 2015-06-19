@@ -874,31 +874,32 @@ End TransferNominalType.
 
 Module Binding.
 
+Local Open Scope fset_scope.
+Local Open Scope fperm_scope.
+
 Section Def.
 
 Variable T : nominalType.
 Implicit Types (x y : {fset name} * T).
 
-Local Open Scope fset_scope.
-
 Definition bound_eq x y :=
   [&& x.1 :&: names x.2 == y.1 :&: names y.2 &
-      has (fun pm => [&& fdisjoint (supp pm) (x.1 :&: names x.2) &
-                         rename pm x.2 == y.2])
+      has (fun s => [&& fdisjoint (supp s) (x.1 :&: names x.2) &
+                         rename s x.2 == y.2])
           (enum_fperm (names x.2 :|: names y.2))].
 
 Lemma bound_eqP x y :
   reflect (x.1 :&: names x.2 = y.1 :&: names y.2 /\
-           exists2 pm, fdisjoint (supp pm) (x.1 :&: names x.2) &
-                       rename pm x.2 = y.2)
+           exists2 s, fdisjoint (supp s) (x.1 :&: names x.2) &
+                       rename s x.2 = y.2)
           (bound_eq x y).
 Proof.
 apply/(iffP idP).
-  case/andP=> [/eqP eq_supp /hasP [pm pm_in /andP [dis /eqP e]]].
+  case/andP=> [/eqP eq_supp /hasP [s s_in /andP [dis /eqP e]]].
   by split=> //; eauto.
-case=> [eq_supp [pm dis e]]; rewrite /bound_eq {1}eq_supp eqxx /=.
+case=> [eq_supp [s dis e]]; rewrite /bound_eq {1}eq_supp eqxx /=.
 apply/hasP.
-have inj: {in names x.2 &, injective pm} by move=> ????; apply: fperm_inj.
+have inj: {in names x.2 &, injective s} by move=> ????; apply: fperm_inj.
 exists (fperm_gen inj).
   by rewrite -enum_fpermE -e names_rename supp_fperm_gen.
 apply/andP; split.
@@ -912,23 +913,23 @@ Qed.
 Lemma bound_eq_refl : reflexive bound_eq.
 Proof.
 move=> x; apply/bound_eqP; split=> //.
-exists 1%fperm; first by rewrite supp1 /fdisjoint fset0I.
+exists 1; first by rewrite supp1 /fdisjoint fset0I.
 by rewrite rename1.
 Qed.
 
 Lemma bound_eq_sym : symmetric bound_eq.
 Proof.
-apply/symmetric_from_pre=> x y /bound_eqP [e [pm dis re]].
+apply/symmetric_from_pre=> x y /bound_eqP [e [s dis re]].
 apply/bound_eqP; rewrite -e; split=> //.
-exists pm^-1%fperm; first by rewrite supp_inv.
+exists s^-1; first by rewrite supp_inv.
 by rewrite -re renameK.
 Qed.
 
 Lemma bound_eq_trans : transitive bound_eq.
 Proof.
-move=> z x y /bound_eqP [e1 [pm1 dis1 re1]] /bound_eqP [e2 [pm2 dis2 re2]].
+move=> z x y /bound_eqP [e1 [s1 dis1 re1]] /bound_eqP [e2 [s2 dis2 re2]].
 apply/bound_eqP; rewrite {1}e1; split=> //.
-exists (pm2 * pm1)%fperm; last by rewrite -renameD re1.
+exists (s2 * s1); last by rewrite -renameD re1.
 apply/fdisjointP=> n /(fsubsetP _ _ (supp_mul _ _)) /fsetUP [n_in|n_in].
   by move/fdisjointP: dis2; rewrite -e1; apply.
 by move/fdisjointP: dis1; apply.
@@ -938,5 +939,52 @@ Canonical bound_eq_equivRel :=
   Eval hnf in EquivRel bound_eq bound_eq_refl bound_eq_sym bound_eq_trans.
 
 End Def.
+
+Local Open Scope quotient_scope.
+
+Notation "{ 'bound' T }" := {eq_quot @bound_eq [nominalType of T]}
+  (at level 0, format "{ 'bound'  T }") : type_scope.
+
+Section Structures.
+
+Variable T : nominalType.
+Implicit Types (s : {fperm name}) (x : {bound T}).
+
+Definition bound_rename s x : {bound T} :=
+  lift_op1 {bound T} (rename s) x.
+
+Lemma bound_rename_morph s :
+  {morph \pi : x / rename s x >-> bound_rename s x}.
+Proof.
+move=> /= [A x]; rewrite /bound_rename -lock.
+apply/eqmodP/bound_eqP=> /=.
+case: piP=> [[A' x'] /eqmodP/bound_eqP /= [e_supp [s' dis ?]]]; subst x'.
+rewrite !names_rename !renamefsE; split.
+  rewrite [LHS](_ : _ = s @: (A :&: names x)); last first.
+    by rewrite imfsetI; last by move=> ?? _ _; apply/fperm_inj.
+  rewrite [RHS](_ : _ = s @: (A' :&: s' @: names x)); last first.
+    by rewrite imfsetI; last by move=> ?? _ _; apply/fperm_inj.
+  by rewrite e_supp names_rename.
+exists (s * s' * s^-1); last by rewrite -renameD renameK renameD.
+rewrite suppJ /fdisjoint -?imfsetI; first last.
+- move=> ?? _ _ /=; apply/rename_inj.
+- move=> ?? _ _ /=; apply/fperm_inj.
+by move/eqP: dis=> ->.
+Qed.
+
+Definition bound_names x :=
+  let r := repr x in
+  r.1 :&: names r.2.
+
+Lemma bound_renameD s1 s2 x :
+  bound_rename s1 (bound_rename s2 x) =
+  bound_rename (s1 * s2) x.
+Proof.
+elim/quotP: x=> [[A x] /= e_x].
+rewrite -bound_rename_morph /= -bound_rename_morph /= renameD.
+by rewrite bound_rename_morph.
+Qed.
+
+End Structures.
 
 End Binding.
