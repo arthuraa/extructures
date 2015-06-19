@@ -235,12 +235,45 @@ case=> [x_in|/imfsetP [x' x'_in -> {x}]].
     exists x'; first by apply/fsetUP; left.
     by rewrite /fperm_gen_def x'_in.
   pose f' x' := if x' \in X then f x' else x'.
-  exists (iter (size X) f' x).
-    apply/fsetUP; right; rewrite (size_fsetD1 x X) x_in iterSr {2}/f' x_in.
-    elim: {x x_in x_nin} (size _) (f x) (mem_imfset f x_in)=> [|n IH] //=.
+  pose g n := iter n f' x.
+  exists (g (size X)).
+    apply/fsetUP; right; rewrite /g (size_fsetD1 x X) x_in iterSr {2}/f' x_in.
+    elim: {g x x_in x_nin} (size _) (f x) (mem_imfset f x_in)=> [|n IH] //=.
     by move=> x x_in; rewrite {1}/f'; case: ifP; auto; apply/mem_imfset.
-  rewrite /fperm_gen_def; case: ifP=> [|_].
-    admit.
+  rewrite /fperm_gen_def; case: ifP=> [it_in|_].
+    pose S := mkfset (iota 0 (size X).+1).
+    have S_leq : forall n m, n \in S -> m <= n -> m \in S.
+      move=> n m; rewrite 2!in_mkfset 2!mem_iota leq0n /= add0n=> ??.
+      by eapply leq_ltn_trans; eauto.
+    have sub: forall n n', g n \notin X -> n <= n' -> g n' = g n.
+      move=> n; elim=> [|n' IH]; first by rewrite leqn0=> _ /eqP->.
+      rewrite leq_eqVlt=> nin /orP [/eqP-> //|]; rewrite ltnS=> lnn'.
+      by rewrite (erefl : g n'.+1 = f' (g n')) IH // /f' (negbTE nin).
+    have {sub} sub: fsubset (g @: S) X.
+      apply/fsubsetP=> x' /imfsetP [n]; rewrite {1}/S in_mkfset mem_iota.
+      rewrite leq0n /= add0n ltnS => Hn -> {x'}.
+      by apply: contraTT it_in=> g_nin; rewrite (sub _ _ g_nin Hn).
+    suff: {in S &, injective g}.
+      move/imfset_injP/eqP=> g_inj; move/fsubset_leq_size in sub.
+      rewrite g_inj (_ : size S = (size X).+1) ?ltnn // in sub.
+      rewrite -[RHS](size_iota 0); apply/eqP; rewrite eq_sym -uniq_size_mkfset.
+      exact: iota_uniq.
+    move=> n m n_in m_in /= enm.
+    wlog lnm : n m n_in m_in enm / n < m.
+      by case: (ltngtP n m)=> [mn|nm|] // h; [|apply/esym; move/esym in enm];
+      eauto.
+    elim: n m {n_in} m_in enm lnm => [|n IH] [|m] // m_in.
+      rewrite {1}/g /=.
+      have gm_in: g m \in X.
+        by move/fsubsetP: sub; apply; apply/mem_imfset; eapply S_leq; eauto.
+      by rewrite /f' gm_in => e; move: x_nin; rewrite e mem_imfset.
+    move=> enm lnm; congr succn; apply: IH=> //; first by eapply S_leq; eauto.
+    move: {enm} (enm : f' (g n) = f' (g m)); rewrite /f'.
+    have gm_in: g m \in X.
+      by move/fsubsetP: sub; apply; apply/mem_imfset; eapply S_leq; eauto.
+    have gn_in: g n \in X.
+      by move/fsubsetP: sub; apply; apply/mem_imfset; eapply S_leq; eauto.
+    by rewrite gm_in gn_in; apply: f_inj.
   elim: (size X) {-2 3}(size X) (leqnn (size X))=> [|n IH] m lnm.
     by move: lnm; rewrite leqn0=> /eqP ->.
   case: m lnm=> [_|m] //.
@@ -250,8 +283,8 @@ case=> [x_in|/imfsetP [x' x'_in -> {x}]].
   rewrite ltnS iterSr /= => lnm.
   rewrite {1}/f'; case: ifPn=> [it_in|it_nin]; first by rewrite fK //; eauto.
   rewrite -iterSr /= -IH // /f_inv.
-  case: fpickP=> [x' /eqP ? x'_in|] //=; subst x.
-    by rewrite (mem_imfset f x'_in) in x_nin.
+  case: fpickP=> [x' /eqP ex x'_in|] //=.
+    by rewrite -ex (mem_imfset f x'_in) in x_nin.
 exists x'; first by apply/fsetUP; left.
 by rewrite /fperm_gen_def x'_in.
 Qed.
