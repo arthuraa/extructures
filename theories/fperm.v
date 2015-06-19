@@ -381,6 +381,17 @@ have [-> -> //|] := altP (s2 x =P x).
 by rewrite orbT.
 Qed.
 
+Lemma suppJ s1 s2 : supp (s1 * s2 * s1^-1) = s1 @: supp s2.
+Proof.
+apply/eq_fset=> x; apply/esym/imfsetP; rewrite mem_supp fpermM /= fpermM /=.
+rewrite (can2_eq (fpermK s1) (fpermKV s1)).
+have [e|ne] /= := altP eqP.
+  case=> [y Py e']; move: e Py.
+  by rewrite e' fpermK mem_supp=> ->; rewrite eqxx.
+exists (s1^-1 x); last by rewrite fpermKV.
+by rewrite mem_supp.
+Qed.
+
 Lemma fperm_mul1s : left_id 1 fperm_mul.
 Proof. by move=> s; apply/eq_fperm=> x; rewrite fpermM. Qed.
 
