@@ -204,6 +204,67 @@ Qed.
 
 End Build.
 
+Section BuildGen.
+
+Variables (f : T -> T) (X : {fset T}).
+Hypothesis f_inj : {in X &, injective f}.
+
+Let f_inv x := odflt x (fpick (pred1 x \o f) X).
+
+Definition fperm_gen_def x :=
+  if x \in X then f x
+  else iter (size X) f_inv x.
+
+Lemma fperm_gen_subproof : fperm_gen_def @: (X :|: f @: X) = X :|: f @: X.
+Proof.
+have fK : {in X, cancel f f_inv}.
+  move=> x x_in /=; rewrite /f_inv; case: fpickP=> /= [x' /eqP e x'_in|].
+    by apply/f_inj.
+  by move=> /(_ _ x_in); rewrite eqxx.
+apply/eq_fset=> x; apply/imfsetP/fsetUP.
+  case=> [x' /fsetUP [x'_in|x'_in] ->] {x}; rewrite /fperm_gen_def.
+    by rewrite x'_in; right; apply/mem_imfset.
+  have [x'_in'|x'_nin] := boolP (x' \in X).
+    by right; apply/mem_imfset.
+  left; case/imfsetP: x'_in {x'_nin} => [x x_in -> {x'}].
+  rewrite (size_fsetD1 x X) x_in iterSr fK //.
+  elim: (size _)=> [|n IH] //=.
+  by rewrite {1}/f_inv; case: fpickP=> [x'|] //=.
+case=> [x_in|/imfsetP [x' x'_in -> {x}]].
+  have [/imfsetP [x' x'_in -> {x x_in}]|x_nin] := boolP (x \in f @: X).
+    exists x'; first by apply/fsetUP; left.
+    by rewrite /fperm_gen_def x'_in.
+  pose f' x' := if x' \in X then f x' else x'.
+  exists (iter (size X) f' x).
+    apply/fsetUP; right; rewrite (size_fsetD1 x X) x_in iterSr {2}/f' x_in.
+    elim: {x x_in x_nin} (size _) (f x) (mem_imfset f x_in)=> [|n IH] //=.
+    by move=> x x_in; rewrite {1}/f'; case: ifP; auto; apply/mem_imfset.
+  rewrite /fperm_gen_def; case: ifP=> [|_].
+    admit.
+  elim: (size X) {-2 3}(size X) (leqnn (size X))=> [|n IH] m lnm.
+    by move: lnm; rewrite leqn0=> /eqP ->.
+  case: m lnm=> [_|m] //.
+    elim: n.+1=> {n IH} /= [|n <-] //=.
+    rewrite /f_inv; case: fpickP=> [x' /eqP ? x'_in|] //=; subst x.
+    by rewrite (mem_imfset f x'_in) in x_nin.
+  rewrite ltnS iterSr /= => lnm.
+  rewrite {1}/f'; case: ifPn=> [it_in|it_nin]; first by rewrite fK //; eauto.
+  rewrite -iterSr /= -IH // /f_inv.
+  case: fpickP=> [x' /eqP ? x'_in|] //=; subst x.
+    by rewrite (mem_imfset f x'_in) in x_nin.
+exists x'; first by apply/fsetUP; left.
+by rewrite /fperm_gen_def x'_in.
+Qed.
+
+Definition fperm_gen := fperm fperm_gen_subproof.
+
+Lemma fperm_genE : {in X, fperm_gen =1 f}.
+Proof.
+by move=> x x_in /=; rewrite fpermE in_fsetU /fperm_gen_def x_in.
+Qed.
+
+End BuildGen.
+
 Section Inverse.
 
 Variable s : {fperm T}.
