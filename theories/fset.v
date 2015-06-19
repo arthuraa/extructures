@@ -683,6 +683,16 @@ Qed.
 Lemma imfsetU1 f x s : f @: (x |: s) = f x |: f @: s.
 Proof. by rewrite fsetU1E imfsetU imfset1 fsetU1E. Qed.
 
+Lemma imfsetI f s1 s2 :
+  {in s1 & s2, injective f} -> f @: (s1 :&: s2) = f @: s1 :&: f @: s2.
+Proof.
+move=> inj; apply/eq_fset=> x; apply/imfsetP/fsetIP.
+  case=> [{x} x x_in ->]; case/fsetIP: x_in=> [x_in1 x_in2].
+  by apply/andP; rewrite ?mem_imfset.
+case=> [/imfsetP [y1 y1_in ->] /imfsetP [y2 y2_in]] e.
+by exists y1; rewrite // in_fsetI y1_in /= (inj _ _ y1_in y2_in e).
+Qed.
+
 End Image.
 
 Notation "f @: s" := (imfset f s) (at level 24) : fset_scope.
