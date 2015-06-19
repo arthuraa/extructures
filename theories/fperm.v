@@ -202,6 +202,12 @@ have [x_in_X|] //= := boolP (x \in X).
 by have [<-|] := altP (x =P f x).
 Qed.
 
+Lemma supp_fperm : fsubset (supp fperm) X.
+Proof.
+apply/fsubsetP=> x; rewrite mem_supp fpermE; case: ifP=> //.
+by rewrite eqxx.
+Qed.
+
 End Build.
 
 Section BuildGen.
@@ -296,6 +302,9 @@ Proof.
 by move=> x x_in /=; rewrite fpermE in_fsetU /fperm_gen_def x_in.
 Qed.
 
+Lemma supp_fperm_gen : fsubset (supp fperm_gen) (X :|: f @: X).
+Proof. exact: supp_fperm. Qed.
+
 End BuildGen.
 
 Section Inverse.
@@ -363,6 +372,13 @@ Proof.
 move=> x; rewrite fpermE; have [|nin_supp] //= := boolP (x \in _).
 rewrite in_fsetU negb_or !mem_supp !negbK in nin_supp.
 by case/andP: nin_supp=> [/eqP h1 /eqP ->]; rewrite h1.
+Qed.
+
+Lemma supp_mul s1 s2 : fsubset (supp (s1 * s2)) (supp s1 :|: supp s2).
+Proof.
+apply/fsubsetP=> x; rewrite in_fsetU !mem_supp fpermM /=.
+have [-> -> //|] := altP (s2 x =P x).
+by rewrite orbT.
 Qed.
 
 Lemma fperm_mul1s : left_id 1 fperm_mul.

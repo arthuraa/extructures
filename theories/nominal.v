@@ -2,7 +2,7 @@ Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
 Require Import Ssreflect.ssrnat Ssreflect.eqtype Ssreflect.seq.
 Require Import Ssreflect.choice Ssreflect.fintype.
 
-Require Import MathComp.tuple MathComp.bigop.
+Require Import MathComp.tuple MathComp.bigop MathComp.generic_quotient.
 
 Require Import ord fset partmap fperm.
 
@@ -871,3 +871,72 @@ Definition BijNominalMixin :=
   NominalMixin bij_renameD bij_namesNNE bij_namesTeq.
 
 End TransferNominalType.
+
+Module Binding.
+
+Section Def.
+
+Variable T : nominalType.
+Implicit Types (x y : {fset name} * T).
+
+Local Open Scope fset_scope.
+
+Definition bound_eq x y :=
+  [&& x.1 :&: names x.2 == y.1 :&: names y.2 &
+      has (fun pm => [&& fdisjoint (supp pm) (x.1 :&: names x.2) &
+                         rename pm x.2 == y.2])
+          (enum_fperm (names x.2 :|: names y.2))].
+
+Lemma bound_eqP x y :
+  reflect (x.1 :&: names x.2 = y.1 :&: names y.2 /\
+           exists2 pm, fdisjoint (supp pm) (x.1 :&: names x.2) &
+                       rename pm x.2 = y.2)
+          (bound_eq x y).
+Proof.
+apply/(iffP idP).
+  case/andP=> [/eqP eq_supp /hasP [pm pm_in /andP [dis /eqP e]]].
+  by split=> //; eauto.
+case=> [eq_supp [pm dis e]]; rewrite /bound_eq {1}eq_supp eqxx /=.
+apply/hasP.
+have inj: {in names x.2 &, injective pm} by move=> ????; apply: fperm_inj.
+exists (fperm_gen inj).
+  by rewrite -enum_fpermE -e names_rename supp_fperm_gen.
+apply/andP; split.
+  move: dis; rewrite 2![fdisjoint _ (x.1 :&: _)]fdisjointC.
+  move=> /fdisjointP dis; apply/fdisjointP=> n n_in.
+  move: (dis _ n_in); rewrite 2!mem_suppN=> /eqP {2}<-; apply/eqP.
+  by apply/fperm_genE; case/fsetIP: n_in.
+by rewrite -e; apply/eqP/eq_in_rename=> n n_in; apply/fperm_genE.
+Qed.
+
+Lemma bound_eq_refl : reflexive bound_eq.
+Proof.
+move=> x; apply/bound_eqP; split=> //.
+exists 1%fperm; first by rewrite supp1 /fdisjoint fset0I.
+by rewrite rename1.
+Qed.
+
+Lemma bound_eq_sym : symmetric bound_eq.
+Proof.
+apply/symmetric_from_pre=> x y /bound_eqP [e [pm dis re]].
+apply/bound_eqP; rewrite -e; split=> //.
+exists pm^-1%fperm; first by rewrite supp_inv.
+by rewrite -re renameK.
+Qed.
+
+Lemma bound_eq_trans : transitive bound_eq.
+Proof.
+move=> z x y /bound_eqP [e1 [pm1 dis1 re1]] /bound_eqP [e2 [pm2 dis2 re2]].
+apply/bound_eqP; rewrite {1}e1; split=> //.
+exists (pm2 * pm1)%fperm; last by rewrite -renameD re1.
+apply/fdisjointP=> n /(fsubsetP _ _ (supp_mul _ _)) /fsetUP [n_in|n_in].
+  by move/fdisjointP: dis2; rewrite -e1; apply.
+by move/fdisjointP: dis1; apply.
+Qed.
+
+Canonical bound_eq_equivRel :=
+  Eval hnf in EquivRel bound_eq bound_eq_refl bound_eq_sym bound_eq_trans.
+
+End Def.
+
+End Binding.
