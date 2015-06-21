@@ -945,44 +945,112 @@ Local Open Scope quotient_scope.
 Notation "{ 'bound' T }" := {eq_quot @bound_eq [nominalType of T]}
   (at level 0, format "{ 'bound'  T }") : type_scope.
 
+Section Basic.
+
+Variable (T : nominalType).
+
+Definition mask (A : {fset name}) (x : T) : {bound T} :=
+  locked (\pi_{bound T} (A, x)).
+
+Lemma maskE A x : mask A x = mask (A :&: names x) x.
+Proof.
+rewrite /mask -2!lock; apply/eqmodP/bound_eqP=> /=.
+rewrite -fsetIA fsetIid; split=> //.
+by exists 1; rewrite ?rename1 // supp1 /fdisjoint fset0I.
+Qed.
+
+Lemma boundP (P : {bound T} -> Type) :
+  (forall A x, fsubset A (names x) -> P (mask A x)) ->
+  forall x, P x.
+Proof.
+move=> IH; elim/quotP=> [[A x] /= _].
+by move: (IH _ x (fsubsetIr A (names x))); rewrite -maskE /mask -lock.
+Qed.
+
+Lemma maskP A x x' :
+  fsubset A (names x) ->
+  (mask A x = mask A x'
+   <-> exists2 s, fdisjoint (supp s) A & rename s x = x').
+Proof.
+move=> sub.
+have {sub} sub: A :&: names x = A.
+  by apply/eqP; rewrite eqEfsubset fsubsetIl fsubsetI fsubsetxx.
+rewrite /mask -2!lock; split.
+  by rewrite -{3}sub; move/eqmodP/bound_eqP=> //= [_] //.
+move=> [s dis <-]; apply/eqmodP/bound_eqP; split=> /=.
+  rewrite names_rename; apply/eq_fset=> n; apply/fsetIP/fsetIP.
+    case=> [in_A in_names]; split=> //.
+    suff ->: n = s n.
+      rewrite mem_imfset_inj //; apply/fperm_inj.
+    by apply/esym/suppPn; move: (n) in_A; apply/fdisjointP; rewrite fdisjointC.
+  case=> [in_A in_names]; split=> //.
+  suff e: n = s n.
+    by rewrite e mem_imfset_inj // in in_names; apply/fperm_inj.
+  by apply/esym/suppPn; move: (n) in_A; apply/fdisjointP; rewrite fdisjointC.
+exists s=> //.
+by move: dis; rewrite /fdisjoint fsetIA=> /eqP ->; rewrite fset0I.
+Qed.
+
+Section Elim.
+
+Variable S : Type.
+Variable f : {fset name} -> T -> S.
+
+Definition lift_bound (x : {bound T}) :=
+  f ((repr x).1 :&: names (repr x).2) (repr x).2.
+
+Lemma lift_boundE :
+  (forall A x s, fsubset A (names x) -> fdisjoint (supp s) A ->
+                 f A x = f A (rename s x)) ->
+  forall A x, fsubset A (names x) -> lift_bound (mask A x) = f A x.
+Proof.
+move=> e A x sub; rewrite /lift_bound /mask -lock.
+case: piP=> [[A' x'] /eqmodP/bound_eqP /= [eA [s dis ex]]].
+rewrite -{}eA //; have eA: A :&: names x = A.
+  by apply/eqP; rewrite eqEfsubset fsubsetIl fsubsetI fsubsetxx.
+by rewrite eA -{}ex -e // -eA.
+Qed.
+
+End Elim.
+
+End Basic.
+
 Section Structures.
 
 Variable T : nominalType.
-Implicit Types (s : {fperm name}) (x : {bound T}).
+Implicit Types (s : {fperm name}) (x : T).
 
-Definition bound_rename s x : {bound T} :=
-  lift_op1 {bound T} (rename s) x.
+Definition bound_rename s :=
+  locked (lift_bound (fun A x => mask (rename s A) (rename s x))).
 
-Lemma bound_rename_morph s :
-  {morph \pi : x / rename s x >-> bound_rename s x}.
+Let bound_rename_morph s A x :
+  fsubset A (names x) ->
+  bound_rename s (mask A x) = mask (rename s A) (rename s x).
 Proof.
-move=> /= [A x]; rewrite /bound_rename -lock.
-apply/eqmodP/bound_eqP=> /=.
-case: piP=> [[A' x'] /eqmodP/bound_eqP /= [e_supp [s' dis ?]]]; subst x'.
-rewrite !names_rename !renamefsE; split.
-  rewrite [LHS](_ : _ = s @: (A :&: names x)); last first.
-    by rewrite imfsetI; last by move=> ?? _ _; apply/fperm_inj.
-  rewrite [RHS](_ : _ = s @: (A' :&: s' @: names x)); last first.
-    by rewrite imfsetI; last by move=> ?? _ _; apply/fperm_inj.
-  by rewrite e_supp names_rename.
-exists (s * s' * s^-1); last by rewrite -renameD renameK renameD.
-rewrite suppJ /fdisjoint -?imfsetI; first last.
-- move=> ?? _ _ /=; apply/rename_inj.
-- move=> ?? _ _ /=; apply/fperm_inj.
-by move/eqP: dis=> ->.
+rewrite /bound_rename -lock; apply: lift_boundE=> {A x} A x s' sub dis.
+apply/maskP; first by rewrite names_rename renamefsE imfsetS.
+exists (s * s' * s^-1).
+  rewrite suppJ /fdisjoint renamefsE -imfsetI.
+    by move: dis; rewrite /fdisjoint=> /eqP ->; rewrite imfset0.
+  by move=> ?? _ _; apply/fperm_inj.
+by rewrite -renameD renameK renameD.
 Qed.
 
-Definition bound_names x :=
-  let r := repr x in
-  r.1 :&: names r.2.
+Definition bound_names :=
+  locked (lift_bound (fun A x => A)).
 
-Lemma bound_renameD s1 s2 x :
-  bound_rename s1 (bound_rename s2 x) =
-  bound_rename (s1 * s2) x.
+Let bound_names_morph A x :
+  fsubset A (names x) -> bound_names (mask A x) = A.
+Proof. by move=> sub; rewrite /bound_names -lock lift_boundE //. Qed.
+
+Lemma bound_renameD s1 s2 y :
+  bound_rename s1 (bound_rename s2 y) =
+  bound_rename (s1 * s2) y.
 Proof.
-elim/quotP: x=> [[A x] /= e_x].
-rewrite -bound_rename_morph /= -bound_rename_morph /= renameD.
-by rewrite bound_rename_morph.
+elim/boundP: y=> [A x sub].
+rewrite bound_rename_morph //= bound_rename_morph //= ?renameD.
+  by rewrite bound_rename_morph.
+by rewrite renamefsE names_rename imfsetS.
 Qed.
 
 End Structures.
