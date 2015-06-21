@@ -948,6 +948,52 @@ Local Open Scope quotient_scope.
 Notation "{ 'bound' T }" := {eq_quot @bound_eq [nominalType of T]}
   (at level 0, format "{ 'bound'  T }") : type_scope.
 
+(* FIXME: For some reason, subtype structure inference is not working here... *)
+Module BoundOrd.
+
+Section Def.
+
+Variable T : nominalType.
+
+Implicit Type (bx : {bound T}).
+
+Local Open Scope ord_scope.
+
+Definition leq bx1 bx2 :=
+  repr bx1 <= repr bx2.
+
+Lemma leq_refl : reflexive leq.
+Proof. by move=> bx; rewrite /leq Ord.leqxx. Qed.
+
+Lemma leq_sym : antisymmetric leq.
+Proof.
+move=> bx1 bx2; rewrite /leq=> /Ord.anti_leq.
+exact: (can_inj (@reprK _ [quotType of {bound T}])).
+Qed.
+
+Lemma leq_trans : transitive leq.
+Proof.
+move=> bx1 bx2 bx3; rewrite /leq=> h1 h2.
+exact: (Ord.leq_trans h1 h2).
+Qed.
+
+Lemma leq_total : total leq.
+Proof.
+by move=> bx1 bx2; rewrite /leq Ord.leq_total.
+Qed.
+
+Definition partOrdMixin := PartOrdMixin leq_refl leq_trans leq_sym.
+Canonical partOrdType := Eval hnf in PartOrdType {bound T} partOrdMixin.
+Definition ordMixin := OrdMixin leq_total.
+Canonical ordType := Eval hnf in OrdType {bound T} ordMixin.
+
+End Def.
+
+End BoundOrd.
+
+Canonical BoundOrd.partOrdType.
+Canonical BoundOrd.ordType.
+
 Section Basic.
 
 Variable (T : nominalType).
@@ -1091,6 +1137,8 @@ Qed.
 
 Definition bound_nominalMixin :=
   NominalMixin bound_renameD bound_namesNNE bound_namesTeq.
+Canonical bound_nominalType :=
+  Eval hnf in NominalType {bound T} bound_nominalMixin.
 
 End Structures.
 
