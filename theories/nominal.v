@@ -71,6 +71,7 @@ Definition pack m :=
 (* Inheritance *)
 Definition eqType := @Equality.Pack cT xclass xT.
 Definition choiceType := @Choice.Pack cT xclass xT.
+Definition partOrdType := @Ord.Partial.Pack cT xclass xT.
 Definition ordType := @Ord.Total.Pack cT class xT.
 
 End ClassDef.
@@ -83,6 +84,8 @@ Coercion eqType : type >-> Equality.type.
 Canonical eqType.
 Coercion choiceType : type >-> Choice.type.
 Canonical choiceType.
+Coercion partOrdType : type >-> Ord.Partial.type.
+Canonical partOrdType.
 Coercion ordType : type >-> Ord.Total.type.
 Canonical ordType.
 Notation nominalType := type.
@@ -1052,6 +1055,42 @@ rewrite bound_rename_morph //= bound_rename_morph //= ?renameD.
   by rewrite bound_rename_morph.
 by rewrite renamefsE names_rename imfsetS.
 Qed.
+
+Lemma bound_namesTeq n n' y :
+  n \in bound_names y ->
+  bound_rename (fperm2 n n') y = y ->
+  n' \in bound_names y.
+Proof.
+elim/boundP: y=> [/= A x sub]; rewrite bound_names_morph // => n_in.
+set s := fperm2 n n'.
+rewrite bound_rename_morph // renamefsE=> e_m.
+suff ->: A = rename s @: A.
+  by rewrite -{1}(fperm2L n n') mem_imfset.
+have sub': fsubset (rename s @: A) (names (rename s x)).
+  by rewrite names_rename imfsetS.
+by rewrite -[LHS](bound_names_morph sub) -e_m bound_names_morph.
+Qed.
+
+Lemma bound_namesNNE n n' y :
+  n \notin bound_names y ->
+  n' \notin bound_names y ->
+  bound_rename (fperm2 n n') y = y.
+Proof.
+elim/boundP: y=> [/= A x sub]; rewrite bound_names_morph // => n_nin n'_nin.
+rewrite bound_rename_morph // namesNNE; first last.
+- apply: contra n'_nin.
+  by rewrite namesfsE=> /bigcupP [?? _ /namesnP ->].
+- apply: contra n_nin.
+  by rewrite namesfsE=> /bigcupP [?? _ /namesnP ->].
+apply/esym/maskP=> //; exists (fperm2 n n'); eauto.
+rewrite /fdisjoint -fsubset0.
+rewrite (fsubset_trans (fsetSI _ (fsubset_supp_fperm2 _ _))) //.
+apply/fsubsetP=> n'' /fsetIP [/fset2P [->|->] in_A];
+by move: n_nin n'_nin; rewrite in_A.
+Qed.
+
+Definition bound_nominalMixin :=
+  NominalMixin bound_renameD bound_namesNNE bound_namesTeq.
 
 End Structures.
 
