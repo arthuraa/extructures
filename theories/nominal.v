@@ -1073,9 +1073,11 @@ Definition bound_rename s :=
   locked (lift_bound (fun A x => mask (rename s A) (rename s x))).
 
 Let bound_rename_morph s A x :
-  fsubset A (names x) ->
   bound_rename s (mask A x) = mask (rename s A) (rename s x).
 Proof.
+rewrite maskE [RHS]maskE names_rename -imfsetI; last first.
+  by move=> ?? _ _; apply: rename_inj.
+move: (A :&: _) (fsubsetIr A (names x))=> {A} A.
 rewrite /bound_rename -lock; apply: lift_boundE=> {A x} A x s' sub dis.
 apply/maskP; first by rewrite names_rename renamefsE imfsetS.
 exists (s * s' * s^-1).
@@ -1098,8 +1100,7 @@ Lemma bound_renameD s1 s2 y :
 Proof.
 elim/boundP: y=> [A x sub].
 rewrite bound_rename_morph //= bound_rename_morph //= ?renameD.
-  by rewrite bound_rename_morph.
-by rewrite renamefsE names_rename imfsetS.
+by rewrite bound_rename_morph.
 Qed.
 
 Lemma bound_namesTeq n n' y :
@@ -1139,6 +1140,15 @@ Definition bound_nominalMixin :=
   NominalMixin bound_renameD bound_namesNNE bound_namesTeq.
 Canonical bound_nominalType :=
   Eval hnf in NominalType {bound T} bound_nominalMixin.
+
+Lemma renamebE s A x :
+  rename s (mask A x) = mask (rename s A) (rename s x).
+Proof. exact: bound_rename_morph. Qed.
+
+Lemma namesbE A x :
+  fsubset A (names x) ->
+  names (mask A x) = A.
+Proof. exact: bound_names_morph. Qed.
 
 End Structures.
 
