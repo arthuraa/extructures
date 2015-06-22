@@ -219,6 +219,11 @@ apply: (@mem_names _ _ _ (names (f x))) => n'; apply: contra=> /eqP ex.
 by rewrite -ex -equi names_rename -{1}(@fperm2L _ n n') mem_imfset.
 Qed.
 
+Definition is_supp (ns : {fset name}) (f : T -> S) :=
+  forall (s : {fperm name}),
+    fdisjoint (supp s) ns ->
+    forall x, rename s (f (rename s^-1 x)) = f x.
+
 End Equivariance.
 
 End NominalTheory.
@@ -1166,6 +1171,14 @@ rewrite maskE [RHS]maskE (_ : (_ :\ _) :&: _ = (A :&: names x) :\ n).
   by move/fdisjointP: dis; apply.
 by apply/eq_fset=> n'; rewrite !(in_fsetI, in_fsetD1) andbA.
 Qed.
+
+Definition new (ns : {fset name}) (f : name -> {bound T}) :=
+  locked (hide (fresh ns) (f (fresh ns))).
+
+Lemma newP ns f g :
+  (forall n, n \notin ns -> f n = g n) ->
+  new ns f = new ns g.
+Proof. by move=> efg; rewrite /new -2!lock efg // freshP. Qed.
 
 End Structures.
 
