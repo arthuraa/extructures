@@ -219,18 +219,37 @@ apply: (@mem_names _ _ _ (names (f x))) => n'; apply: contra=> /eqP ex.
 by rewrite -ex -equi names_rename -{1}(@fperm2L _ n n') mem_imfset.
 Qed.
 
-Definition is_supp (ns : {fset name}) (f : T -> S) :=
+Definition finsupp (ns : {fset name}) (f : T -> S) :=
   forall (s : {fperm name}),
     fdisjoint (supp s) ns ->
     forall x, rename s (f (rename s^-1 x)) = f x.
 
-Lemma is_suppS ns ns' f :
-  is_supp ns f ->
+Lemma finsuppS ns ns' f :
+  finsupp ns f ->
   fsubset ns ns' ->
-  is_supp ns' f.
+  finsupp ns' f.
 Proof.
 move=> supp_f sub s dis; apply: supp_f; move: dis.
 by rewrite 2!(fdisjointC (supp s)); apply/fdisjoint_trans.
+Qed.
+
+Lemma names_finsupp ns f x :
+  finsupp ns f ->
+  fsubset (names (f x)) (ns :|: names x).
+Proof.
+move=> fs_f; apply/fsubsetP=> n; rewrite in_fsetU=> n_in_fx.
+have [|n_nin_ns] //= := boolP (n \in ns).
+apply: (@mem_names _ _ _ (ns :|: names (f x)))=> n'.
+rewrite in_fsetU=> /norP [n'_nin_ns n'_nin_fx].
+set s := fperm2 n n'.
+have: rename s (f x) != f x.
+  apply: contra n'_nin_fx=> /eqP <-; rewrite names_rename.
+  by rewrite (mem_imfset_can _ _ (fpermK _) (fpermKV _)) fperm2V fperm2R.
+apply: contra=> /eqP {2}<-.
+have dis: fdisjoint (supp s) ns.
+  rewrite (fdisjoint_trans (fsubset_supp_fperm2 _ _)) //.
+  by apply/fdisjointP=> n'' /fset2P [->|->] {n''} //.
+by rewrite -{1}(renameK s x) (fs_f _ dis).
 Qed.
 
 End Equivariance.
@@ -1208,6 +1227,26 @@ Lemma newP ns f g :
   (forall n, n \notin ns -> f n = g n) ->
   new ns f = new ns g.
 Proof. by move=> efg; rewrite /new -2!lock efg // freshP. Qed.
+
+Lemma newS ns ns' f :
+  finsupp ns f -> fsubset ns ns' -> new ns f = new ns' f.
+Proof.
+move=> fs_f sub; rewrite /new -2!lock.
+move: (fresh _) (freshP ns) => n n_nin_ns.
+move: (fresh _) (freshP ns') => n' n'_nin_ns'.
+have n'_nin_ns : n' \notin ns.
+  by apply: contra n'_nin_ns'; move/fsubsetP: sub; apply.
+pose s := fperm2 n n'.
+have dis: fdisjoint (supp s) ns.
+  rewrite (fdisjoint_trans (fsubset_supp_fperm2 _ _)) //.
+  by apply/fdisjointP=> n'' /fset2P [->|->] {n''} //.
+rewrite -(fs_f _ dis) fperm2V renamenE fperm2L.
+rewrite -{1}(fperm2R n n' : s n' = n) -rename_hide.
+rewrite ?names_disjointE // names_hide.
+suff sub': fsubset (names (f n') :\ n') ns.
+  by rewrite fdisjointC (fdisjoint_trans sub') // fdisjointC.
+by rewrite fsubD1set fsetU1E fsetUC (names_finsupp n' fs_f).
+Qed.
 
 End Structures.
 

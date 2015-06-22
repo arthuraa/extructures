@@ -459,6 +459,9 @@ Proof.
 by move=> /fsubsetP sub /fdisjointP dis; apply/fdisjointP=> x /sub; eauto.
 Qed.
 
+Lemma fdisjoint0 s : fdisjoint fset0 s.
+Proof. by rewrite /fdisjoint fset0I. Qed.
+
 Lemma in_fsetD1 x s y : (x \in s :\ y) = (x != y) && (x \in s).
 Proof. by rewrite in_fset_filter. Qed.
 
