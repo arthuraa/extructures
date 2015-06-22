@@ -1228,24 +1228,31 @@ Lemma newP ns f g :
   new ns f = new ns g.
 Proof. by move=> efg; rewrite /new -2!lock efg // freshP. Qed.
 
-Lemma newS ns ns' f :
-  finsupp ns f -> fsubset ns ns' -> new ns f = new ns' f.
+Lemma newE ns f n :
+  n \notin ns -> finsupp ns f -> new ns f = hide n (f n).
 Proof.
-move=> fs_f sub; rewrite /new -2!lock.
-move: (fresh _) (freshP ns) => n n_nin_ns.
-move: (fresh _) (freshP ns') => n' n'_nin_ns'.
-have n'_nin_ns : n' \notin ns.
-  by apply: contra n'_nin_ns'; move/fsubsetP: sub; apply.
-pose s := fperm2 n n'.
+move=> n_nin_ns fs_f; rewrite /new -lock.
+move: (fresh _) (freshP ns)=> n' n'_nin_ns.
+pose s := fperm2 n' n.
 have dis: fdisjoint (supp s) ns.
   rewrite (fdisjoint_trans (fsubset_supp_fperm2 _ _)) //.
   by apply/fdisjointP=> n'' /fset2P [->|->] {n''} //.
 rewrite -(fs_f _ dis) fperm2V renamenE fperm2L.
-rewrite -{1}(fperm2R n n' : s n' = n) -rename_hide.
+rewrite -{1}(fperm2R n' n : s n = n') -rename_hide.
 rewrite ?names_disjointE // names_hide.
-suff sub': fsubset (names (f n') :\ n') ns.
+suff sub': fsubset (names (f n) :\ n) ns.
   by rewrite fdisjointC (fdisjoint_trans sub') // fdisjointC.
-by rewrite fsubD1set fsetU1E fsetUC (names_finsupp n' fs_f).
+by rewrite fsubD1set fsetU1E fsetUC (names_finsupp n fs_f).
+Qed.
+
+Lemma newS ns ns' f :
+  finsupp ns f -> fsubset ns ns' -> new ns f = new ns' f.
+Proof.
+move=> fs_f sub; move: (fresh _) (freshP ns')=> n n_nin_ns'.
+have n_nin_ns: n \notin ns.
+  by apply: contra n_nin_ns'; move/fsubsetP: sub; apply.
+rewrite (newE n_nin_ns') 1?(newE n_nin_ns) //.
+exact: finsuppS fs_f sub.
 Qed.
 
 End Structures.
