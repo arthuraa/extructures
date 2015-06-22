@@ -1067,7 +1067,7 @@ End Basic.
 Section Structures.
 
 Variable T : nominalType.
-Implicit Types (s : {fperm name}) (x : T).
+Implicit Types (s : {fperm name}) (x : T) (bx : {bound T}).
 
 Definition bound_rename s :=
   locked (lift_bound (fun A x => mask (rename s A) (rename s x))).
@@ -1094,21 +1094,21 @@ Let bound_names_morph A x :
   fsubset A (names x) -> bound_names (mask A x) = A.
 Proof. by move=> sub; rewrite /bound_names -lock lift_boundE //. Qed.
 
-Lemma bound_renameD s1 s2 y :
-  bound_rename s1 (bound_rename s2 y) =
-  bound_rename (s1 * s2) y.
+Lemma bound_renameD s1 s2 bx :
+  bound_rename s1 (bound_rename s2 bx) =
+  bound_rename (s1 * s2) bx.
 Proof.
-elim/boundP: y=> [A x sub].
+elim/boundP: bx=> [A x sub].
 rewrite bound_rename_morph //= bound_rename_morph //= ?renameD.
 by rewrite bound_rename_morph.
 Qed.
 
-Lemma bound_namesTeq n n' y :
-  n \in bound_names y ->
-  bound_rename (fperm2 n n') y = y ->
-  n' \in bound_names y.
+Lemma bound_namesTeq n n' bx :
+  n \in bound_names bx ->
+  bound_rename (fperm2 n n') bx = bx ->
+  n' \in bound_names bx.
 Proof.
-elim/boundP: y=> [/= A x sub]; rewrite bound_names_morph // => n_in.
+elim/boundP: bx=> [/= A x sub]; rewrite bound_names_morph // => n_in.
 set s := fperm2 n n'.
 rewrite bound_rename_morph // renamefsE=> e_m.
 suff ->: A = rename s @: A.
@@ -1118,12 +1118,12 @@ have sub': fsubset (rename s @: A) (names (rename s x)).
 by rewrite -[LHS](bound_names_morph sub) -e_m bound_names_morph.
 Qed.
 
-Lemma bound_namesNNE n n' y :
-  n \notin bound_names y ->
-  n' \notin bound_names y ->
-  bound_rename (fperm2 n n') y = y.
+Lemma bound_namesNNE n n' bx :
+  n \notin bound_names bx ->
+  n' \notin bound_names bx ->
+  bound_rename (fperm2 n n') bx = bx.
 Proof.
-elim/boundP: y=> [/= A x sub]; rewrite bound_names_morph // => n_nin n'_nin.
+elim/boundP: bx=> [/= A x sub]; rewrite bound_names_morph // => n_nin n'_nin.
 rewrite bound_rename_morph // namesNNE; first last.
 - apply: contra n'_nin.
   by rewrite namesfsE=> /bigcupP [?? _ /namesnP ->].
