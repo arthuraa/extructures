@@ -1150,6 +1150,23 @@ Lemma namesbE A x :
   names (mask A x) = A.
 Proof. exact: bound_names_morph. Qed.
 
+Definition hide (n : name) :=
+  locked (lift_bound (fun A x => mask (A :\ n) x)).
+
+Lemma hideE n A x : hide n (mask A x) = mask (A :\ n) x.
+Proof.
+rewrite maskE [RHS]maskE (_ : (_ :\ _) :&: _ = (A :&: names x) :\ n).
+  move: (A :&: names x) (fsubsetIr A (names x))=> {A} A sub.
+  rewrite /hide -lock lift_boundE // {A x sub}.
+  move=> A x s sub dis; apply/maskP=> //.
+    rewrite fsubD1set (fsubset_trans sub) //.
+    by rewrite fsetU1E fsubsetUr.
+  exists s=> //; rewrite fdisjointC; apply/fdisjointP=> n'.
+  rewrite in_fsetD1=> /andP [_]; rewrite fdisjointC in dis.
+  by move/fdisjointP: dis; apply.
+by apply/eq_fset=> n'; rewrite !(in_fsetI, in_fsetD1) andbA.
+Qed.
+
 End Structures.
 
 End Binding.
