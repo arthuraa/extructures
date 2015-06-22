@@ -224,6 +224,15 @@ Definition is_supp (ns : {fset name}) (f : T -> S) :=
     fdisjoint (supp s) ns ->
     forall x, rename s (f (rename s^-1 x)) = f x.
 
+Lemma is_suppS ns ns' f :
+  is_supp ns f ->
+  fsubset ns ns' ->
+  is_supp ns' f.
+Proof.
+move=> supp_f sub s dis; apply: supp_f; move: dis.
+by rewrite 2!(fdisjointC (supp s)); apply/fdisjoint_trans.
+Qed.
+
 End Equivariance.
 
 End NominalTheory.
@@ -1170,6 +1179,26 @@ rewrite maskE [RHS]maskE (_ : (_ :\ _) :&: _ = (A :&: names x) :\ n).
   rewrite in_fsetD1=> /andP [_]; rewrite fdisjointC in dis.
   by move/fdisjointP: dis; apply.
 by apply/eq_fset=> n'; rewrite !(in_fsetI, in_fsetD1) andbA.
+Qed.
+
+Lemma names_hide n bx : names (hide n bx) = names bx :\ n.
+Proof.
+elim/boundP: bx=> [A x sub]; rewrite hideE [in RHS]namesbE //.
+by rewrite namesbE // (fsubset_trans _ sub) // fsubD1set fsetU1E fsubsetUr.
+Qed.
+
+Lemma rename_hide s n bx :
+  rename s (hide n bx) = hide (s n) (rename s bx).
+Proof.
+elim/boundP: bx=> [A x sub]; rewrite hideE 2!renamebE hideE.
+congr mask; apply/eq_fset=> n'; rewrite in_fsetD1 renamefsE.
+apply/imfsetP/andP.
+  case=> [n'']; rewrite in_fsetD1=> /andP [ne in_A ->].
+  rewrite inj_eq ?ne ?renamefsE ?mem_imfset_inj //;
+  move=> ??; exact : rename_inj.
+rewrite renamefsE=> - [ne /imfsetP [n'' in_A ?]]; subst n'.
+exists n''; rewrite // in_fsetD1 in_A andbT.
+by apply: contra ne=> /eqP ->.
 Qed.
 
 Definition new (ns : {fset name}) (f : name -> {bound T}) :=

@@ -453,6 +453,12 @@ move=> dis; apply/eq_fset=> x; rewrite in_fset0 in_fsetI.
 by have [h|//] := boolP (x \in s1); rewrite (negbTE (dis _ h)).
 Qed.
 
+Lemma fdisjoint_trans s1 s2 s3 :
+  fsubset s1 s2 -> fdisjoint s2 s3 -> fdisjoint s1 s3.
+Proof.
+by move=> /fsubsetP sub /fdisjointP dis; apply/fdisjointP=> x /sub; eauto.
+Qed.
+
 Lemma in_fsetD1 x s y : (x \in s :\ y) = (x != y) && (x \in s).
 Proof. by rewrite in_fset_filter. Qed.
 
