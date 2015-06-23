@@ -255,20 +255,35 @@ Qed.
 Lemma const_finsupp y : finsupp (names y) (fun _ => y).
 Proof. by move=> s dis x /=; rewrite names_disjointE. Qed.
 
+Lemma equivariant_finsupp f : equivariant f <-> finsupp fset0 f.
+Proof.
+split=> [equi_f|fs_f].
+  by move=> s _ x; rewrite equi_f renameKV.
+by move=> s x; rewrite -[in LHS](renameK s x) fs_f.
+Qed.
+
 End Equivariance.
 
 Section Composition.
 
 Variables (T S R : nominalType).
 
-Lemma finsupp_comp ns ns' (f : T -> S) (g : S -> R) :
-  finsupp ns f -> finsupp ns' g -> finsupp (ns :|: ns') (g \o f).
+Lemma finsupp_comp ns ns' (g : S -> R) (f : T -> S) :
+  finsupp ns g -> finsupp ns' f -> finsupp (ns :|: ns') (g \o f).
 Proof.
 move=> fs_f fs_g s dis x /=.
 have {dis} /andP [dis1 dis2]:
   fdisjoint (supp s) ns && fdisjoint (supp s) ns'.
   by move: dis; rewrite /fdisjoint fsetIUr fsetU_eq0.
 by rewrite -[f _](renameK s) (fs_f _ dis1) (fs_g _ dis2).
+Qed.
+
+Lemma equivariant_comp (g : S -> R) (f : T -> S) :
+  equivariant g -> equivariant f -> equivariant (g \o f).
+Proof.
+move=> /equivariant_finsupp fs_g /equivariant_finsupp fs_f.
+apply/equivariant_finsupp; rewrite -(fsetU0 fset0).
+exact: finsupp_comp.
 Qed.
 
 End Composition.
@@ -1097,15 +1112,15 @@ Section Elim.
 Variable S : Type.
 Variable f : {fset name} -> T -> S.
 
-Definition lift_bound (x : {bound T}) :=
+Definition elim_bound (x : {bound T}) :=
   f ((repr x).1 :&: names (repr x).2) (repr x).2.
 
-Lemma lift_boundE :
+Lemma elim_boundE :
   (forall A x s, fsubset A (names x) -> fdisjoint (supp s) A ->
                  f A x = f A (rename s x)) ->
-  forall A x, fsubset A (names x) -> lift_bound (mask A x) = f A x.
+  forall A x, fsubset A (names x) -> elim_bound (mask A x) = f A x.
 Proof.
-move=> e A x sub; rewrite /lift_bound /mask -lock.
+move=> e A x sub; rewrite /elim_bound /mask -lock.
 case: piP=> [[A' x'] /eqmodP/bound_eqP /= [eA [s dis ex]]].
 rewrite -{}eA //; have eA: A :&: names x = A.
   by apply/eqP; rewrite eqEfsubset fsubsetIl fsubsetI fsubsetxx.
@@ -1116,13 +1131,64 @@ End Elim.
 
 End Basic.
 
+Section Functor.
+
+Section Def.
+
+Variable T S : nominalType.
+Variable f : T -> S.
+
+Definition lift_bound :=
+  elim_bound (fun A => mask A \o f).
+
+Lemma lift_boundE :
+  equivariant f ->
+  forall A x, fsubset A (names x) ->
+              lift_bound (mask A x) = mask A (f x).
+Proof.
+move=> equi A x sub; rewrite /lift_bound elim_boundE //.
+move=> {A x sub} A x s sub dis /=.
+rewrite -equi [RHS]maskE [LHS]maskE names_rename.
+have <-: A :&: names (f x) = A :&: s @: names (f x).
+  apply/eq_fset=> n; apply/fsetIP/fsetIP; case=> [in_A in_names]; split=> //.
+    rewrite -(_ : s n = n) ?mem_imfset //.
+    by apply/suppPn; move: (n) in_A; apply/fdisjointP; rewrite fdisjointC.
+  rewrite -(mem_imfset_inj _ _ (@fperm_inj _ s)) (_ : s n = n) //.
+  by apply/suppPn; move: (n) in_A; apply/fdisjointP; rewrite fdisjointC.
+apply/maskP; first exact: fsubsetIr.
+exists s=> //; rewrite fdisjointC (fdisjoint_trans (fsubsetIl _ _)) //.
+by rewrite fdisjointC.
+Qed.
+
+End Def.
+
+Variables T S R : nominalType.
+
+Lemma lift_bound_id (bx : {bound T}) : lift_bound id bx = bx.
+Proof. by elim/boundP: bx=> [A x sub]; rewrite lift_boundE. Qed.
+
+Lemma lift_bound_comp (g : S -> R) (f : T -> S) bx :
+  equivariant g -> equivariant f ->
+  lift_bound (g \o f) bx = lift_bound g (lift_bound f bx).
+Proof.
+elim/boundP: bx=> [A x sub] equi_g equi_f; rewrite lift_boundE //=.
+  rewrite lift_boundE // [in RHS]maskE lift_boundE //; last first.
+    exact: fsubsetIr.
+  rewrite [in LHS]maskE [in RHS]maskE; congr mask.
+  rewrite -fsetIA; congr fsetI; apply/eqP; rewrite eqEfsubset.
+  by rewrite fsubsetIr andbT fsubsetI fsubsetxx andbT equivariant_names.
+exact: equivariant_comp.
+Qed.
+
+End Functor.
+
 Section Structures.
 
 Variable T : nominalType.
 Implicit Types (s : {fperm name}) (x : T) (bx : {bound T}).
 
 Definition bound_rename s :=
-  locked (lift_bound (fun A x => mask (rename s A) (rename s x))).
+  locked (elim_bound (fun A x => mask (rename s A) (rename s x))).
 
 Let bound_rename_morph s A x :
   bound_rename s (mask A x) = mask (rename s A) (rename s x).
@@ -1130,7 +1196,7 @@ Proof.
 rewrite maskE [RHS]maskE names_rename -imfsetI; last first.
   by move=> ?? _ _; apply: rename_inj.
 move: (A :&: _) (fsubsetIr A (names x))=> {A} A.
-rewrite /bound_rename -lock; apply: lift_boundE=> {A x} A x s' sub dis.
+rewrite /bound_rename -lock; apply: elim_boundE=> {A x} A x s' sub dis.
 apply/maskP; first by rewrite names_rename renamefsE imfsetS.
 exists (s * s' * s^-1).
   rewrite suppJ /fdisjoint renamefsE -imfsetI.
@@ -1140,11 +1206,11 @@ by rewrite -renameD renameK renameD.
 Qed.
 
 Definition bound_names :=
-  locked (lift_bound (fun A x => A)).
+  locked (elim_bound (fun A x => A)).
 
 Let bound_names_morph A x :
   fsubset A (names x) -> bound_names (mask A x) = A.
-Proof. by move=> sub; rewrite /bound_names -lock lift_boundE //. Qed.
+Proof. by move=> sub; rewrite /bound_names -lock elim_boundE //. Qed.
 
 Lemma bound_renameD s1 s2 bx :
   bound_rename s1 (bound_rename s2 bx) =
@@ -1203,13 +1269,13 @@ Lemma namesbE A x :
 Proof. exact: bound_names_morph. Qed.
 
 Definition hide (n : name) :=
-  locked (lift_bound (fun A x => mask (A :\ n) x)).
+  locked (elim_bound (fun A x => mask (A :\ n) x)).
 
 Lemma hideE n A x : hide n (mask A x) = mask (A :\ n) x.
 Proof.
 rewrite maskE [RHS]maskE (_ : (_ :\ _) :&: _ = (A :&: names x) :\ n).
   move: (A :&: names x) (fsubsetIr A (names x))=> {A} A sub.
-  rewrite /hide -lock lift_boundE // {A x sub}.
+  rewrite /hide -lock elim_boundE // {A x sub}.
   move=> A x s sub dis; apply/maskP=> //.
     rewrite fsubD1set (fsubset_trans sub) //.
     by rewrite fsetU1E fsubsetUr.
