@@ -252,13 +252,16 @@ have dis: fdisjoint (supp s) ns.
 by rewrite -{1}(renameK s x) (fs_f _ dis).
 Qed.
 
+Lemma const_finsupp y : finsupp (names y) (fun _ => y).
+Proof. by move=> s dis x /=; rewrite names_disjointE. Qed.
+
 End Equivariance.
 
 Section Composition.
 
 Variables (T S R : nominalType).
 
-Lemma finsupp_comp ns ns' (f : T -> S) (g : S -> T) :
+Lemma finsupp_comp ns ns' (f : T -> S) (g : S -> R) :
   finsupp ns f -> finsupp ns' g -> finsupp (ns :|: ns') (g \o f).
 Proof.
 move=> fs_f fs_g s dis x /=.
@@ -1269,6 +1272,16 @@ have n_nin_ns: n \notin ns.
   by apply: contra n_nin_ns'; move/fsubsetP: sub; apply.
 rewrite (newE n_nin_ns') 1?(newE n_nin_ns) //.
 exact: finsuppS fs_f sub.
+Qed.
+
+Lemma new_const bx : new (names bx) (fun _ => bx) = bx.
+Proof.
+rewrite (newE (freshP (names bx)) (@const_finsupp _ _ bx)).
+elim/boundP: bx=> [A x sub]; rewrite hideE; congr mask.
+apply/eqP; rewrite eqEfsubset fsubD1set fsetU1E fsubsetUr /=.
+apply/fsubsetP=> n n_in_A; rewrite in_fsetD1 n_in_A andbT.
+rewrite namesbE //; apply: contraTN n_in_A=> /eqP ->.
+exact: freshP.
 Qed.
 
 End Structures.
