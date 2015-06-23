@@ -24,6 +24,10 @@ Canonical name_partOrdType := Eval hnf in PartOrdType name name_partOrdMixin.
 Definition name_ordMixin := [ordMixin of name by <:].
 Canonical name_ordType := Eval hnf in OrdType name name_ordMixin.
 
+Section Fresh.
+
+Local Open Scope fset_scope.
+
 Definition fresh (ns : {fset name}) : name :=
   locked (Name (foldr maxn 0 [seq nat_of_name n | n <- ns]).+1).
 
@@ -36,6 +40,32 @@ elim: {ns} (val ns)=> [|[n'] ns IH] //=.
 rewrite inE=> /orP [/eqP[<-]{n'} |/IH h]; first exact: leq_maxl.
 by rewrite (leq_trans h) // leq_maxr.
 Qed.
+
+Fixpoint freshk k ns :=
+  if k is S k' then
+    let n := fresh ns in
+    n |: freshk k' (n |: ns)
+  else fset0.
+
+Lemma freshkP k ns : fdisjoint (freshk k ns) ns.
+Proof.
+elim: k ns => [|k IH] ns /=; first exact: fdisjoint0.
+apply/fdisjointP=> n /fsetU1P [->|]; first exact: freshP.
+move: n; apply/fdisjointP; rewrite fdisjointC.
+apply/(fdisjoint_trans (fsubsetUr (fset1 (fresh ns)) ns)); rewrite -fsetU1E.
+by rewrite fdisjointC.
+Qed.
+
+Lemma size_freshk k ns : size (freshk k ns) = k.
+Proof.
+elim: k ns=> [//|k IH] ns.
+rewrite (lock val) /= -lock size_fsetU1 IH -add1n; congr addn.
+move: (fresh _) (freshP ns)=> n Pn.
+move: (freshkP k (n |: ns)); rewrite fdisjointC=> /fdisjointP/(_ n).
+by rewrite in_fsetU1 eqxx /= => /(_ erefl) ->.
+Qed.
+
+End Fresh.
 
 Module Nominal.
 
