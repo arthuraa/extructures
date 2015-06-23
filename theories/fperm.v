@@ -307,6 +307,40 @@ Proof. exact: supp_fperm. Qed.
 
 End BuildGen.
 
+Section Renaming.
+
+Lemma find_fperm (X Y : {fset T}) :
+  size X = size Y ->
+  exists2 s, fsubset (supp s) (X :|: Y) & s @: X = Y.
+Proof.
+move=> size_X.
+suff [f f_inj im_f]: exists2 f, {in X &, injective f} & f @: X = Y.
+  rewrite -im_f.
+  exists (fperm_gen f_inj); first by rewrite supp_fperm_gen.
+  by apply/eq_in_imfset/fperm_genE.
+elim/fset_ind: X Y size_X => [|x X x_nin_X IH] Y.
+  rewrite /=; move/esym/eqP; rewrite sizes_eq0=> /eqP ->.
+  by exists id.
+rewrite size_fsetU1 x_nin_X add1n.
+elim/fset_ind: Y=> // y Y y_nin_Y _; rewrite size_fsetU1 y_nin_Y /=.
+rewrite add1n=> - [/IH [f Pf PXY]].
+exists (fun x' => if x' == x then y else f x').
+  move=> x1 x2 /=; rewrite !in_fsetU1.
+  have [-> _|ne1] /= := altP (x1 =P x).
+    have [-> _|ne2] //= := altP (x2 =P x).
+    move=> x2_in_X ey; move: y_nin_Y; rewrite {}ey -PXY.
+    by rewrite mem_imfset.
+  move=> x1_in_X.
+  have [-> _|ne2] /= := altP (x2 =P x).
+    by move=> ey; move: y_nin_Y; rewrite -{}ey -PXY mem_imfset.
+  by move: x1_in_X; apply: Pf.
+rewrite imfsetU1 eqxx -{}PXY; congr fsetU1.
+apply/eq_in_imfset=> x' x'_in_X.
+by move: x'_in_X x_nin_X; have [->|//] := altP eqP=> ->.
+Qed.
+
+End Renaming.
+
 Section Inverse.
 
 Variable s : {fperm T}.
