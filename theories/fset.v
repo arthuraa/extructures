@@ -484,6 +484,12 @@ by apply/fsubsetP/fsubsetP=> h x';
 move/(_ x'): h; rewrite in_fsetD1 in_fsetU1; case: eqP.
 Qed.
 
+Lemma fsetID s1 s2 : s1 :&: s2 :|: s1 :\: s2 = s1.
+Proof.
+apply/eq_fset=> x; rewrite in_fsetU in_fsetI in_fsetD.
+by rewrite (andbC _ (x \in s1)) -andb_orr orbN andbT.
+Qed.
+
 Lemma fsubset_leq_size s1 s2 : fsubset s1 s2 -> size s1 <= size s2.
 Proof.
 elim/fset_ind: s1 s2 => [|x s1 Px IH] s2; first by rewrite leq0n.

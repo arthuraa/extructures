@@ -309,6 +309,7 @@ End BuildGen.
 
 Section Renaming.
 
+(* FIXME: find a better name for this *)
 Lemma find_fperm (X Y : {fset T}) :
   size X = size Y ->
   exists2 s, fsubset (supp s) (X :|: Y) & s @: X = Y.
