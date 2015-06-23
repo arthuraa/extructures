@@ -254,6 +254,22 @@ Qed.
 
 End Equivariance.
 
+Section Composition.
+
+Variables (T S R : nominalType).
+
+Lemma finsupp_comp ns ns' (f : T -> S) (g : S -> T) :
+  finsupp ns f -> finsupp ns' g -> finsupp (ns :|: ns') (g \o f).
+Proof.
+move=> fs_f fs_g s dis x /=.
+have {dis} /andP [dis1 dis2]:
+  fdisjoint (supp s) ns && fdisjoint (supp s) ns'.
+  by move: dis; rewrite /fdisjoint fsetIUr fsetU_eq0.
+by rewrite -[f _](renameK s) (fs_f _ dis1) (fs_g _ dis2).
+Qed.
+
+End Composition.
+
 End NominalTheory.
 
 Prenex Implicits renameD rename1 renameK renameKV rename_inj.
