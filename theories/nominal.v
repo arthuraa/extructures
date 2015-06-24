@@ -252,7 +252,7 @@ Qed.
 Definition finsupp (ns : {fset name}) (f : T -> S) :=
   forall (s : {fperm name}),
     fdisjoint (supp s) ns ->
-    forall x, rename s (f (rename s^-1 x)) = f x.
+    forall x, rename s (f x) = f (rename s x).
 
 Lemma finsuppS ns ns' f :
   finsupp ns f ->
@@ -279,7 +279,7 @@ apply: contra=> /eqP {2}<-.
 have dis: fdisjoint (supp s) ns.
   rewrite (fdisjoint_trans (fsubset_supp_fperm2 _ _)) //.
   by apply/fdisjointP=> n'' /fset2P [->|->] {n''} //.
-by rewrite -{1}(renameK s x) (fs_f _ dis).
+by rewrite (fs_f _ dis).
 Qed.
 
 Lemma const_finsupp y : finsupp (names y) (fun _ => y).
@@ -288,8 +288,8 @@ Proof. by move=> s dis x /=; rewrite names_disjointE. Qed.
 Lemma equivariant_finsupp f : equivariant f <-> finsupp fset0 f.
 Proof.
 split=> [equi_f|fs_f].
-  by move=> s _ x; rewrite equi_f renameKV.
-by move=> s x; rewrite -[in LHS](renameK s x) fs_f.
+  by move=> s _ x; rewrite equi_f.
+by move=> s x; rewrite fs_f.
 Qed.
 
 End Equivariance.
@@ -305,7 +305,7 @@ move=> fs_f fs_g s dis x /=.
 have {dis} /andP [dis1 dis2]:
   fdisjoint (supp s) ns && fdisjoint (supp s) ns'.
   by move: dis; rewrite /fdisjoint fsetIUr fsetU_eq0.
-by rewrite -[f _](renameK s) (fs_f _ dis1) (fs_g _ dis2).
+by rewrite (fs_f _ dis1) (fs_g _ dis2).
 Qed.
 
 Lemma equivariant_comp (g : S -> R) (f : T -> S) :
@@ -1429,8 +1429,7 @@ pose s := fperm2 n' n.
 have dis: fdisjoint (supp s) ns.
   rewrite (fdisjoint_trans (fsubset_supp_fperm2 _ _)) //.
   by apply/fdisjointP=> n'' /fset2P [->|->] {n''} //.
-rewrite -(fs_f _ dis) fperm2V renamenE fperm2L.
-rewrite -{1}(fperm2R n' n : s n = n') -rename_hide.
+rewrite -{1 2}(fperm2R n' n : s n = n') -(fs_f _ dis) -rename_hide.
 rewrite ?names_disjointE // names_hide.
 suff sub': fsubset (names (f n) :\ n) ns.
   by rewrite fdisjointC (fdisjoint_trans sub') // fdisjointC.
