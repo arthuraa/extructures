@@ -295,15 +295,16 @@ exists x'; first by apply/fsetUP; left.
 by rewrite /fperm_gen_def x'_in.
 Qed.
 
-Definition fperm_gen := fperm fperm_gen_subproof.
+Definition fperm_gen := locked (fperm fperm_gen_subproof).
 
 Lemma fperm_genE : {in X, fperm_gen =1 f}.
 Proof.
-by move=> x x_in /=; rewrite fpermE in_fsetU /fperm_gen_def x_in.
+move=> x x_in /=.
+by rewrite /fperm_gen -lock fpermE in_fsetU /fperm_gen_def x_in.
 Qed.
 
 Lemma supp_fperm_gen : fsubset (supp fperm_gen) (X :|: f @: X).
-Proof. exact: supp_fperm. Qed.
+Proof. rewrite /fperm_gen -lock; exact: supp_fperm. Qed.
 
 End BuildGen.
 
@@ -359,11 +360,11 @@ apply/eq_fset=> x; apply/(sameP idP)/(iffP idP).
 by case/imfsetP=> [y Py -> {x}]; case: fpickP.
 Qed.
 
-Definition fperm_inv := fperm fperm_inv_subproof.
+Definition fperm_inv := locked (fperm fperm_inv_subproof).
 
 Lemma fpermK : cancel s fperm_inv.
 Proof.
-move=> x; rewrite fpermE; case: ifPn=> [x_in_supp|].
+move=> x; rewrite /fperm_inv -lock fpermE; case: ifPn=> [x_in_supp|].
   rewrite fperm_supp in x_in_supp.
   case: fpickP => [y /= /eqP/esym /fperm_inj-> //|/(_ _ x_in_supp) /=].
   by rewrite eqxx.
@@ -372,7 +373,7 @@ Qed.
 
 Lemma fpermKV : cancel fperm_inv s.
 Proof.
-move=> x; rewrite fpermE; case: ifPn=> [x_in_supp|].
+move=> x; rewrite /fperm_inv -lock fpermE; case: ifPn=> [x_in_supp|].
   case: fpickP=> [x' /= /eqP/esym -> //|/=].
   rewrite -imfset_supp in x_in_supp; case/imfsetP: x_in_supp=> [x' Px' ->].
   by move/(_ _ Px'); rewrite eqxx.
@@ -397,14 +398,15 @@ Proof.
 by rewrite imfset_comp !imfset_supp_sub // ?fsubsetUr // fsubsetUl.
 Qed.
 
-Definition fperm_mul s1 s2 := fperm (fperm_mul_subproof s1 s2).
+Definition fperm_mul s1 s2 := locked (fperm (fperm_mul_subproof s1 s2)).
 
 Infix "*" := fperm_mul.
 Notation "x ^-1" := (fperm_inv x).
 
 Lemma fpermM s1 s2 : s1 * s2 =1 s1 \o s2.
 Proof.
-move=> x; rewrite fpermE; have [|nin_supp] //= := boolP (x \in _).
+move=> x; rewrite /fperm_mul -lock fpermE.
+have [|nin_supp] //= := boolP (x \in _).
 rewrite in_fsetU negb_or !mem_supp !negbK in nin_supp.
 by case/andP: nin_supp=> [/eqP h1 /eqP ->]; rewrite h1.
 Qed.
