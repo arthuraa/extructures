@@ -1364,6 +1364,89 @@ Qed.
 
 End Strengthen.
 
+Section FinSupp.
+
+Variables T S : nominalType.
+Variables (D : {fset name}) (f : T -> S).
+
+Definition lift_bound_finsupp :=
+  elim_bound
+    (fun A x => mask (D :|: A) (f (rename (avoid (D :\: A) (names x)) x))).
+
+Lemma lift_bound_finsuppE :
+  finsupp D f ->
+  forall A x, fsubset A (names x) ->
+              fsubset (D :&: names x) A ->
+              lift_bound_finsupp (mask A x) =
+              mask (D :|: A) (f x).
+Proof.
+move=> /= fs_f A x sub1 sub2; rewrite /lift_bound_finsupp elim_boundE //.
+  rewrite names_disjointE // {2}(_ : names x = names x :\: (D :\: A)).
+    exact: supp_avoid.
+  apply/eq_fset=> /= n; apply/(sameP idP)/(iffP idP).
+    by rewrite in_fsetD => /andP [].
+  move=> n_in_names; rewrite in_fsetD n_in_names andbT in_fsetD.
+  rewrite negb_and negbK orbC -implybE; apply/implyP=> n_in_D.
+  by move/fsubsetP: sub2; apply; apply/fsetIP; split.
+move=> {A x sub1 sub2} /= A x s sub dis.
+set s1 := avoid _ _; set s2 := avoid _ _.
+rewrite [LHS]maskE [RHS]maskE.
+pose s' := s2 * s * s1^-1.
+have inj: {in names (rename s1 x) &, injective s'}.
+  by move=> ?? _ _; apply: fperm_inj.
+pose s'' := fperm_gen inj.
+have disA : fdisjoint (supp s'') A.
+  rewrite fdisjointC; apply/fdisjointP=> /= n inA.
+  have es1n: s1 n = n.
+    apply/suppPn; move: (supp_avoid _ _ : fdisjoint (supp s1) _).
+    rewrite fdisjointC; move/fdisjointP; apply.
+    by rewrite 2!in_fsetD inA; move: inA; apply/fsubsetP.
+  apply/suppPn; rewrite fperm_genE; last first.
+    rewrite names_rename -es1n.
+    by apply/mem_imfset; move: inA; apply/fsubsetP.
+  move/suppPn: es1n; rewrite -supp_inv=> /suppPn es1n.
+  rewrite /s' fpermM /= fpermM /= es1n.
+  have esn: s n = n.
+    by apply/suppPn; move: dis; rewrite fdisjointC; move/fdisjointP; apply.
+  rewrite esn.
+  apply/suppPn; move: (supp_avoid _ _ : fdisjoint (supp s2) _).
+  rewrite fdisjointC; move/fdisjointP; apply.
+  rewrite names_rename 2!in_fsetD inA /= -esn.
+  by apply/mem_imfset; move: inA; apply/fsubsetP.
+have disD : fdisjoint (supp s'') D.
+  rewrite fdisjointC; apply/fdisjointP=> /= n inN.
+  have [|ninA] := boolP (n \in A).
+    by apply/fdisjointP; rewrite fdisjointC.
+  move/fsubsetP/(_ n)/contra: (supp_fperm_gen _ : fsubset (supp s'') _).
+  apply; rewrite in_fsetU negb_or {1}names_rename.
+  move: (avoidP _ _ : fdisjoint (s1 @: _) _); rewrite fdisjointC.
+  move=> /fdisjointP/(_ n); rewrite in_fsetD ninA inN=> /(_ erefl) nin_im.
+  rewrite nin_im /= -names_rename renameD /s' fperm_mulsKV.
+  rewrite -renameD names_rename; move: (avoidP _ _ : fdisjoint (s2 @: _) _).
+  by rewrite fdisjointC; move/fdisjointP; apply; rewrite in_fsetD ninA inN.
+have disDA: fdisjoint (supp s'') (D :|: A).
+  apply/fdisjointP=> /= n inS; rewrite in_fsetU negb_or.
+  move/fdisjointP/(_ _ inS) in disA; move/fdisjointP/(_ _ inS) in disD.
+  by rewrite disA disD.
+set A1 := _ :&: _; set A2 := _ :&: _.
+rewrite -(_ : A1 = A2).
+  apply/maskP; first exact: fsubsetIr.
+  exists s''=> //.
+    apply/fdisjointP=> /= n inS; rewrite in_fsetI negb_and.
+    by move/fdisjointP/(_ _ inS): disDA=> ->.
+  rewrite fs_f // (eq_in_rename (fperm_genE inj)) 2!renameD.
+  by rewrite /s' fperm_mulsKV.
+apply/eq_fset=> /= n; rewrite 2!in_fsetI.
+have [inDA|//] /= := boolP (n \in D :|: A).
+rewrite renameD -(fperm_mulsKV s1 (s2 * s)) -renameD.
+rewrite -(eq_in_rename (fperm_genE inj)) -[in RHS]fs_f //.
+rewrite [in RHS]names_rename -[in RHS](_ : s'' n = n).
+  rewrite mem_imfset_inj //; exact: fperm_inj.
+by apply/suppPn; move: inDA; apply/fdisjointP; rewrite fdisjointC.
+Qed.
+
+End FinSupp.
+
 End Functor.
 
 Section Structures.
