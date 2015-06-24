@@ -1138,15 +1138,17 @@ by move: dis; rewrite /fdisjoint fsetIA=> /eqP ->; rewrite fset0I.
 Qed.
 
 Definition avoid D A :=
-  let ns_old := A :&: D in
-  let ns_new := freshk (size ns_old) (A :|: D) in
-  let ss := enum_fperm (ns_old :|: ns_new) in
-  let s_ok (s : {fperm name}) := s @: ns_old == ns_new in
-  odflt 1 (fpick s_ok ss).
+  locked (
+    let ns_old := A :&: D in
+    let ns_new := freshk (size ns_old) (A :|: D) in
+    let ss := enum_fperm (ns_old :|: ns_new) in
+    let s_ok (s : {fperm name}) := s @: ns_old == ns_new in
+    odflt 1 (fpick s_ok ss)
+  ).
 
 Lemma avoidP D A : fdisjoint (avoid D A @: A) D.
 Proof.
-rewrite /avoid.
+rewrite /avoid -lock.
 move: (size_freshk (size (A :&: D)) (A :|: D)).
 move: (freshkP (size (A :&: D)) (A :|: D)).
 move: (freshk _ _)=> N dis Psize.
@@ -1169,7 +1171,7 @@ Qed.
 
 Lemma supp_avoid D A : fdisjoint (supp (avoid D A)) (A :\: D).
 Proof.
-rewrite /avoid.
+rewrite /avoid -lock.
 move: (size_freshk (size (A :&: D)) (A :|: D)).
 move: (freshkP (size (A :&: D)) (A :|: D)).
 move: (freshk _ _)=> N dis Psize.
@@ -1183,6 +1185,33 @@ case: fpickP=> [s /eqP Ps|] //=.
 move: Psize => /esym Psize P.
 have [s sub im_s] := find_fperm Psize.
 by rewrite enum_fpermE in sub; move: (P s sub); rewrite im_s eqxx.
+Qed.
+
+Lemma mask_avoid D A x :
+  fsubset A (names x) ->
+  mask A x = mask A (rename (avoid (D :\: A) (names x)) x).
+Proof.
+move=> sub; apply/(maskP _ sub); eexists; last by eauto.
+move/fdisjointP: (supp_avoid (D :\: A) (names x))=> dis.
+apply/fdisjointP=> /= n /dis; rewrite in_fsetD=> /nandP.
+rewrite negbK in_fsetD=> - [/andP [] //|].
+by apply: contra; apply/fsubsetP.
+Qed.
+
+Lemma fresh_boundP D (P : {bound T} -> Type) :
+  (forall A x, fsubset A (names x) -> fsubset (D :&: names x) A ->
+               P (mask A x)) ->
+  forall bx, P bx.
+Proof.
+move=> IH; elim/boundP=> [/= A x sub].
+rewrite (mask_avoid D sub); apply: IH; rewrite names_rename.
+  apply/fsubsetP=> n n_in_A; move/(fsubsetP _ _ sub _): (n_in_A)=> n_in_x.
+  move: (supp_avoid (D :\: A) (names x)); rewrite fdisjointC.
+  move/fdisjointP/(_ n); rewrite 2!in_fsetD negb_and negbK n_in_A /=.
+  by move/(_ n_in_x)/suppPn=> <-; apply/mem_imfset.
+rewrite -{1}(fsetID D A) fsetIUl [in X in _ :|: X]fsetIC.
+move/eqP: (avoidP (D :\: A) (names x))=> ->; rewrite fsetU0.
+by rewrite (fsetIC _ A) -fsetIA fsubsetIl.
 Qed.
 
 Section Elim.
