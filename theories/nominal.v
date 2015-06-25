@@ -1716,6 +1716,51 @@ Qed.
 
 End Flip.
 
+Section Monoid.
+
+Section BasicFacts.
+
+Variables (T : nominalType) (op : T -> T -> T) (idx : T).
+
+Hypothesis equi_op : equivariant (fun p => op p.1 p.2).
+
+Lemma bound_left_id :
+  left_id idx op -> left_id (mask fset0 idx) (lift_bound2 op).
+Proof.
+move=> op1x bx.
+move: {1 3}(mask fset0 idx) (erefl (mask fset0 idx)).
+elim/(@fresh_boundP T (names bx))=> [fset0' idx' sub0 lim] e.
+have ?: fset0' = fset0.
+  by move: (congr1 (@names _) e); rewrite namesbE // namesbE ?fsub0set.
+subst fset0'; move/(maskP _ sub0): e=> [s dis eidx].
+elim/(@fresh_boundP T (names idx')): bx lim=> [A x subA lim'].
+rewrite namesbE // => lim''; rewrite lift_bound2E //.
+  rewrite fset0U -(renameK s (op _ _)) (equi_op s (idx', x)) /=.
+  by rewrite eidx op1x renameK.
+rewrite fset0I; apply/(fsubset_trans _ lim'').
+by rewrite fsubsetI lim' fsubsetIl.
+Qed.
+
+End BasicFacts.
+
+Section RightId.
+
+Variables (T : nominalType) (op : T -> T -> T) (idx : T).
+
+Hypothesis equi_op : equivariant (fun p => op p.1 p.2).
+
+Lemma bound_right_id :
+  right_id idx op -> right_id (mask fset0 idx) (lift_bound2 op).
+Proof.
+move=> opx1 bx; rewrite -(flip_lift_bound2 _ _ equi_op).
+rewrite bound_left_id // => s [bx1 bx2] /=.
+by rewrite (equi_op s (bx2, bx1)).
+Qed.
+
+End RightId.
+
+End Monoid.
+
 Section New.
 
 Section Basic.
