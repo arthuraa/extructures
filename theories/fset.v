@@ -484,10 +484,32 @@ by apply/fsubsetP/fsubsetP=> h x';
 move/(_ x'): h; rewrite in_fsetD1 in_fsetU1; case: eqP.
 Qed.
 
+Lemma fsetD1E s x : s :\ x = s :\: fset1 x.
+Proof.
+by apply/eq_fset=> x'; rewrite in_fsetD1 in_fsetD in_fset1.
+Qed.
+
 Lemma fsetID s1 s2 : s1 :&: s2 :|: s1 :\: s2 = s1.
 Proof.
 apply/eq_fset=> x; rewrite in_fsetU in_fsetI in_fsetD.
 by rewrite (andbC _ (x \in s1)) -andb_orr orbN andbT.
+Qed.
+
+Lemma fsetDUl : left_distributive (@fsetD T) (@fsetU T).
+Proof.
+move=> s1 s2 s3; apply/eq_fset=> x; rewrite !(in_fsetU, in_fsetD).
+by rewrite andb_orr.
+Qed.
+
+Lemma fsetD1U s1 s2 x : (s1 :|: s2) :\ x = s1 :\ x :|: s2 :\ x.
+Proof. by rewrite 3!fsetD1E fsetDUl. Qed.
+
+Lemma fsetDUr s1 s2 s3 : s1 :\: (s2 :|: s3) = (s1 :\: s2) :&: (s1 :\: s3).
+Proof.
+apply/eq_fset=> x; rewrite !(in_fsetD, in_fsetU, in_fsetI).
+rewrite negb_or (andbC (x \notin s3)) andbA.
+rewrite -[in RHS](andbA (x \notin s2)) andbb -!andbA; congr andb.
+exact: andbC.
 Qed.
 
 Lemma fsubset_leq_size s1 s2 : fsubset s1 s2 -> size s1 <= size s2.
