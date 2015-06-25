@@ -1474,6 +1474,41 @@ Lemma namesbE A x :
   names (mask A x) = A.
 Proof. exact: bound_names_morph. Qed.
 
+Definition join_bound (bbx : {bound {bound T}}) : {bound T} :=
+  elim_bound (fun A => elim_bound (fun _ x => mask A x)) bbx.
+
+Lemma join_boundE A A' x :
+  fsubset A A' -> join_bound (mask A (mask A' x)) = mask A x.
+Proof.
+move=> sub; rewrite (maskE A') maskE.
+rewrite namesbE ?fsubsetIr //.
+rewrite -{1}(fsetIid (names x)) 2!fsetIA fsetIC fsetIA (fsetIA (names x)).
+rewrite (fsetIC (names x)) -fsetIA [RHS]maskE.
+move: {sub} (fsetSI (names x) sub).
+move: (A :&: _) (A' :&: _) (fsubsetIr A (names x)) (fsubsetIr A' (names x)).
+move=> {A A'} A A' subA subA' subAA'.
+rewrite (_ : A :&: A' = A); last first.
+  by apply/eqP; rewrite eqEfsubset fsubsetI fsubsetIl fsubsetxx.
+rewrite /join_bound elim_boundE // ?namesbE //.
+  rewrite elim_boundE // => s dis; apply/maskP=> //.
+  by exists s; rewrite // fdisjointC (fdisjoint_trans subAA') // fdisjointC.
+move=> s dis; rewrite renamebE elim_boundE //; last first.
+  move=> {s dis} s dis; apply/maskP=> //.
+  by exists s; rewrite // fdisjointC (fdisjoint_trans subAA') // fdisjointC.
+rewrite elim_boundE //.
+- by apply/maskP; eauto.
+- by rewrite renamefsE names_rename; apply: imfsetS.
+move=> s' dis'; apply/maskP=> //.
+  rewrite -(imfset_id A) -(eq_in_imfset (_ : {in A, s =1 id})).
+    by rewrite names_rename; apply: imfsetS.
+  by move=> /= n inA; apply/suppPn; apply: contraTN inA; apply/fdisjointP.
+exists s'; rewrite // fdisjointC; apply/fdisjointP=> /= n inA.
+move/fdisjointP/(_ n)/contraTN: dis'; apply.
+rewrite renamefsE -(_ : s n = n).
+  by apply: mem_imfset; move: inA; apply/fsubsetP.
+by apply/suppPn; move: inA; apply: contraTN; apply/fdisjointP.
+Qed.
+
 Definition hide (n : name) :=
   locked (elim_bound (fun A x => mask (A :\ n) x)).
 
