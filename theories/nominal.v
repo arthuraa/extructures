@@ -1222,12 +1222,12 @@ Variable f : {fset name} -> T -> S.
 Definition elim_bound (x : {bound T}) :=
   f ((repr x).1 :&: names (repr x).2) (repr x).2.
 
-Lemma elim_boundE :
-  (forall A x s, fsubset A (names x) -> fdisjoint (supp s) A ->
-                 f A x = f A (rename s x)) ->
-  forall A x, fsubset A (names x) -> elim_bound (mask A x) = f A x.
+Lemma elim_boundE A x :
+  fsubset A (names x) ->
+  (forall s, fdisjoint (supp s) A -> f A x = f A (rename s x)) ->
+  elim_bound (mask A x) = f A x.
 Proof.
-move=> e A x sub; rewrite /elim_bound /mask -lock.
+move=> sub e; rewrite /elim_bound /mask -lock.
 case: piP=> [[A' x'] /eqmodP/bound_eqP /= [eA [s dis ex]]].
 rewrite -{}eA //; have eA: A :&: names x = A.
   by apply/eqP; rewrite eqEfsubset fsubsetIl fsubsetI fsubsetxx.
@@ -1264,7 +1264,7 @@ move=> /= fs_f A x sub1 sub2; rewrite /lift_bound_finsupp elim_boundE //.
   move=> n_in_names; rewrite in_fsetD n_in_names andbT in_fsetD.
   rewrite negb_and negbK orbC -implybE; apply/implyP=> n_in_D.
   by move/fsubsetP: sub2; apply; apply/fsetIP; split.
-move=> {A x sub1 sub2} /= A x s sub dis.
+move=> s dis.
 set s1 := avoid _ _; set s2 := avoid _ _.
 rewrite [LHS]maskE [RHS]maskE.
 pose s' := s2 * s * s1^-1.
@@ -1402,7 +1402,7 @@ Proof.
 rewrite maskE [RHS]maskE names_rename -imfsetI; last first.
   by move=> ?? _ _; apply: rename_inj.
 move: (A :&: _) (fsubsetIr A (names x))=> {A} A.
-rewrite /bound_rename -lock; apply: elim_boundE=> {A x} A x s' sub dis.
+rewrite /bound_rename -lock=> sub'; rewrite elim_boundE // => s' dis.
 apply/maskP; first by rewrite names_rename renamefsE imfsetS.
 exists (s * s' * s^-1).
   rewrite suppJ /fdisjoint renamefsE -imfsetI.
@@ -1481,8 +1481,8 @@ Lemma hideE n A x : hide n (mask A x) = mask (A :\ n) x.
 Proof.
 rewrite maskE [RHS]maskE (_ : (_ :\ _) :&: _ = (A :&: names x) :\ n).
   move: (A :&: names x) (fsubsetIr A (names x))=> {A} A sub.
-  rewrite /hide -lock elim_boundE // {A x sub}.
-  move=> A x s sub dis; apply/maskP=> //.
+  rewrite /hide -lock elim_boundE //.
+  move=> s dis; apply/maskP=> //.
     rewrite fsubD1set (fsubset_trans sub) //.
     by rewrite fsetU1E fsubsetUr.
   exists s=> //; rewrite fdisjointC; apply/fdisjointP=> n'.
