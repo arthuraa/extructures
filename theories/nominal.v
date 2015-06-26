@@ -1645,22 +1645,59 @@ Definition lift_bound2 bx bz :=
 Hypothesis equi_f : equivariant (fun p => f p.1 p.2).
 
 Lemma lift_bound2E A x B z :
+  fsubset (names x :&: B) A ->
+  fsubset (A :&: names z) B ->
+  fsubset (names x :&: names z) (A :&: B) ->
+  lift_bound2 (mask A x) (mask B z) = mask (A :|: B) (f x z).
+Proof.
+move=> subx subz lim.
+rewrite [RHS](_ : _ = mask (A :&: names x :|: B :&: names z) (f x z)).
+  have {lim} lim: fsubset (names x :&: names z)
+                          ((A :&: names x) :&: (B :&: names z)).
+    apply/fsubsetP=> /= n inNxz.
+    case/fsubsetP/(_ _ inNxz)/fsetIP: lim=> [inA inB].
+    by rewrite !in_fsetI inA inB /= -in_fsetI.
+  rewrite (maskE A) (maskE B).
+  move: {subx subz} (A :&: _) (fsubsetIr A (names x))
+        (B :&: _) (fsubsetIr B (names z)) lim => {A B} /= A sub B sub' lim.
+  rewrite /lift_bound2 /= mergeE //; last first.
+    rewrite namesbE //.
+    apply/(fsubset_trans _ (fsubsetIr A B))/(fsubset_trans _ lim).
+    exact: fsetSI.
+  rewrite namesbE // lift_boundE /=; first last.
+    move=> s [??] /=; exact: rename_merge.
+  rewrite mergeE //; last first.
+    by rewrite fsetIC (fsubset_trans lim) // fsubsetIl.
+  rewrite (fsetUC _ A) join_boundE ?fsetUS // lift_boundE //.
+  by move=> s [z' x'] /=; rewrite (equi_f s (x', z')).
+rewrite [LHS]maskE [RHS]maskE; congr mask.
+apply/eqP; rewrite eqEfsubset; apply/andP; split; last first.
+  by rewrite fsetSI // fsetUSS // fsubsetIl.
+apply/fsubsetP=> /= n /fsetIP [inAB inNfxz].
+rewrite in_fsetI inNfxz andbT.
+move: (equivariant_names equi_f (x, z))=> /= /fsubsetP/(_ _ inNfxz) inNxz.
+rewrite in_fsetU !in_fsetI; case/fsetUP: inAB=> [inA|inB].
+  rewrite inA /=; case/fsetUP: inNxz=> /= [inNx|inNz].
+    by rewrite inNx.
+  rewrite inNz andbT; apply/orP; right.
+  by move/fsubsetP: subz; apply; apply/fsetIP; split.
+rewrite inB /=; case/fsetUP: inNxz=> /= [inNx|inNz].
+  rewrite inNx andbT; apply/orP; left.
+  by move/fsubsetP: subx; apply; apply/fsetIP; split.
+by rewrite inNz orbT.
+Qed.
+
+Lemma lift_bound2E_weak A x B z :
   fsubset A (names x) ->
   fsubset B (names z) ->
   fsubset (names x :&: names z) (A :&: B) ->
   lift_bound2 (mask A x) (mask B z) = mask (A :|: B) (f x z).
 Proof.
-move=> /= sub sub' lim; rewrite /lift_bound2 /=.
-rewrite mergeE //; last first.
-  rewrite namesbE //.
-  apply/(fsubset_trans _ (fsubsetIr A B))/(fsubset_trans _ lim).
-  exact: fsetSI.
-rewrite namesbE // lift_boundE /=; first last.
-  move=> s [??] /=; exact: rename_merge.
-rewrite mergeE //; last first.
-  by rewrite fsetIC (fsubset_trans lim) // fsubsetIl.
-rewrite (fsetUC _ A) join_boundE ?fsetUS // lift_boundE //.
-by move=> s [z' x'] /=; rewrite (equi_f s (x', z')).
+move=> subA subB lim; rewrite lift_bound2E //.
+  apply/(fsubset_trans (fsetIS _ subB))/(fsubset_trans lim).
+  exact: fsubsetIl.
+apply/(fsubset_trans (fsetSI _ subA))/(fsubset_trans lim).
+exact: fsubsetIr.
 Qed.
 
 (* TODO: Eliminator for pairs of bound things? *)
@@ -1674,7 +1711,7 @@ rewrite namesbE // => lim1 lim2.
 have {lim1 lim2} lim: fsubset (names x :&: names z) (A :&: B).
   rewrite fsubsetI lim1 andbT (fsubset_trans _ lim2) //.
   by rewrite fsubsetI fsubsetIl andbT.
-rewrite lift_bound2E // !renamebE lift_bound2E //; first last.
+rewrite lift_bound2E_weak // !renamebE lift_bound2E_weak //; first last.
 - rewrite !names_rename !renamefsE -imfsetI; last first.
     by move=> ?? _ _; apply: fperm_inj.
   rewrite -imfsetI; last by move=> ?? _ _; apply: fperm_inj.
@@ -1716,7 +1753,7 @@ rewrite namesbE // => lim1 lim2.
 have {lim1 lim2} lim: fsubset (names x :&: names z) (A :&: B).
   rewrite fsubsetI lim1 andbT (fsubset_trans _ lim2) //.
   by rewrite fsubsetI fsubsetIl andbT.
-rewrite [in RHS]lift_bound2E // lift_bound2E //; first last.
+rewrite [in RHS]lift_bound2E_weak // lift_bound2E_weak //; first last.
 - by rewrite fsetIC (fsetIC B).
 - by move=> s [z' x'] /=; rewrite (equi_op s (x', z')).
 by rewrite fsetUC.
@@ -1742,7 +1779,7 @@ have ?: fset0' = fset0.
   by move: (congr1 (@names _) e); rewrite namesbE // namesbE ?fsub0set.
 subst fset0'; move/(maskP _ sub0): e=> [s dis eidx].
 elim/(@fresh_boundP T (names idx')): bx lim=> [A x subA lim'].
-rewrite namesbE // => lim''; rewrite lift_bound2E //.
+rewrite namesbE // => lim''; rewrite lift_bound2E_weak //.
   rewrite fset0U -(renameK s (op _ _)) (equi_op s (idx', x)) /=.
   by rewrite eidx op1x renameK.
 rewrite fset0I; apply/(fsubset_trans _ lim'').
@@ -1881,8 +1918,8 @@ elim/(@fresh_boundP S (names x)): bz ninAN ninB dis=> [/= B z subB sub].
 rewrite namesbE // => ninAB ninB lim.
 have dis: fsubset (names x :&: names z) A'.
   by rewrite (fsubset_trans _ lim) // fsubsetI sub fsubsetIl.
-rewrite lift_bound2E //.
-- rewrite lift_bound2E // ?hideE.
+rewrite lift_bound2E_weak //.
+- rewrite lift_bound2E_weak // ?hideE.
     rewrite fsetD1U (_ : B :\ n = B) //.
     apply/eqP; rewrite eqEfsubset fsubD1set fsetU1E fsubsetUr /=.
     apply/fsubsetP=> /= n' inB; rewrite in_fsetD1 inB andbT.
