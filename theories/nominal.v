@@ -1254,12 +1254,26 @@ Definition lift_bound_fs :=
 
 Lemma lift_bound_fsE :
   finsupp D f ->
-  forall A x, fsubset A (names x) ->
-              fsubset (D :&: names x) A ->
+  forall A x, fsubset (D :&: names x) A ->
               lift_bound_fs (mask A x) =
               mask (D :|: A) (f x).
 Proof.
-move=> /= fs_f A x sub1 sub2; rewrite /lift_bound_fs elim_boundE //.
+move=> /= fs_f A x sub; rewrite [in LHS]maskE.
+rewrite [RHS](_ : _ = mask (D :|: A :&: names x) (f x)); last first.
+  rewrite [LHS]maskE [RHS]maskE; congr mask.
+  rewrite !fsetIUl; rewrite -fsetIA (fsetIC (names x)) fsetIA.
+  apply/eqP; rewrite eqEfsubset fsubUset fsubsetUl /=; apply/andP; split.
+    apply/fsubsetP=> /= n inA; rewrite in_fsetU [in X in _ || X]in_fsetI.
+    rewrite inA /=; case/fsetIP: inA=> [inA inNfx].
+    case/fsubsetP/(_ _ inNfx)/fsetUP: (names_finsupp x fs_f)=> [inD|inNx].
+      by rewrite in_fsetI inD inNfx.
+    by rewrite inNx orbT.
+  rewrite fsubUset fsubsetUl /=; apply/fsubsetU/orP; right.
+  exact/fsubsetIl.
+have {sub} sub2: fsubset (D :&: names x) (A :&: names x).
+  by rewrite fsubsetI sub fsubsetIr.
+move: (_ :&: _) (fsubsetIr A (names x)) sub2=> {A} A sub1 sub2.
+rewrite /lift_bound_fs elim_boundE //.
   rewrite names_disjointE // {2}(_ : names x = names x :\: (D :\: A)).
     exact: supp_avoid.
   apply/eq_fset=> /= n; apply/(sameP idP)/(iffP idP).
@@ -1379,10 +1393,9 @@ Definition lift_bound := lift_bound_fs fset0 f.
 
 Lemma lift_boundE :
   equivariant f ->
-  forall A x, fsubset A (names x) ->
-              lift_bound (mask A x) = mask A (f x).
+  forall A x, lift_bound (mask A x) = mask A (f x).
 Proof.
-move=> /equivariant_finsupp fs_f A x sub.
+move=> /equivariant_finsupp fs_f A x.
 rewrite /lift_bound lift_bound_fsE //=.
 by rewrite fset0I fsub0set.
 Qed.
@@ -1566,9 +1579,8 @@ have dis': fdisjoint (supp s) (names D).
   rewrite fdisjointC; apply/fdisjointP=> /= n /namesfsP [n' inD /namesnP ?].
   by subst n'; apply: contraTN inD; apply/fdisjointP.
 rewrite lift_bound_fsE // 2!renamebE fs_f // lift_bound_fsE //.
-- congr mask; rewrite renamefsE imfsetU; congr fsetU.
+  congr mask; rewrite renamefsE imfsetU; congr fsetU.
   by rewrite -renamefsE names_disjointE.
-- by rewrite renamefsE names_rename imfsetS.
 rewrite -(_ : rename s D = D) ; last by rewrite names_disjointE.
 rewrite renamefsE names_rename -imfsetI ?imfsetS //.
 by move=> ?? _ _; apply: rename_inj.
@@ -1597,11 +1609,10 @@ Definition merge (x : T) (bz : {bound S}) : {bound T * S} :=
   lift_bound_fs (names x) (pair x) bz.
 
 Lemma mergeE x B z :
-  fsubset B (names z) ->
   fsubset (names x :&: names z) B ->
   merge x (mask B z) = mask (names x :|: B) (x, z).
 Proof.
-move=> sub lim; rewrite /merge lift_bound_fsE //.
+move=> lim; rewrite /merge lift_bound_fsE //.
 exact: curry_equivariant.
 Qed.
 
@@ -1610,8 +1621,7 @@ Lemma rename_merge s x bz :
 Proof.
 elim/(@fresh_boundP S (names x)): bz=> [B z sub lim].
 rewrite mergeE // 2!renamebE mergeE.
-- by rewrite renamefsE imfsetU names_rename.
-- by rewrite names_rename; apply/imfsetS.
+  by rewrite renamefsE imfsetU names_rename.
 rewrite 2!names_rename -imfsetI; first exact: imfsetS.
 by move=> ?? _ _; apply/fperm_inj.
 Qed.
@@ -1646,13 +1656,11 @@ rewrite mergeE //; last first.
   apply/(fsubset_trans _ (fsubsetIr A B))/(fsubset_trans _ lim).
   exact: fsetSI.
 rewrite namesbE // lift_boundE /=; first last.
-- by apply/fsetUSS=> //; rewrite namesbE // fsubsetxx.
-- move=> s [??] /=; exact: rename_merge.
+  move=> s [??] /=; exact: rename_merge.
 rewrite mergeE //; last first.
   by rewrite fsetIC (fsubset_trans lim) // fsubsetIl.
 rewrite (fsetUC _ A) join_boundE ?fsetUS // lift_boundE //.
-  by move=> s [z' x'] /=; rewrite (equi_f s (x', z')).
-by rewrite fsetUC; apply/fsetUSS.
+by move=> s [z' x'] /=; rewrite (equi_f s (x', z')).
 Qed.
 
 (* TODO: Eliminator for pairs of bound things? *)
@@ -1834,12 +1842,11 @@ have ninB: n \notin B.
 rewrite (newE ninA) //.
 elim/(@fresh_boundP T B): (f n) (names_finsupp n fs_f)=> [/= A' x sub dis].
 rewrite namesbE // => sub'; rewrite hideE lift_bound_fsE //.
-- rewrite lift_bound_fsE // hideE; congr mask.
+  rewrite lift_bound_fsE // hideE; congr mask.
   rewrite fsetD1U; congr fsetU.
   apply/eqP; rewrite eqEfsubset fsubD1set fsetU1E fsubsetUr andbT.
   apply/fsubsetP=> /= n' inB; rewrite in_fsetD1 inB andbT.
   by apply: contraTN inB=> /eqP ->.
-- by rewrite fsubD1set fsetU1E fsubsetU // sub orbT.
 apply/fsubsetP=> /= n' inI; rewrite in_fsetD1.
 rewrite (fsubsetP _ _ dis _ inI) andbT.
 by apply: contraTN inI=> /eqP ->; rewrite in_fsetI negb_and ninB.
