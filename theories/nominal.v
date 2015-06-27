@@ -1786,6 +1786,56 @@ rewrite fset0I; apply/(fsubset_trans _ lim'').
 by rewrite fsubsetI lim' fsubsetIl.
 Qed.
 
+Lemma bound_associative :
+  associative op -> associative (lift_bound2 op).
+Proof.
+move=> opA bx1 bx2 bx3.
+elim/(@fresh_boundP T (names bx2 :|: names bx3)): bx1.
+move=> A1 x1 subA1.
+elim/(@fresh_boundP T (names x1 :|: names bx3)): bx2.
+move=> A2 x2 subA2; rewrite namesbE; last by [].
+elim/(@fresh_boundP T (names x1 :|: names x2)): bx3.
+move=> A3 x3 subA3; rewrite namesbE; last by [].
+rewrite !fsetIUl !fsubUset.
+case/andP=> [dis13 dis23] /andP [dis12 dis32] /andP [dis21 dis31].
+have names_op: forall x x', fsubset (names (op x x')) (names x :|: names x').
+  move=> x x'; exact: (equivariant_names equi_op (x, x')).
+rewrite lift_bound2E_weak; trivial; last first.
+  rewrite fsubsetI dis23 andbT (fsubset_trans _ dis32) //.
+  rewrite fsubsetI dis23 /=; apply/fsubsetIl.
+rewrite [in RHS]lift_bound2E_weak; trivial; last first.
+  rewrite fsubsetI dis12 andbT (fsubset_trans _ dis21) //.
+  rewrite fsubsetI dis12 /=; apply/fsubsetIl.
+rewrite lift_bound2E; trivial; first last.
+- apply/(fsubset_trans (fsetIS _ (names_op x2 x3))).
+  rewrite 2!fsetIUr; apply/fsetUSS.
+    rewrite fsubsetI dis12 andbT (fsubset_trans _ dis21) //.
+    by rewrite (fsetIC A2) fsubsetI fsubsetIl.
+  rewrite fsubsetI dis13 andbT (fsubset_trans _ dis31) //.
+  by rewrite fsubsetI dis13 fsubsetIl.
+- apply/(fsubset_trans (fsetIS _ (names_op x2 x3))).
+  rewrite fsetIUr; apply/fsetUSS.
+  apply/(fsubset_trans _ dis12); rewrite fsubsetI fsubsetIr andbT.
+  by apply/(fsubset_trans _ subA1)/fsubsetIl.
+- apply/(fsubset_trans _ dis13).
+  rewrite fsubsetI fsubsetIr andbT (fsubset_trans _ subA1) //.
+  by apply/fsubsetIl.
+- by rewrite fsetIUr fsubUset fsetIC dis21 /= fsetIC.
+rewrite lift_bound2E; trivial; first last.
+- apply/(fsubset_trans (fsetSI _ (names_op x1 x2))).
+  rewrite 2!fsetIUl; apply/fsetUSS.
+    rewrite fsubsetI dis13 andbT (fsubset_trans _ dis31) //.
+    by rewrite (fsetIC A3) fsubsetI fsubsetIl.
+  rewrite fsubsetI dis23 andbT (fsubset_trans _ dis32) //.
+  by rewrite fsubsetI dis23 fsubsetIl.
+- rewrite fsetIUl fsubUset; apply/andP; split.
+    by apply/(fsubset_trans _ dis13)/fsetSI.
+  by apply/(fsubset_trans _ dis23)/fsetSI.
+- apply/(fsubset_trans (fsetSI _ (names_op x1 x2))).
+  by rewrite fsetIUl; apply/fsetUSS; rewrite fsetIC.
+by rewrite fsetUA opA.
+Qed.
+
 End BasicFacts.
 
 Section RightId.
