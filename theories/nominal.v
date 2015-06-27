@@ -975,7 +975,7 @@ Definition BijNominalMixin :=
 
 End TransferNominalType.
 
-Module Binding.
+Module Export Binding.
 
 Local Open Scope fset_scope.
 Local Open Scope fperm_scope.
