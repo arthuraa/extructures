@@ -864,33 +864,17 @@ right; rewrite namesfsE big_tnth; apply/bigcupP.
 by rewrite {}i_in in n_in; eexists; eauto.
 Qed.
 
-(* FIXME: Use equivariant_names for these results *)
 Lemma namesm_set m k v :
   fsubset (names (setm m k v)) (names m :|: names k :|: names v).
 Proof.
-apply/fsubsetP=> n; case/namesmP=> [k' v'|k' v']; rewrite setmE;
-have [Pk'|Pk'] := altP eqP; try subst k'.
-- by move=> _; rewrite !in_fsetU=> ->; rewrite orbT.
-- move=> get_k' Pn; rewrite 2!in_fsetU (_ : n \in names m) //.
-  by apply/namesmP; eapply PMFreeNamesKey; eauto.
-- by move=> [<-]; rewrite 2!in_fsetU=> ->; rewrite orbT.
-move=> get_k' Pn; rewrite 2!in_fsetU (_ : n \in names m) //.
-by apply/namesmP; eapply PMFreeNamesVal; eauto.
+exact: equivariant_names (fun s p => renamem_set s p.1.1 p.1.2 p.2)
+                         ((m, k), v).
 Qed.
 
 Lemma namesm_union m1 m2 :
   fsubset (names (unionm m1 m2)) (names m1 :|: names m2).
 Proof.
-apply/fsubsetP=> n; case/namesmP=> [k v|k v]; rewrite unionmE;
-case get_k: (m1 k)=> [v'|] //=.
-- move=> _ Pn; apply/fsetUP; left; apply/namesmP.
-  by eapply PMFreeNamesKey; eauto.
-- move=> get_k' Pn; apply/fsetUP; right; apply/namesmP.
-  by eapply PMFreeNamesKey; eauto.
-- move=> [<-] Pn; apply/fsetUP; left; apply/namesmP.
-  by eapply PMFreeNamesVal; eauto.
-move=> get_k' Pn; apply/fsetUP; right; apply/namesmP.
-by eapply PMFreeNamesVal; eauto.
+exact: equivariant_names (fun s p => renamem_union s p.1 p.2) (m1, m2).
 Qed.
 
 Lemma namesm_unionl m1 m2 : fsubset (names m1) (names (unionm m1 m2)).
