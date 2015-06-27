@@ -1029,6 +1029,8 @@ End Def.
 
 Local Open Scope quotient_scope.
 
+(* FIXME: This notation does not work when MathComp.generic_quotient is
+   not imported *)
 Notation "{ 'bound' T }" := {eq_quot @bound_eq [nominalType of T]}
   (at level 0, format "{ 'bound'  T }") : type_scope.
 
