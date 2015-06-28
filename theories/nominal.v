@@ -557,7 +557,8 @@ End SumNominalType.
 
 Section OptionNominalType.
 
-Implicit Type x : option S.
+Variable S' : nominalType.
+Implicit Type x : option S'.
 
 Definition option_rename s x := omap (rename s) x.
 
@@ -585,17 +586,17 @@ Proof. by case: x=> [x /namesTeq P [/P e]|]. Qed.
 Definition option_nominalMixin :=
   NominalMixin option_renameD option_namesNNE option_namesTeq.
 Canonical option_nominalType :=
-  Eval hnf in NominalType (option S) option_nominalMixin.
+  Eval hnf in NominalType (option S') option_nominalMixin.
 
 Lemma renameoE s x : rename s x = omap (rename s) x.
 Proof. by []. Qed.
 
-Lemma rename_omap f : equivariant f -> equivariant (omap f).
+End OptionNominalType.
+
+Lemma rename_omap T' S' f : @equivariant T' S' f -> equivariant (omap f).
 Proof.
 by move=> equi_f s [x|] //=; rewrite renameoE /= equi_f.
 Qed.
-
-End OptionNominalType.
 
 Section SetNominalType.
 
