@@ -590,6 +590,11 @@ Canonical option_nominalType :=
 Lemma renameoE s x : rename s x = omap (rename s) x.
 Proof. by []. Qed.
 
+Lemma rename_omap f : equivariant f -> equivariant (omap f).
+Proof.
+by move=> equi_f s [x|] //=; rewrite renameoE /= equi_f.
+Qed.
+
 End OptionNominalType.
 
 Section SetNominalType.
