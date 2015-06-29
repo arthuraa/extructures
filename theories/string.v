@@ -3,7 +3,7 @@ Require Import Ssreflect.eqtype Ssreflect.choice Ssreflect.seq.
 
 Require Import Coq.Strings.Ascii Coq.Strings.String.
 
-Require Import ord.
+Require Import ord nominal.
 
 Notation string := string.
 
@@ -50,3 +50,6 @@ Canonical string_partOrdType :=
   Eval hnf in PartOrdType string string_partOrdMixin.
 Definition string_ordMixin := CanOrdMixin seq_of_stringK.
 Canonical string_ordType := Eval hnf in OrdType string string_ordMixin.
+Canonical string_nominalType := Eval hnf in [nominalType for string by //].
+Canonical string_trivialNominalType :=
+  Eval hnf in [trivialNominalType for string].
