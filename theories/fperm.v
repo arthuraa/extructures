@@ -429,6 +429,25 @@ exists (s1^-1 x); last by rewrite fpermKV.
 by rewrite mem_supp.
 Qed.
 
+Lemma fperm_mulC s1 s2 :
+  fdisjoint (supp s1) (supp s2) ->
+  s1 * s2 = s2 * s1.
+Proof.
+move=> dis; apply/eq_fperm=> x; rewrite !fpermM /=.
+have [ins1|nins1] := boolP (x \in supp s1).
+  move: (ins1); rewrite -fperm_supp=> ins1'.
+  move/fdisjointP in dis.
+  move/suppPn: (dis _ ins1)=> ->.
+  by move/suppPn: (dis _ ins1')=> ->.
+have [ins2|nins2] := boolP (x \in supp s2).
+  move: (ins2); rewrite -fperm_supp=> ins2'.
+  move: dis; rewrite fdisjointC=> /fdisjointP dis.
+  move/suppPn: (dis _ ins2)=> ->.
+  by move/suppPn: (dis _ ins2')=> ->.
+move: nins1 nins2=> /suppPn nins1 /suppPn nins2.
+by rewrite nins1 nins2.
+Qed.
+
 Lemma fperm_mul1s : left_id 1 fperm_mul.
 Proof. by move=> s; apply/eq_fperm=> x; rewrite fpermM. Qed.
 

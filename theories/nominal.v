@@ -2095,6 +2095,18 @@ rewrite namesbE //; apply: contraTN n_in_A=> /eqP ->.
 exact: freshP.
 Qed.
 
+Lemma rename_new s A (f : name -> {bound T}) :
+  finsupp A f ->
+  rename s (new A f) = new (supp s :|: A) (rename s \o f).
+Proof.
+move: (fresh _) (freshP (supp s :|: A))=> n nin fs_f.
+have ninA: n \notin A by move: nin; rewrite in_fsetU; case/norP.
+have ninS: n \notin supp s by move: nin; rewrite in_fsetU; case/norP.
+rewrite (newE ninA) // rename_hide (newE nin) /= ?(suppPn _ _ ninS) //.
+move=> s'; rewrite fdisjointUr=> /andP [disS disA] /= {n nin ninA ninS} n.
+by rewrite renameD fperm_mulC // -renameD (fs_f _ disA).
+Qed.
+
 End Basic.
 
 Section Composition.
