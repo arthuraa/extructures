@@ -366,9 +366,19 @@ Proof. rewrite in_fset1; exact/eqP. Qed.
 
 End NameNominal.
 
-Section TrivialNominalType.
+Module TrivialNominal.
+
+Section ClassDef.
 
 Local Open Scope fset_scope.
+Local Open Scope fperm_scope.
+
+Record mixin_of (T : nominalType) := Mixin {
+  _ : forall s (x : T), rename s x = x
+}.
+
+Section Mixins.
+
 Local Open Scope fperm_scope.
 
 Variable (T : ordType).
@@ -394,21 +404,101 @@ Lemma trivial_namesTeq n n' x :
   n' \in trivial_names x.
 Proof. by []. Qed.
 
-End TrivialNominalType.
+Definition DefNominalMixin :=
+  NominalMixin trivial_renameD trivial_namesNNE trivial_namesTeq.
 
-Notation TrivialNominalMixin T :=
-  (NominalMixin (@trivial_renameD [ordType of T])
-                (@trivial_namesNNE [ordType of T])
-                (@trivial_namesTeq [ordType of T])).
+Definition DefMixin :=
+  @Mixin (NominalType T DefNominalMixin) (fun _ _ => erefl).
 
-Definition unit_nominalMixin := TrivialNominalMixin unit.
-Canonical unit_nominalType := Eval hnf in NominalType unit unit_nominalMixin.
+End Mixins.
 
-Definition bool_nominalMixin := TrivialNominalMixin bool.
-Canonical bool_nominalType := Eval hnf in NominalType bool bool_nominalMixin.
+Record class_of T :=
+  Class {base : Nominal.class_of T; mixin : mixin_of (Nominal.Pack base T)}.
+Local Coercion base : class_of >-> Nominal.class_of.
 
-Definition nat_nominalMixin := TrivialNominalMixin nat.
-Canonical nat_nominalType := Eval hnf in NominalType nat nat_nominalMixin.
+Structure type := Pack {sort; _ : class_of sort; _ : Type}.
+Local Coercion sort : type >-> Sortclass.
+Variables (T : Type) (cT : type).
+Definition class := let: Pack _ c _ as cT' := cT return class_of cT' in c.
+Definition clone c of phant_id class c := @Pack T c T.
+Let xT := let: Pack T _ _ := cT in T.
+Notation xclass := (class : class_of xT).
+
+Definition pack b0 (m0 : mixin_of (@Nominal.Pack T b0 T)) :=
+  fun bT b & phant_id (Nominal.class bT) b =>
+  fun    m & phant_id m0 m => Pack (@Class T b m) T.
+
+(* Inheritance *)
+Definition eqType := @Equality.Pack cT xclass xT.
+Definition choiceType := @Choice.Pack cT xclass xT.
+Definition partOrdType := @Ord.Partial.Pack cT xclass xT.
+Definition ordType := @Ord.Total.Pack cT class xT.
+Definition nominalType := @Nominal.Pack cT xclass xT.
+
+End ClassDef.
+
+Module Import Exports.
+Coercion base : class_of >-> Nominal.class_of.
+Coercion mixin : class_of >-> mixin_of.
+Coercion sort : type >-> Sortclass.
+Coercion eqType : type >-> Equality.type.
+Canonical eqType.
+Coercion choiceType : type >-> Choice.type.
+Canonical choiceType.
+Coercion partOrdType : type >-> Ord.Partial.type.
+Canonical partOrdType.
+Coercion ordType : type >-> Ord.Total.type.
+Canonical ordType.
+Coercion nominalType : type >-> Nominal.type.
+Canonical nominalType.
+Notation trivialNominalType := type.
+Notation trivialNominalMixin := mixin_of.
+Notation TrivialNominalMixin := Mixin.
+Notation TrivialNominalType T m := (@pack T _ m _ _ id _ id).
+Notation "[ 'nominalType' 'for' T 'by' // ]" :=
+  (NominalType T (DefNominalMixin [ordType of T]))
+  (at level 0, format "[ 'nominalType'  'for'  T  'by'  // ]")
+  : form_scope.
+Notation "[ 'trivialNominalType' 'for' T ]" :=
+  (TrivialNominalType T (@TrivialNominalMixin [nominalType of T]
+                                              (fun _ _ => erefl)))
+  (at level 0, format "[ 'trivialNominalType'  'for'  T ]")
+  : form_scope.
+Notation "[ 'trivialNominalType' 'of' T 'for' cT ]" :=  (@clone T cT _ idfun)
+  (at level 0, format "[ 'trivialNominalType'  'of'  T  'for'  cT ]")
+  : form_scope.
+Notation "[ 'trivialNominalType' 'of' T ]" := (@clone T _ _ id)
+  (at level 0, format "[ 'trivialNominalType'  'of'  T ]") : form_scope.
+End Exports.
+
+End TrivialNominal.
+Export TrivialNominal.Exports.
+
+Canonical unit_nominalType := Eval hnf in [nominalType for unit by //].
+Canonical unit_trivialNominalType := Eval hnf in [trivialNominalType for unit].
+
+Canonical bool_nominalType := Eval hnf in [nominalType for bool by //].
+Canonical bool_trivialNominalType := Eval hnf in [trivialNominalType for bool].
+
+Canonical nat_nominalType := Eval hnf in [nominalType for nat by //].
+Canonical nat_trivialNominalType := Eval hnf in [trivialNominalType for nat].
+
+Section TrivialNominalTheory.
+
+Variable T : trivialNominalType.
+Implicit Type (x : T).
+
+Lemma renameT : forall s x, rename s x = x.
+Proof. by case: (T)=> [? [[? ? []]]]. Qed.
+
+Lemma namesT : forall x, names x = fset0.
+Proof.
+move=> x; apply/eqP; rewrite eqEfsubset fsub0set andbT.
+apply/fsubsetP=> n inN; move: (renameT (fperm2 n (fresh (names x))) x).
+by move/(namesTeq inN); apply/contraTT; rewrite freshP.
+Qed.
+
+End TrivialNominalTheory.
 
 Section Instances.
 

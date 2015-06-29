@@ -67,8 +67,8 @@ Definition word_partOrdMixin := [partOrdMixin of word by <:].
 Canonical word_partOrdType := Eval hnf in PartOrdType word word_partOrdMixin.
 Definition word_ordMixin := [ordMixin of word by <:].
 Canonical word_ordType := Eval hnf in OrdType word word_ordMixin.
-Definition word_nominalMixin := TrivialNominalMixin word.
-Canonical word_nominalType := Eval hnf in NominalType word word_nominalMixin.
+Canonical word_nominalType := Eval hnf in [nominalType for word by //].
+Canonical word_trivialNominalType := Eval hnf in [trivialNominalType for word].
 
 Lemma card_word : #|{: word}| = 2 ^ k.
 Proof. by rewrite card_sub eq_cardT // -cardT card_ord. Qed.
