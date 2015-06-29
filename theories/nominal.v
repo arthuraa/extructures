@@ -2205,6 +2205,12 @@ rewrite /expose -lock maskE namesT fsetI0 elim_boundE //.
 by move=> s _; rewrite renameT.
 Qed.
 
+Lemma rename_expose : equivariant expose.
+Proof.
+move=> s x; case: x / boundP => /= [A x sub].
+by rewrite exposeE renamebE exposeE.
+Qed.
+
 End Trivial.
 
 End Binding.
