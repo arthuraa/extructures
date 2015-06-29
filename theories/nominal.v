@@ -611,6 +611,14 @@ move=> [x /(tnthP (in_tuple xs)) [i {x}->]].
 by rewrite big_tnth; move: n; apply/fsubsetP/bigcup_sup.
 Qed.
 
+Lemma renames_nth s d xs n :
+  rename s (nth d xs n) = nth (rename s d) (rename s xs) n.
+Proof.
+rewrite !renamesE; have [in_xs|nin] := boolP (n < size xs).
+  by rewrite (nth_map d).
+by rewrite -leqNgt in nin; rewrite 2?nth_default // size_map.
+Qed.
+
 End SeqNominalType.
 
 Section SumNominalType.
@@ -966,6 +974,16 @@ move=> /dommP [v]; rewrite renamemE renamefsE=> Pv.
 apply/imfsetP; exists (rename s^-1 k); last by rewrite renameKV.
 apply/dommP; exists (rename s^-1 v).
 by move: Pv; case: (m _)=> // v' [<-]; rewrite renameK.
+Qed.
+
+Lemma namesm_empty : names emptym = fset0.
+Proof.
+by rewrite namesmE domm0 codomm0 !namesfsE !big_nil fsetUid.
+Qed.
+
+Lemma renamem_empty s : rename s emptym = emptym.
+Proof.
+by move: s; apply/names0P/eqP/namesm_empty.
 Qed.
 
 CoInductive partmap_names_spec n m : Prop :=
