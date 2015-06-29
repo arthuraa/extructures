@@ -1353,24 +1353,6 @@ End Elim.
 
 End Basic.
 
-Section Iso.
-
-Variable T : nominalType.
-
-Definition obound : {bound option T} -> option {bound T} :=
-  locked (elim_bound (fun A => omap (mask A))).
-
-Lemma oboundE A x : obound (mask A x) = omap (mask A) x.
-Proof.
-rewrite /obound -lock maskE; case: x=> [x|] /=; rewrite elim_boundE //=.
-- by rewrite [in RHS]maskE.
-- exact: fsubsetIr.
-move=> s dis; congr Some; apply/maskP; first exact: fsubsetIr.
-by exists s.
-Qed.
-
-End Iso.
-
 Section Structures.
 
 Variable T : nominalType.
@@ -1530,6 +1512,31 @@ by apply: contra ne=> /eqP ->.
 Qed.
 
 End Structures.
+
+Section Iso.
+
+Variable T : nominalType.
+
+Definition obound : {bound option T} -> option {bound T} :=
+  locked (elim_bound (fun A => omap (mask A))).
+
+Lemma oboundE A x : obound (mask A x) = omap (mask A) x.
+Proof.
+rewrite /obound -lock maskE; case: x=> [x|] /=; rewrite elim_boundE //=.
+- by rewrite [in RHS]maskE.
+- exact: fsubsetIr.
+move=> s dis; congr Some; apply/maskP; first exact: fsubsetIr.
+by exists s.
+Qed.
+
+Lemma rename_obound : equivariant obound.
+Proof.
+move=> s x; case: x / boundP=> [A [x|] sub];
+rewrite oboundE renamebE oboundE //=.
+by rewrite renameoE /= renamebE.
+Qed.
+
+End Iso.
 
 Section Functor.
 
