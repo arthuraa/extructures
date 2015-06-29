@@ -662,6 +662,85 @@ Qed.
 
 End Inverse.
 
+Section OfSeq.
+
+Variable (T : Type).
+
+Definition partmap_of_seq (xs : seq T) : {partmap nat -> T} :=
+  mkpartmapfp (nth None [seq Some x | x <- xs]) (iota 0 (size xs)).
+
+Lemma partmap_of_seqE xs n :
+  partmap_of_seq xs n = nth None [seq Some x | x <- xs] n.
+Proof.
+rewrite /partmap_of_seq mkpartmapfpE mem_iota leq0n /= add0n.
+case: ltnP=> [l|g] //.
+by rewrite nth_default // size_map.
+Qed.
+
+End OfSeq.
+
+Section Currying.
+
+Variables (T S : ordType) (R : Type).
+Implicit Type (m : {partmap T * S -> R}).
+Implicit Type (n : {partmap T -> {partmap S -> R}}).
+
+Local Open Scope fset_scope.
+
+Definition currym m :=
+  mkpartmapf (fun x => mkpartmapfp (fun y => m (x, y))
+                                   (@snd _ _ @: domm m))
+             (@fst _ _ @: domm m).
+
+Definition uncurrym n :=
+  mkpartmapfp (fun p => if n p.1 is Some n' then n' p.2
+                        else None)
+              (\bigcup_(x <- domm n)
+                  if n x is Some n' then pair x @: domm n'
+                  else fset0).
+
+Lemma currymP m x y v :
+  (exists2 n, currym m x = Some n & n y = Some v) <->
+  m (x, y) = Some v.
+Proof.
+split.
+  move=> [n]; rewrite /currym mkpartmapfE.
+  case: ifP=> [/imfsetP/= [[x' y'] /= E ?]|//]; subst x'.
+  move=> [<-] {n}; rewrite mkpartmapfpE.
+  by case: ifP.
+move=> get_xy.
+exists (mkpartmapfp (fun y' => m (x, y')) (@snd _ _ @: domm m)).
+  rewrite /currym mkpartmapfE -{1}[x]/(x, y).1 mem_imfset //.
+  by rewrite mem_domm get_xy.
+by rewrite mkpartmapfpE -{1}[y]/(x, y).2 mem_imfset // mem_domm get_xy.
+Qed.
+
+Lemma uncurrymP n x y v :
+  (exists2 n', n x = Some n' & n' y = Some v) <->
+  uncurrym n (x, y) = Some v.
+Proof.
+pose f x' := if n x' is Some n'' then pair x' @: domm n'' else fset0.
+split.
+  move=> [n' get_x get_y].
+  rewrite /uncurrym mkpartmapfpE /= get_x get_y.
+  have inDn' : (x, y) \in f x.
+    by rewrite /f get_x mem_imfset // mem_domm get_y.
+  have inD : x \in domm n by rewrite mem_domm get_x.
+  by move/fsubsetP/(_ _ inDn'): (bigcup_sup f inD erefl)=> ->.
+rewrite /uncurrym mkpartmapfpE /=.
+by case: ifP=> [inU|] //=; case: (n x) => [n'|] //= get_y; eauto.
+Qed.
+
+Lemma currymK : cancel currym uncurrym.
+Proof.
+move=> m; apply/eq_partmap=> - [x y].
+case get_m: (m _)=> [v|]; first by move/currymP/uncurrymP: get_m.
+case get_ucm : (uncurrym _ _)=> [v|] //.
+by move/uncurrymP/currymP: get_ucm get_m => ->.
+Qed.
+
+End Currying.
+
 Section Enumeration.
 
 Variable T S : ordType.
