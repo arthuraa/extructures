@@ -205,6 +205,15 @@ have {dis} /IH dis: fdisjoint (supp s) (names x).
 by rewrite -renameD dis namesNNE.
 Qed.
 
+Lemma names0P x : reflect (forall s, rename s x = x) (names x == fset0).
+Proof.
+apply/(iffP eqP).
+  by move=> eq0 s; rewrite names_disjointE // eq0 fdisjointC fdisjoint0.
+move=> reE; apply/eqP; rewrite eqEfsubset fsub0set andbT.
+apply/fsubsetP=> n inN; move: (reE (fperm2 n (fresh (names x)))).
+by move/(namesTeq inN); apply/contraTT; rewrite freshP.
+Qed.
+
 Lemma eq_in_rename s1 s2 x :
   {in names x, s1 =1 s2} ->
   rename s1 x = rename s2 x.
@@ -492,11 +501,7 @@ Lemma renameT : forall s x, rename s x = x.
 Proof. by case: (T)=> [? [[? ? []]]]. Qed.
 
 Lemma namesT : forall x, names x = fset0.
-Proof.
-move=> x; apply/eqP; rewrite eqEfsubset fsub0set andbT.
-apply/fsubsetP=> n inN; move: (renameT (fperm2 n (fresh (names x))) x).
-by move/(namesTeq inN); apply/contraTT; rewrite freshP.
-Qed.
+Proof. move=> x; apply/eqP/names0P=> s; exact: renameT. Qed.
 
 End TrivialNominalTheory.
 
