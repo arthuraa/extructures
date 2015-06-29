@@ -688,6 +688,18 @@ Proof.
 by move=> equi_f s [x|] //=; rewrite renameoE /= equi_f.
 Qed.
 
+Section OptionTrivial.
+
+Variable T' : trivialNominalType.
+
+Let trivial_rename : forall s (x : option T'), rename s x = x.
+Proof. by move=> s [x|]; rewrite renameoE //= renameT. Qed.
+
+Canonical option_trivialNominalType :=
+  TrivialNominalType (option T') (TrivialNominalMixin trivial_rename).
+
+End OptionTrivial.
+
 Section SetNominalType.
 
 Variable T' : nominalType.
@@ -768,6 +780,21 @@ Lemma namesfs_subset X Y :
 Proof. by move=> /eqP <-; rewrite namesfsU /fsubset fsetUA fsetUid. Qed.
 
 End SetNominalType.
+
+Section SetTrivialNominalType.
+
+Variable T' : trivialNominalType.
+
+Let trivial_rename s (xs : {fset T'}) : rename s xs = xs.
+Proof.
+by rewrite -[RHS]imfset_id renamefsE; apply/eq_imfset=> x; rewrite renameT.
+Qed.
+
+Canonical fset_trivialNominalType :=
+  Eval hnf in TrivialNominalType {fset T'}
+                                 (TrivialNominalMixin trivial_rename).
+
+End SetTrivialNominalType.
 
 Section PartMapNominalType.
 
@@ -1325,6 +1352,24 @@ Qed.
 End Elim.
 
 End Basic.
+
+Section Iso.
+
+Variable T : nominalType.
+
+Definition obound : {bound option T} -> option {bound T} :=
+  locked (elim_bound (fun A => omap (mask A))).
+
+Lemma oboundE A x : obound (mask A x) = omap (mask A) x.
+Proof.
+rewrite /obound -lock maskE; case: x=> [x|] /=; rewrite elim_boundE //=.
+- by rewrite [in RHS]maskE.
+- exact: fsubsetIr.
+move=> s dis; congr Some; apply/maskP; first exact: fsubsetIr.
+by exists s.
+Qed.
+
+End Iso.
 
 Section Structures.
 
@@ -2138,5 +2183,21 @@ Qed.
 End Right.
 
 End New.
+
+Section Trivial.
+
+Variable T : trivialNominalType.
+
+Definition expose : {bound T} -> T :=
+  locked (elim_bound (fun _ x => x)).
+
+Lemma exposeE A x : expose (mask A x) = x.
+Proof.
+rewrite /expose -lock maskE namesT fsetI0 elim_boundE //.
+  exact: fsub0set.
+by move=> s _; rewrite renameT.
+Qed.
+
+End Trivial.
 
 End Binding.
