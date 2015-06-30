@@ -1067,6 +1067,38 @@ End PartMapNominalType.
 
 End Instances.
 
+Section MorePartMap.
+
+Local Open Scope fperm_scope.
+
+Lemma renamem_partmap_of_seq (T : nominalType) s (xs : seq T) :
+  rename s (partmap_of_seq xs) = partmap_of_seq (rename s xs).
+Proof.
+apply/eq_partmap=> n; rewrite renamemE !partmap_of_seqE renameT.
+by rewrite renames_nth renameoE /= renamesE -!map_comp /funcomp.
+Qed.
+
+Lemma renamem_uncurry (T S R : nominalType) s m :
+  rename s (@uncurrym T S R m) = uncurrym (rename s m).
+Proof.
+apply/eq_partmap=> - [x y]; rewrite renamemE.
+case get_xy: (uncurrym _ (x, y))=> [v|] //=.
+  move/uncurrymP: get_xy=> [m' get_x get_y].
+  have ->: uncurrym m (rename s^-1 (x, y)) = Some (rename s^-1 v).
+    apply/uncurrymP=> /=; exists (rename s^-1 m').
+      by move: get_x; rewrite renamemE=> /(canRL (renameK s)).
+    by rewrite renamemE renameK get_y.
+  by rewrite renameoE /= renameKV.
+case get_xy': (uncurrym _ _)=> [v|] //=.
+move/uncurrymP: get_xy'=> [m' /= get_x get_y]; move: get_xy.
+suff ->: uncurrym (rename s m) (x, y) = Some (rename s v) by [].
+apply/uncurrymP=> /=; exists (rename s m').
+  by move: get_x; rewrite renamemE=> ->.
+by rewrite renamemE get_y.
+Qed.
+
+End MorePartMap.
+
 Section TransferNominalType.
 
 Local Open Scope fset_scope.
