@@ -555,6 +555,12 @@ Canonical prod_nominalType :=
 Lemma renamepE s p : rename s p = (rename s p.1, rename s p.2).
 Proof. by []. Qed.
 
+Lemma rename_fst s p : rename s (fst p) = fst (rename s p).
+Proof. by []. Qed.
+
+Lemma rename_snd s p : rename s (snd p) = snd (rename s p).
+Proof. by []. Qed.
+
 End ProdNominalType.
 
 Section SeqNominalType.
@@ -946,11 +952,22 @@ apply/eq_partmap=> k; rewrite renamemE 2!unionmE 2!renamemE.
 by rewrite [in LHS]fun_if; case: (m1 _).
 Qed.
 
+Lemma namesm_empty : names emptym = fset0.
+Proof.
+by rewrite namesmE domm0 codomm0 !namesfsE !big_nil fsetUid.
+Qed.
+
+Lemma renamem_empty s : rename s emptym = emptym.
+Proof.
+by move: s; apply/names0P/eqP/namesm_empty.
+Qed.
+
 Lemma renamem_mkpartmap s kvs :
   rename s (mkpartmap kvs) =
   mkpartmap (rename s kvs) :> {partmap T -> S}.
 Proof.
-by elim: kvs=> [|[k v] kvs IH] //=; rewrite renamem_set IH.
+elim: kvs=> [|[k v] kvs IH] /=; first by rewrite renamem_empty.
+by rewrite renamem_set IH.
 Qed.
 
 Lemma renamem_mkpartmapf s f ks :
@@ -958,6 +975,16 @@ Lemma renamem_mkpartmapf s f ks :
   mkpartmapf (fun k => rename s (f (rename s^-1 k))) (rename s ks).
 Proof.
 apply/eq_partmap=> k; rewrite renamemE 2!mkpartmapfE.
+rewrite [in LHS]fun_if (_ : (rename s^-1 k \in ks) = (k \in rename s ks)) //.
+rewrite -[in RHS](renameKV s k) mem_map //.
+exact: @rename_inj.
+Qed.
+
+Lemma renamem_mkpartmapfp s f ks :
+  rename s (mkpartmapfp f ks) =
+  mkpartmapfp (fun k => rename s (f (rename s^-1 k))) (rename s ks).
+Proof.
+apply/eq_partmap=> k; rewrite renamemE 2!mkpartmapfpE.
 rewrite [in LHS]fun_if (_ : (rename s^-1 k \in ks) = (k \in rename s ks)) //.
 rewrite -[in RHS](renameKV s k) mem_map //.
 exact: @rename_inj.
@@ -974,16 +1001,6 @@ move=> /dommP [v]; rewrite renamemE renamefsE=> Pv.
 apply/imfsetP; exists (rename s^-1 k); last by rewrite renameKV.
 apply/dommP; exists (rename s^-1 v).
 by move: Pv; case: (m _)=> // v' [<-]; rewrite renameK.
-Qed.
-
-Lemma namesm_empty : names emptym = fset0.
-Proof.
-by rewrite namesmE domm0 codomm0 !namesfsE !big_nil fsetUid.
-Qed.
-
-Lemma renamem_empty s : rename s emptym = emptym.
-Proof.
-by move: s; apply/names0P/eqP/namesm_empty.
 Qed.
 
 CoInductive partmap_names_spec n m : Prop :=
@@ -1069,6 +1086,7 @@ End Instances.
 
 Section MorePartMap.
 
+Local Open Scope fset_scope.
 Local Open Scope fperm_scope.
 
 Lemma renamem_partmap_of_seq (T : nominalType) s (xs : seq T) :
@@ -1095,6 +1113,25 @@ suff ->: uncurrym (rename s m) (x, y) = Some (rename s v) by [].
 apply/uncurrymP=> /=; exists (rename s m').
   by move: get_x; rewrite renamemE=> ->.
 by rewrite renamemE get_y.
+Qed.
+
+Lemma renamem_curry (T S R : nominalType) s m :
+  rename s (@currym T S R m) = currym (rename s m).
+Proof.
+apply/eq_partmap=> x.
+move: (mem_domm_curry (rename s m) x).
+rewrite -renamem_dom.
+rewrite (_ : (x \in @fst _ _ @: rename s (domm m)) =
+             (rename s^-1 x \in @fst _ _ @: (domm m))).
+  rewrite -mem_domm_curry !mem_domm renamemE.
+  case get_x: (currym m _)=> [n|];
+  case get_x': (currym _ _)=> [n'|] //= _.
+  congr Some; apply/eq_partmap=> y; rewrite renamemE.
+  move: (currymE (rename s m) x y).
+  rewrite get_x' /= renamemE renamepE /= => <-.
+  by rewrite currymE /= get_x /=.
+rewrite -(mem_imfset_can _ _ (renameK s) (renameKV s)).
+by rewrite !renamefsE -2!imfset_comp //.
 Qed.
 
 End MorePartMap.

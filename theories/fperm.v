@@ -98,7 +98,11 @@ move=> ?; subst y'; move: (andP (valP s)).2 => /allP/(_ y).
 by rewrite mem_domm ey /= mem_domm ex /= => /(_ erefl).
 Qed.
 
-Definition fperm_one : {fperm T} := @FPerm.FPerm T emptym erefl.
+Lemma fperm_one_subproof : FPerm.axiom (@emptym T T).
+Proof. by rewrite /FPerm.axiom /domm -lock. Qed.
+
+Definition fperm_one : {fperm T} :=
+  @FPerm.FPerm T emptym fperm_one_subproof.
 Notation "1" := fperm_one.
 
 Lemma fperm1 x : 1 x = x.
@@ -155,7 +159,7 @@ Qed.
 Lemma supp1 : supp 1 = fset0.
 Proof.
 apply/eqP; rewrite -fsubset0; apply/fsubsetP=> x.
-by rewrite mem_supp fperm1.
+by rewrite mem_supp fperm1 eqxx.
 Qed.
 
 Lemma supp_eq0 s : (supp s == fset0) = (s == 1).

@@ -172,7 +172,7 @@ Definition mkpartmapf (f : T -> S) (ks : seq T) : {partmap T -> S} :=
 Definition mkpartmapfp (f : T -> option S) (ks : seq T) : {partmap T -> S} :=
   mkpartmap (pmap (fun k => omap (pair k) (f k)) ks).
 
-Definition domm m := mkfset (unzip1 m).
+Definition domm m := locked (mkfset (unzip1 m)).
 
 End Operations.
 
@@ -244,7 +244,7 @@ Qed.
 
 Lemma mem_domm m k : k \in domm m = m k.
 Proof.
-rewrite inE /domm /= in_mkfset.
+rewrite inE /domm -lock /= in_mkfset.
 case: m => [s Ps] /=; rewrite /getm /=.
 by elim: s {Ps} => [|p s IH] //=; rewrite inE IH; case: (k == p.1).
 Qed.
@@ -597,7 +597,7 @@ by move: (h k'); rewrite h' eqxx.
 Qed.
 
 Lemma codomm0 : codomm (@emptym T S) = fset0.
-Proof. by []. Qed.
+Proof. by rewrite /codomm /domm -lock. Qed.
 
 Lemma codomm_rem m k : fsubset (codomm (remm m k)) (codomm m).
 Proof.
@@ -714,6 +714,24 @@ exists (mkpartmapfp (fun y' => m (x, y')) (@snd _ _ @: domm m)).
   by rewrite mem_domm get_xy.
 by rewrite mkpartmapfpE -{1}[y]/(x, y).2 mem_imfset // mem_domm get_xy.
 Qed.
+
+Lemma currymE m x y :
+  m (x, y) = obind (fun n : {partmap S -> R} => n y) (currym m x).
+Proof.
+rewrite /currym mkpartmapfE.
+case: imfsetP=> [[[x' y'] /=]|].
+  rewrite mem_domm => get_xy ?; subst x'.
+  rewrite mkpartmapfpE.
+  case get_xy': (m (x, y))=> [v|] //=; last by case: ifP.
+  by rewrite -{1}[y]/(x, y).2 mem_imfset // mem_domm get_xy'.
+case get_xy: (m (x, y))=> [v|] // h.
+suff: False by [].
+by apply: h; exists (x, y)=> //; rewrite mem_domm get_xy.
+Qed.
+
+Lemma mem_domm_curry m x :
+  (x \in domm (currym m)) = (x \in @fst _ _ @: (domm m)).
+Proof. by rewrite /currym mem_domm mkpartmapfE; case: ifP. Qed.
 
 Lemma uncurrymP n x y v :
   (exists2 n', n x = Some n' & n' y = Some v) <->
