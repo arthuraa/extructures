@@ -729,9 +729,10 @@ suff: False by [].
 by apply: h; exists (x, y)=> //; rewrite mem_domm get_xy.
 Qed.
 
-Lemma mem_domm_curry m x :
-  (x \in domm (currym m)) = (x \in @fst _ _ @: (domm m)).
-Proof. by rewrite /currym mem_domm mkpartmapfE; case: ifP. Qed.
+Lemma domm_curry m : domm (currym m) = @fst _ _ @: (domm m).
+Proof.
+by apply/eq_fset=> x; rewrite /currym mem_domm mkpartmapfE; case: ifP.
+Qed.
 
 Lemma uncurrymP n x y v :
   (exists2 n', n x = Some n' & n' y = Some v) <->

@@ -1119,11 +1119,11 @@ Lemma renamem_curry (T S R : nominalType) s m :
   rename s (@currym T S R m) = currym (rename s m).
 Proof.
 apply/eq_partmap=> x.
-move: (mem_domm_curry (rename s m) x).
-rewrite -renamem_dom.
+move: (erefl (x \in domm (currym (rename s m)))).
+rewrite {1}domm_curry -renamem_dom.
 rewrite (_ : (x \in @fst _ _ @: rename s (domm m)) =
              (rename s^-1 x \in @fst _ _ @: (domm m))).
-  rewrite -mem_domm_curry !mem_domm renamemE.
+  rewrite -domm_curry !mem_domm renamemE.
   case get_x: (currym m _)=> [n|];
   case get_x': (currym _ _)=> [n'|] //= _.
   congr Some; apply/eq_partmap=> y; rewrite renamemE.
