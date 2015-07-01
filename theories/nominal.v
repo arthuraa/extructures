@@ -2020,6 +2020,19 @@ rewrite /mutfresh andbA (andbC (fsubset _ _)) -andbA.
 by rewrite (fsetIC A) (fsetIC B) (fsetIC A B) (fsetIC (names x) (names z)).
 Qed.
 
+Lemma mutfreshS T T' S S' A x x' B y y' :
+  @mutfresh T S A x B y ->
+  fsubset (names x') (names x) ->
+  fsubset (names y') (names y) ->
+  @mutfresh T' S' A x' B y'.
+Proof.
+move=> /and3P [sA sB dis] sx sy.
+rewrite /mutfresh; apply/and3P; split.
+- by apply/(fsubset_trans _ sA)/fsetSI.
+- by apply/(fsubset_trans _ sB)/fsetIS.
+by apply/(fsubset_trans _ dis)/fsetISS.
+Qed.
+
 Lemma mutfreshEl T S R (f : T -> R) A x B (z : S) :
   equivariant f ->
   mutfresh A x B z -> mutfresh A (f x) B z.
