@@ -1240,14 +1240,27 @@ Qed.
 Canonical bound_eq_equivRel :=
   Eval hnf in EquivRel bound_eq bound_eq_refl bound_eq_sym bound_eq_trans.
 
-End Def.
-
 Local Open Scope quotient_scope.
 
-(* FIXME: This notation does not work when MathComp.generic_quotient is
-   not imported *)
-Notation "{ 'bound' T }" := {eq_quot @bound_eq [nominalType of T]}
+CoInductive bound_type := Bound of {eq_quot bound_eq}.
+Definition bound_of of phant T := bound_type.
+Identity Coercion type_of_bound_of : bound_of >-> bound_type.
+
+Definition quot_of_bound b := let: Bound b := b in b.
+
+Canonical bound_newType := [newType for quot_of_bound].
+Definition bound_eqMixin := [eqMixin of bound_type by <:].
+Canonical bound_eqType :=
+  Eval hnf in EqType bound_type bound_eqMixin.
+Definition bound_choiceMixin := [choiceMixin of bound_type by <:].
+Canonical bound_choiceType :=
+  Eval hnf in ChoiceType bound_type bound_choiceMixin.
+
+End Def.
+
+Notation "{ 'bound' T }" := (@bound_of _ (Phant T))
   (at level 0, format "{ 'bound'  T }") : type_scope.
+
 
 (* FIXME: For some reason, subtype structure inference is not working here... *)
 Module BoundOrd.
@@ -1261,15 +1274,15 @@ Implicit Type (bx : {bound T}).
 Local Open Scope ord_scope.
 
 Definition leq bx1 bx2 :=
-  repr bx1 <= repr bx2.
+  repr (val bx1) <= repr (val bx2).
 
 Lemma leq_refl : reflexive leq.
-Proof. by move=> bx; rewrite /leq Ord.leqxx. Qed.
+Proof. by move=> [bx]; rewrite /leq Ord.leqxx. Qed.
 
 Lemma leq_sym : antisymmetric leq.
 Proof.
-move=> bx1 bx2; rewrite /leq=> /Ord.anti_leq.
-exact: (can_inj (@reprK _ [quotType of {bound T}])).
+move=> [bx1] [bx2]; rewrite /leq=> /Ord.anti_leq /= => e.
+congr Bound; exact: (can_inj (@reprK _ _)).
 Qed.
 
 Lemma leq_trans : transitive leq.
@@ -1299,12 +1312,14 @@ Section Basic.
 
 Variable (T : nominalType).
 
+Local Open Scope quotient_scope.
+
 Definition mask (A : {fset name}) (x : T) : {bound T} :=
-  locked (\pi_{bound T} (A, x)).
+  locked (Bound (\pi_{eq_quot @bound_eq T} (A, x))).
 
 Lemma maskE A x : mask A x = mask (A :&: names x) x.
 Proof.
-rewrite /mask -2!lock; apply/eqmodP/bound_eqP=> /=.
+rewrite /mask -2!lock; congr Bound; apply/eqmodP/bound_eqP=> /=.
 rewrite -fsetIA fsetIid; split=> //.
 by exists 1; rewrite ?rename1 // supp1 /fdisjoint fset0I.
 Qed.
@@ -1314,7 +1329,7 @@ CoInductive bound_spec : {bound T} -> Type :=
 
 Lemma boundP bx : bound_spec bx.
 Proof.
-elim/quotP: bx=> /= [[A x] /= _].
+case: bx=> [bx]; elim/quotP: bx=> /= [[A x] /= _].
 suff: bound_spec (mask A x) by rewrite /mask -lock.
 by rewrite maskE; constructor; apply/fsubsetIr.
 Qed.
@@ -1328,8 +1343,8 @@ move=> sub.
 have {sub} sub: A :&: names x = A.
   by apply/eqP; rewrite eqEfsubset fsubsetIl fsubsetI fsubsetxx.
 rewrite /mask -2!lock; split.
-  by rewrite -{3}sub; move/eqmodP/bound_eqP=> //= [_] //.
-move=> [s dis <-]; apply/eqmodP/bound_eqP; split=> /=.
+  by rewrite -{3}sub => - []; move/eqmodP/bound_eqP=> //= [_] //.
+move=> [s dis <-]; congr Bound; apply/eqmodP/bound_eqP; split=> /=.
   rewrite names_rename; apply/eq_fset=> n; apply/fsetIP/fsetIP.
     case=> [in_A in_names]; split=> //.
     suff ->: n = s n.
@@ -1427,7 +1442,7 @@ Variable S : Type.
 Variable f : {fset name} -> T -> S.
 
 Definition elim_bound (x : {bound T}) :=
-  f ((repr x).1 :&: names (repr x).2) (repr x).2.
+  f ((repr (val x)).1 :&: names (repr (val x)).2) (repr (val x)).2.
 
 Lemma elim_boundE A x :
   fsubset A (names x) ->
