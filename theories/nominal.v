@@ -1653,8 +1653,10 @@ Variables T S : nominalType.
 Variables (D : {fset name}) (f : T -> S).
 
 Definition mapb_fs :=
-  elim_bound
-    (fun A x => mask (D :|: A) (f (rename (avoid (D :\: A) (names x)) x))).
+  locked (
+    elim_bound
+      (fun A x => mask (D :|: A) (f (rename (avoid (D :\: A) (names x)) x)))
+  ).
 
 Lemma mapb_fsE :
   finsupp D f ->
@@ -1677,7 +1679,7 @@ rewrite [RHS](_ : _ = mask (D :|: A :&: names x) (f x)); last first.
 have {sub} sub2: fsubset (D :&: names x) (A :&: names x).
   by rewrite fsubsetI sub fsubsetIr.
 move: (_ :&: _) (fsubsetIr A (names x)) sub2=> {A} A sub1 sub2.
-rewrite /mapb_fs elim_boundE //.
+rewrite /mapb_fs -lock elim_boundE //.
   rewrite names_disjointE // {2}(_ : names x = names x :\: (D :\: A)).
     exact: supp_avoid.
   apply/eq_fset=> /= n; apply/(sameP idP)/(iffP idP).
