@@ -885,6 +885,12 @@ Proof.
 by rewrite /fdisjoint fsetIUr -fsubset0 fsubUset 2!fsubset0.
 Qed.
 
+Lemma fset0D s : fset0 :\: s = fset0.
+Proof. by []. Qed.
+
+Lemma fset0D1 (x : T) : fset0 :\ x = fset0.
+Proof. by []. Qed.
+
 End Properties2.
 
 Section BigOpIdempotent.

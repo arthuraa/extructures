@@ -1618,7 +1618,33 @@ exists n''; rewrite // in_fsetD1 in_A andbT.
 by apply: contra ne=> /eqP ->.
 Qed.
 
+Lemma hide0 n bx :
+  names bx = fset0 -> hide n bx = bx.
+Proof.
+case: bx / boundP=> [/= A x sub].
+by rewrite namesbE // => ->; rewrite hideE fset0D1.
+Qed.
+
 End Structures.
+
+Section TrivialNominalType.
+
+Variable T : trivialNominalType.
+
+Let bound_renameT s (bx : {bound T}) : rename s bx = bx.
+Proof.
+case: bx / boundP=> [/= A x]; rewrite namesT fsubset0=> /eqP ->.
+by rewrite renamebE renamefsE imfset0 renameT.
+Qed.
+
+Canonical bound_trivialNominalType :=
+  Eval hnf in TrivialNominalType {bound T}
+                                 (TrivialNominalMixin bound_renameT).
+
+End TrivialNominalType.
+
+Lemma hideT (T : trivialNominalType) n bx : @hide T n bx = bx.
+Proof. by rewrite hide0 // namesT. Qed.
 
 Section Iso.
 
@@ -1641,6 +1667,14 @@ Proof.
 move=> s x; case: x / boundP=> [A [x|] sub];
 rewrite oboundE renamebE oboundE //=.
 by rewrite renameoE /= renamebE.
+Qed.
+
+Lemma obound_hide n bx :
+  obound (hide n bx) = omap (hide n) (obound bx).
+Proof.
+case: bx / boundP=> [/= A x sub].
+rewrite hideE !oboundE; case: x {sub} => [x|] //=.
+by rewrite hideE.
 Qed.
 
 End Iso.
@@ -2093,6 +2127,54 @@ Lemma hide_mapb T S n f bx :
 Proof.
 move=> equi_f; case: bx / boundP=> [/= A x sub].
 by rewrite mapbE // !hideE mapbE.
+Qed.
+
+Lemma hide_mapb2l T S R n f bx bz :
+  equivariant (fun p => f p.1 p.2) ->
+  n \notin names bz ->
+  hide n (@mapb2 T S R f bx bz) = mapb2 f (hide n bx) bz.
+Proof.
+move=> equi ninN.
+case: bx bz / bound2P ninN => [/= A x B z mf sub1 sub2].
+rewrite namesbE // => ninA.
+rewrite mapb2E // !hideE mapb2E //.
+  rewrite fsetD1U (_ : B :\ n = B) //.
+  apply/eqP; rewrite eqEfsubset fsubD1set fsetU1E fsubsetUr /=.
+  apply/fsubsetP=> n' ninA'; rewrite in_fsetD1 ninA' andbT.
+  by apply: contra ninA=> /eqP <-.
+case/and3P: mf=> [disA disB dis]; apply/and3P; split.
+- apply/fsubsetP=> n'; rewrite in_fsetI in_fsetD1=> /andP [inA inN].
+  apply/andP; split; first by apply: contra ninA=> /eqP <-.
+  by move/fsubsetP: disA; apply; apply/fsetIP; split.
+- apply/fsubsetP=> n'; rewrite in_fsetI in_fsetD1 -andbA => /and3P [_ ? ?].
+  by move/fsubsetP: disB; apply; apply/fsetIP; split.
+apply/fsubsetP=> n' inN; move/fsubsetP/(_ _ inN): dis.
+rewrite !in_fsetI in_fsetD1=> /andP [-> inB].
+by rewrite inB /= !andbT; apply: contra ninA => /eqP <-.
+Qed.
+
+Lemma hide_mapb2r T S R n f bx bz :
+  equivariant (fun p => f p.1 p.2) ->
+  n \notin names bx ->
+  hide n (@mapb2 T S R f bx bz) = mapb2 f bx (hide n bz).
+Proof.
+move=> equi ninN.
+case: bx bz / bound2P ninN => [/= A x B z mf sub1 sub2].
+rewrite namesbE // => ninA.
+rewrite mapb2E // !hideE mapb2E //.
+  rewrite fsetD1U (_ : A :\ n = A) //.
+  apply/eqP; rewrite eqEfsubset fsubD1set fsetU1E fsubsetUr /=.
+  apply/fsubsetP=> n' ninA'; rewrite in_fsetD1 ninA' andbT.
+  by apply: contra ninA=> /eqP <-.
+case/and3P: mf=> [disA disB dis]; apply/and3P; split.
+- apply/fsubsetP=> n'; rewrite in_fsetI in_fsetD1 => /and3P [? _ ?].
+  by move/fsubsetP: disA; apply; apply/fsetIP; split.
+- apply/fsubsetP=> n'; rewrite in_fsetI in_fsetD1=> /andP [inA inN].
+  apply/andP; split; first by apply: contra ninA=> /eqP <-.
+  by move/fsubsetP: disB; apply; apply/fsetIP; split.
+apply/fsubsetP=> n' inN; move/fsubsetP/(_ _ inN): dis.
+rewrite !in_fsetI in_fsetD1=> /andP [inA ->].
+by rewrite inA andbT /=; apply: contra ninA => /eqP <-.
 Qed.
 
 End Hiding.
