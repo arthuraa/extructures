@@ -2086,6 +2086,17 @@ Proof. by rewrite !(mutfresh_sym A); apply/mutfreshE2l. Qed.
 
 End Independence.
 
+Section Hiding.
+
+Lemma hide_mapb T S n f bx :
+  equivariant f -> hide n (@mapb T S f bx) = mapb f (hide n bx).
+Proof.
+move=> equi_f; case: bx / boundP=> [/= A x sub].
+by rewrite mapbE // !hideE mapbE.
+Qed.
+
+End Hiding.
+
 Section Flip.
 
 Variables T S R : nominalType.
