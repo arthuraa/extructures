@@ -301,6 +301,18 @@ split=> [equi_f|fs_f].
 by move=> s x; rewrite fs_f.
 Qed.
 
+Lemma finsuppJ A f (s : {fperm name}) :
+  finsupp A f ->
+  finsupp (s @: A) (rename s \o f \o rename s^-1).
+Proof.
+move=> fs_f s' dis x /=; apply/(canRL (renameKV s)).
+rewrite -{2}(renameKV s x); move: (rename s^-1 x)=> {x} x.
+rewrite !renameD; apply: fs_f; rewrite -{2}(fperm_invK s) suppJ.
+apply/eqP; rewrite -(imfsetK (fpermK s) A) -imfsetI; last first.
+  by move=> ?? _ _; apply: fperm_inj.
+by move/eqP: dis=> ->; rewrite imfset0.
+Qed.
+
 End Equivariance.
 
 Section Composition.
@@ -2312,14 +2324,14 @@ Qed.
 
 Lemma rename_new s A (f : name -> {bound T}) :
   finsupp A f ->
-  rename s (new A f) = new (supp s :|: A) (rename s \o f).
+  rename s (new A f) = new (s @: A) (rename s \o f \o rename s^-1).
 Proof.
-move: (fresh _) (freshP (supp s :|: A))=> n nin fs_f.
-have ninA: n \notin A by move: nin; rewrite in_fsetU; case/norP.
-have ninS: n \notin supp s by move: nin; rewrite in_fsetU; case/norP.
-rewrite (newE ninA) // rename_hide (newE nin) /= ?(suppPn _ _ ninS) //.
-move=> s'; rewrite fdisjointUr=> /andP [disS disA] /= {n nin ninA ninS} n.
-by rewrite renameD fperm_mulC // -renameD (fs_f _ disA).
+move: (fresh _) (freshP (supp s :|: A :|: s @: A))=> n nin fs_f.
+have /and3P [/suppPn ninS ninA ninSA]:
+  [&& n \notin supp s, n \notin A & n \notin s @: A].
+  by move: nin; rewrite !in_fsetU !negb_or -andbA.
+rewrite (newE ninA) // rename_hide (newE ninSA); last exact: finsuppJ.
+by rewrite ninS /= renamenE -{4}ninS fpermK.
 Qed.
 
 End Basic.
