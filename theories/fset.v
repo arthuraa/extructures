@@ -462,6 +462,13 @@ Qed.
 Lemma fdisjoint0 s : fdisjoint fset0 s.
 Proof. by rewrite /fdisjoint fset0I. Qed.
 
+Lemma fdisjoints1 s x : fdisjoint s (fset1 x) = (x \notin s).
+Proof.
+apply/fdisjointP; have [ins|nins] /= := boolP (x \in s).
+  by move/(_ _ ins)/fset1P.
+by move=> x' ins'; apply: contra nins=> /fset1P <-.
+Qed.
+
 Lemma in_fsetD1 x s y : (x \in s :\ y) = (x != y) && (x \in s).
 Proof. by rewrite in_fset_filter. Qed.
 
@@ -890,6 +897,11 @@ Proof. by []. Qed.
 
 Lemma fset0D1 (x : T) : fset0 :\ x = fset0.
 Proof. by []. Qed.
+
+Lemma fsetDv s : s :\: s = fset0.
+Proof.
+by apply/eqP; rewrite -fsubset0; apply/fsubsetP=> x; rewrite in_fsetD andNb.
+Qed.
 
 End Properties2.
 
