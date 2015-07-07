@@ -637,6 +637,20 @@ rewrite !renamesE; have [in_xs|nin] := boolP (n < size xs).
 by rewrite -leqNgt in nin; rewrite 2?nth_default // size_map.
 Qed.
 
+Lemma namessE xs :
+  names xs = foldr fsetU fset0 [seq names x | x <- xs].
+Proof.
+rewrite {1}/names /= /seq_names; elim: xs=> [|x xs IH].
+  by rewrite big_nil.
+by rewrite big_cons IH.
+Qed.
+
+Lemma namess0 : names [::] = fset0.
+Proof. by rewrite namessE. Qed.
+
+Lemma namess1 x xs : names (x :: xs) = names x :|: names xs.
+Proof. by rewrite 2!namessE. Qed.
+
 End SeqNominalType.
 
 Section SumNominalType.
