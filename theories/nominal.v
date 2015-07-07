@@ -826,6 +826,13 @@ Proof. by move=> /eqP <-; rewrite namesfsU /fsubset fsetUA fsetUid. Qed.
 
 End SetNominalType.
 
+Lemma namesfsnE (A : {fset name}) : names A = A.
+Proof.
+apply/eq_fset=> n; apply/namesfsP=> /=; have [inA|ninA] := boolP (n \in A).
+  by exists n=> //; apply/namesnP.
+by case=> [n' inA /namesnP nn']; move: ninA; rewrite nn' inA.
+Qed.
+
 Section SetTrivialNominalType.
 
 Variable T' : trivialNominalType.
@@ -2346,6 +2353,36 @@ have /and3P [/suppPn ninS ninA ninSA]:
   by move: nin; rewrite !in_fsetU !negb_or -andbA.
 rewrite (newE ninA) // rename_hide (newE ninSA); last exact: finsuppJ.
 by rewrite ninS /= renamenE -{4}ninS fpermK.
+Qed.
+
+Lemma newC ns f :
+  finsupp ns (fun p => f p.1 p.2) ->
+  new ns (fun n => new (n |: ns) (fun n' => f n n')) =
+  new ns (fun n' => new (n' |: ns) (fun n => f n n')).
+Proof.
+move=> fs_f; rewrite /new -!lock.
+move: (fresh _) (freshP ns)=> n pn.
+move: (fresh _) (freshP (n |: ns))=> n'.
+rewrite in_fsetU1 negb_or=> /andP [nn' pn'].
+have dis: fdisjoint (supp (fperm2 n n')) ns.
+  apply/(fdisjoint_trans (fsubset_supp_fperm2 _ _)).
+  by apply/fdisjointP=> /= n'' /fset2P [->|->].
+move/(_ _ dis (n, n')): (fs_f); rewrite /= !renamenE fperm2L fperm2R => <-.
+have: fsubset (names (f n n')) (ns :|: (fset1 n :|: fset1 n')).
+  exact: (names_finsupp (n, n') fs_f).
+move: (f n n') {fs_f}=> bx; case: bx / (fboundP ns)=> [A x sub dis'].
+rewrite namesbE // renamebE !hideE => sub'.
+rewrite (_ : rename _ _ :\ _ :\ _ = A :\ n' :\ n).
+  apply/maskP.
+    apply/(fsubset_trans _ sub); rewrite !fsubD1set !fsetU1E.
+    by do 2![apply/fsubsetU/orP; right]; rewrite fsubsetxx.
+  exists (fperm2 n n')=> //.
+  apply/(fdisjoint_trans (fsubset_supp_fperm2 _ _)).
+  by apply/fdisjointP=> n'' /fset2P [->|->]; rewrite !in_fsetD1 !eqxx ?andbF.
+apply/eq_fset=> n''; rewrite !in_fsetD1.
+have [|nn''] //= := altP (n'' =P n); have [|n'n''] //= := altP (n'' =P n').
+rewrite (mem_imfset_can _ _ (renameK _) (renameKV _)) fperm2V.
+by rewrite renamenE fperm2D.
 Qed.
 
 End Basic.
