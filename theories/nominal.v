@@ -2503,4 +2503,40 @@ Qed.
 
 End Trivial.
 
+Section OExpose.
+
+Variable T : nominalType.
+
+Definition oexpose (bx : {bound T}) : option T :=
+  elim_bound (fun A x => if fsubset (names x) A then Some x
+                         else None) bx.
+
+Lemma oexposeE A x :
+  oexpose (mask A x) = (if fsubset (names x) A then Some x else None).
+Proof.
+rewrite maskE -[fsubset _ _]andbT -(fsubsetxx (names x)) -fsubsetI.
+move: (_ :&: _) (fsubsetIr A (names x))=> {A} A subA.
+rewrite /oexpose elim_boundE // => s dis.
+rewrite names_rename {2}(_ : A = s @: A); last first.
+  rewrite -[LHS]imfset_id; apply: eq_in_imfset => n inA.
+  apply/esym/suppPn; apply: contraTN inA.
+  by move/fdisjointP: dis; apply.
+rewrite {2}/fsubset -imfsetU (inj_eq (imfset_inj (@fperm_inj _ s))).
+rewrite -[_ == _]/(fsubset (names x) A).
+have [sub|//] := boolP (fsubset (names x) A).
+congr Some; apply/esym/names_disjointE.
+by rewrite fdisjointC (fdisjoint_trans sub) // fdisjointC.
+Qed.
+
+Lemma oexpose_rename : equivariant oexpose.
+Proof.
+move=> s bx; case: bx / boundP => [A x subA].
+rewrite renamebE !oexposeE renamefsE -[rename s @: A]/(s @: A).
+rewrite names_rename {2}/fsubset -imfsetU.
+rewrite (inj_eq (imfset_inj (@fperm_inj _ s))) -[_ == _]/(fsubset (names x) A).
+by rewrite [LHS]fun_if.
+Qed.
+
+End OExpose.
+
 End Binding.
