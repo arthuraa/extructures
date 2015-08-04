@@ -477,6 +477,16 @@ move=> m; apply/eq_partmap=> k; rewrite !unionmE.
 by case: (m k).
 Qed.
 
+Lemma unionmC m1 m2 :
+  fdisjoint (domm m1) (domm m2) ->
+  unionm m1 m2 = unionm m2 m1.
+Proof.
+move=> dis; apply/eq_partmap=> k; rewrite !unionmE.
+have {dis}: ~~ (m1 k) || ~~ (m2 k).
+  by rewrite -!mem_domm -implybE; apply/implyP/fdisjointP.
+by case: (m1 k) (m2 k)=> [?|] [?|] //=.
+Qed.
+
 End Properties.
 
 Section EqType.
