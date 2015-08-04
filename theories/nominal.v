@@ -1113,6 +1113,21 @@ case: p=> //= - [?] Pn; subst v'; apply/namesmP.
 by eapply PMFreeNamesVal; eauto.
 Qed.
 
+Lemma namesm_mkpartmapf f ks :
+  names (mkpartmapf f ks) = names ks :|: names [seq f k | k <- ks].
+Proof.
+apply/eq_fset=> n; apply/namesmP/fsetUP.
+  case=> [k v|k v]; rewrite mkpartmapfE; case: ifP=> // in_ks [].
+    by move=> _ {v} in_k; left; apply/namessP; eauto.
+  move=> <- {v} in_fk; right; apply/namessP; exists (f k)=> //.
+  by apply/mapP; eauto.
+case=> [] /namessP => [[k in_ks in_k]|[v /mapP [k in_ks -> {v} in_fk]]].
+  apply: (@PMFreeNamesKey n _ k (f k))=> //.
+  by rewrite mkpartmapfE in_ks.
+apply: (@PMFreeNamesVal n _ k (f k))=> //.
+by rewrite mkpartmapfE in_ks.
+Qed.
+
 End PartMapNominalType.
 
 End Instances.
