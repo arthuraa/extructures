@@ -1764,10 +1764,8 @@ Variables T S : nominalType.
 Variables (D : {fset name}) (f : T -> S).
 
 Definition mapb_fs :=
-  locked (
-    elim_bound
-      (fun A x => mask (D :|: A) (f (rename (avoid (D :\: A) (names x)) x)))
-  ).
+  elim_bound
+    (fun A x => mask (D :|: A) (f (rename (avoid (D :\: A) (names x)) x))).
 
 Lemma mapb_fsE :
   finsupp D f ->
@@ -1790,7 +1788,7 @@ rewrite [RHS](_ : _ = mask (D :|: A :&: names x) (f x)); last first.
 have {sub} sub2: fsubset (D :&: names x) (A :&: names x).
   by rewrite fsubsetI sub fsubsetIr.
 move: (_ :&: _) (fsubsetIr A (names x)) sub2=> {A} A sub1 sub2.
-rewrite /mapb_fs -lock elim_boundE //.
+rewrite /mapb_fs elim_boundE //.
   rewrite names_disjointE // {2}(_ : names x = names x :\: (D :\: A)).
     exact: supp_avoid.
   apply/eq_fset=> /= n; apply/(sameP idP)/(iffP idP).
@@ -1999,11 +1997,10 @@ Implicit Types (A B : {fset name}) (x : T) (z : S).
 Implicit Types (bx : {bound T}) (bz : {bound S}).
 
 Definition mapb2 bx bz :=
-  locked
-    (mapb (fun p => f p.2 p.1) \o
-     @join_bound _ \o
-     mapb (fun p => merge p.2 p.1) \o
-     (fun p => merge p.1 p.2)) (bx, bz).
+  (mapb (fun p => f p.2 p.1) \o
+   @join_bound _ \o
+   mapb (fun p => merge p.2 p.1) \o
+   (fun p => merge p.1 p.2)) (bx, bz).
 
 Hypothesis equi_f : equivariant (fun p => f p.1 p.2).
 
@@ -2054,7 +2051,7 @@ rewrite [RHS](_ : _ = mask (A :&: names x :|: B :&: names z) (f x z)).
   rewrite (maskE A) (maskE B).
   move: {subx subz} (A :&: _) (fsubsetIr A (names x))
         (B :&: _) (fsubsetIr B (names z)) lim => {A B} /= A sub B sub' lim.
-  rewrite /mapb2 -lock /= mergeE //; last first.
+  rewrite /mapb2 /= mergeE //; last first.
     rewrite namesbE //.
     apply/(fsubset_trans _ (fsubsetIr A B))/(fsubset_trans _ lim).
     exact: fsetSI.
@@ -2344,17 +2341,17 @@ Section Basic.
 Variable T : nominalType.
 
 Definition new (ns : {fset name}) (f : name -> {bound T}) :=
-  locked (hide (fresh ns) (f (fresh ns))).
+  hide (fresh ns) (f (fresh ns)).
 
 Lemma newP ns f g :
   (forall n, n \notin ns -> f n = g n) ->
   new ns f = new ns g.
-Proof. by move=> efg; rewrite /new -2!lock efg // freshP. Qed.
+Proof. by move=> efg; rewrite /new efg // freshP. Qed.
 
 Lemma newE ns f n :
   n \notin ns -> finsupp ns f -> new ns f = hide n (f n).
 Proof.
-move=> n_nin_ns fs_f; rewrite /new -lock.
+move=> n_nin_ns fs_f; rewrite /new.
 move: (fresh _) (freshP ns)=> n' n'_nin_ns.
 pose s := fperm2 n' n.
 have dis: fdisjoint (supp s) ns.
@@ -2404,7 +2401,7 @@ Lemma newC ns f :
   new ns (fun n => new (n |: ns) (fun n' => f n n')) =
   new ns (fun n' => new (n' |: ns) (fun n => f n n')).
 Proof.
-move=> fs_f; rewrite /new -!lock.
+move=> fs_f; rewrite /new.
 move: (fresh _) (freshP ns)=> n pn.
 move: (fresh _) (freshP (n |: ns))=> n'.
 rewrite in_fsetU1 negb_or=> /andP [nn' pn'].
@@ -2530,11 +2527,11 @@ Section Trivial.
 Variable T : trivialNominalType.
 
 Definition expose : {bound T} -> T :=
-  locked (elim_bound (fun _ x => x)).
+  elim_bound (fun _ x => x).
 
 Lemma exposeE A x : expose (mask A x) = x.
 Proof.
-rewrite /expose -lock maskE namesT fsetI0 elim_boundE //.
+rewrite /expose maskE namesT fsetI0 elim_boundE //.
   exact: fsub0set.
 by move=> s _; rewrite renameT.
 Qed.
