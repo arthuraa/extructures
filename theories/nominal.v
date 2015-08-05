@@ -28,14 +28,16 @@ Section Fresh.
 
 Local Open Scope fset_scope.
 
-Definition fresh (ns : {fset name}) : name :=
-  locked (Name (foldr maxn 0 [seq nat_of_name n | n <- ns]).+1).
+Lemma fresh_key : unit. Proof. exact: tt. Qed.
+Definition fresh_def (ns : {fset name}) : name :=
+  Name (foldr maxn 0 [seq nat_of_name n | n <- ns]).+1.
+Definition fresh := locked_with fresh_key fresh_def.
 
 Lemma freshP ns : fresh ns \notin ns.
 Proof.
 suff ub: forall n, n \in ns -> nat_of_name n < nat_of_name (fresh ns).
   by apply/negP=> /ub; rewrite ltnn.
-move=> [n] /=; rewrite /fresh; unlock=> /=; rewrite ltnS inE /=.
+move=> [n] /=; rewrite /fresh unlock=> /=; rewrite ltnS inE /=.
 elim: {ns} (val ns)=> [|[n'] ns IH] //=.
 rewrite inE=> /orP [/eqP[<-]{n'} |/IH h]; first exact: leq_maxl.
 by rewrite (leq_trans h) // leq_maxr.
@@ -1420,16 +1422,20 @@ Canonical BoundOrd.ordType.
 
 Section Basic.
 
-Variable (T : nominalType).
-
 Local Open Scope quotient_scope.
 
-Definition mask (A : {fset name}) (x : T) : {bound T} :=
-  locked (Bound (\pi_{eq_quot @bound_eq T} (A, x))).
+Lemma mask_key : unit. Proof. exact: tt. Qed.
+Definition mask_def (T : nominalType) A x : {bound T} :=
+  Bound (\pi_{eq_quot @bound_eq T} (A, x)).
+Definition mask := locked_with mask_key mask_def.
+
+Variable (T : nominalType).
+
+Implicit Type x : T.
 
 Lemma maskE A x : mask A x = mask (A :&: names x) x.
 Proof.
-rewrite /mask -2!lock; congr Bound; apply/eqmodP/bound_eqP=> /=.
+rewrite [mask]unlock; congr Bound; apply/eqmodP/bound_eqP=> /=.
 rewrite -fsetIA fsetIid; split=> //.
 by exists 1; rewrite ?rename1 // supp1 /fdisjoint fset0I.
 Qed.
@@ -1440,7 +1446,7 @@ CoInductive bound_spec : {bound T} -> Type :=
 Lemma boundP bx : bound_spec bx.
 Proof.
 case: bx=> [bx]; elim/quotP: bx=> /= [[A x] /= _].
-suff: bound_spec (mask A x) by rewrite /mask -lock.
+suff: bound_spec (mask A x) by rewrite [mask]unlock.
 by rewrite maskE; constructor; apply/fsubsetIr.
 Qed.
 
@@ -1452,7 +1458,7 @@ Proof.
 move=> sub.
 have {sub} sub: A :&: names x = A.
   by apply/eqP; rewrite eqEfsubset fsubsetIl fsubsetI fsubsetxx.
-rewrite /mask -2!lock; split.
+rewrite [mask]unlock; split.
   by rewrite -{3}sub => - []; move/eqmodP/bound_eqP=> //= [_] //.
 move=> [s dis <-]; congr Bound; apply/eqmodP/bound_eqP; split=> /=.
   rewrite names_rename; apply/eq_fset=> n; apply/fsetIP/fsetIP.
@@ -1526,7 +1532,7 @@ Lemma elim_boundE A x :
   (forall s, fdisjoint (supp s) A -> f A x = f A (rename s x)) ->
   elim_bound (mask A x) = f A x.
 Proof.
-move=> sub e; rewrite /elim_bound /mask -lock.
+move=> sub e; rewrite /elim_bound [mask]unlock /=.
 case: piP=> [[A' x'] /eqmodP/bound_eqP /= [eA [s dis ex]]].
 rewrite -{}eA //; have eA: A :&: names x = A.
   by apply/eqP; rewrite eqEfsubset fsubsetIl fsubsetI fsubsetxx.
@@ -1543,7 +1549,7 @@ Variable T : nominalType.
 Implicit Types (s : {fperm name}) (x : T) (bx : {bound T}).
 
 Definition bound_rename s :=
-  locked (elim_bound (fun A x => mask (rename s A) (rename s x))).
+  elim_bound (fun A x => mask (rename s A) (rename s x)).
 
 Let bound_rename_morph s A x :
   bound_rename s (mask A x) = mask (rename s A) (rename s x).
@@ -1551,7 +1557,7 @@ Proof.
 rewrite maskE [RHS]maskE names_rename -imfsetI; last first.
   by move=> ?? _ _; apply: rename_inj.
 move: (A :&: _) (fsubsetIr A (names x))=> {A} A.
-rewrite /bound_rename -lock=> sub'; rewrite elim_boundE // => s' dis.
+rewrite /bound_rename=> sub'; rewrite elim_boundE // => s' dis.
 apply/maskP; first by rewrite names_rename renamefsE imfsetS.
 exists (s * s' * s^-1).
   rewrite suppJ /fdisjoint renamefsE -imfsetI.
@@ -1560,12 +1566,11 @@ exists (s * s' * s^-1).
 by rewrite -renameD renameK renameD.
 Qed.
 
-Definition bound_names :=
-  locked (elim_bound (fun A x => A)).
+Definition bound_names := elim_bound (fun A x => A).
 
 Let bound_names_morph A x :
   fsubset A (names x) -> bound_names (mask A x) = A.
-Proof. by move=> sub; rewrite /bound_names -lock elim_boundE //. Qed.
+Proof. by move=> sub; rewrite /bound_names elim_boundE //. Qed.
 
 Lemma bound_renameD s1 s2 bx :
   bound_rename s1 (bound_rename s2 bx) =
@@ -1659,13 +1664,13 @@ by apply/suppPn; move: inA; apply: contraTN; apply/fdisjointP.
 Qed.
 
 Definition hide (n : name) :=
-  locked (elim_bound (fun A x => mask (A :\ n) x)).
+  elim_bound (fun A x => mask (A :\ n) x).
 
 Lemma hideE n A x : hide n (mask A x) = mask (A :\ n) x.
 Proof.
 rewrite maskE [RHS]maskE (_ : (_ :\ _) :&: _ = (A :&: names x) :\ n).
   move: (A :&: names x) (fsubsetIr A (names x))=> {A} A sub.
-  rewrite /hide -lock elim_boundE //.
+  rewrite /hide elim_boundE //.
   move=> s dis; apply/maskP=> //.
     rewrite fsubD1set (fsubset_trans sub) //.
     by rewrite fsetU1E fsubsetUr.
@@ -1728,11 +1733,11 @@ Section Iso.
 Variable T : nominalType.
 
 Definition obound : {bound option T} -> option {bound T} :=
-  locked (elim_bound (fun A => omap (mask A))).
+  elim_bound (fun A => omap (mask A)).
 
 Lemma oboundE A x : obound (mask A x) = omap (mask A) x.
 Proof.
-rewrite /obound -lock maskE; case: x=> [x|] /=; rewrite elim_boundE //=.
+rewrite /obound maskE; case: x=> [x|] /=; rewrite elim_boundE //=.
 - by rewrite [in RHS]maskE.
 - exact: fsubsetIr.
 move=> s dis; congr Some; apply/maskP; first exact: fsubsetIr.
@@ -1990,17 +1995,19 @@ End Merging.
 
 Section Functor2.
 
+Lemma mapb2_key : unit. Proof. exact: tt. Qed.
+Definition mapb2_def (T S R : nominalType) (f : T -> S -> R) bx bz :=
+  (mapb (fun p => f p.2 p.1) \o
+   @join_bound _ \o
+   mapb (fun p => merge p.2 p.1) \o
+   (fun p => merge p.1 p.2)) (bx, bz).
+Definition mapb2 := locked_with mapb2_key mapb2_def.
+
 Variables T S R : nominalType.
 Variable f : T -> S -> R.
 
 Implicit Types (A B : {fset name}) (x : T) (z : S).
 Implicit Types (bx : {bound T}) (bz : {bound S}).
-
-Definition mapb2 bx bz :=
-  (mapb (fun p => f p.2 p.1) \o
-   @join_bound _ \o
-   mapb (fun p => merge p.2 p.1) \o
-   (fun p => merge p.1 p.2)) (bx, bz).
 
 Hypothesis equi_f : equivariant (fun p => f p.1 p.2).
 
@@ -2039,7 +2046,7 @@ Qed.
 
 Lemma mapb2E A x B z :
   mutfresh A x B z ->
-  mapb2 (mask A x) (mask B z) = mask (A :|: B) (f x z).
+  mapb2 f (mask A x) (mask B z) = mask (A :|: B) (f x z).
 Proof.
 case/and3P=> [subx subz lim].
 rewrite [RHS](_ : _ = mask (A :&: names x :|: B :&: names z) (f x z)).
@@ -2051,7 +2058,7 @@ rewrite [RHS](_ : _ = mask (A :&: names x :|: B :&: names z) (f x z)).
   rewrite (maskE A) (maskE B).
   move: {subx subz} (A :&: _) (fsubsetIr A (names x))
         (B :&: _) (fsubsetIr B (names z)) lim => {A B} /= A sub B sub' lim.
-  rewrite /mapb2 /= mergeE //; last first.
+  rewrite [mapb2]unlock /mapb2_def /= mergeE //; last first.
     rewrite namesbE //.
     apply/(fsubset_trans _ (fsubsetIr A B))/(fsubset_trans _ lim).
     exact: fsetSI.
@@ -2112,7 +2119,7 @@ by case: bx bz / (fbound2P fset0)=> ???????; constructor.
 Qed.
 
 Lemma rename_mapb2 s bx bz :
-  rename s (mapb2 bx bz) = mapb2 (rename s bx) (rename s bz).
+  rename s (mapb2 f bx bz) = mapb2 f (rename s bx) (rename s bz).
 Proof.
 case: bx bz / bound2P=> [A x B z mf]; rewrite mapb2E //.
 rewrite 3!renamebE mapb2E; last by rewrite rename_mutfresh.
@@ -2120,15 +2127,15 @@ by rewrite !renamefsE imfsetU (equi_f s (x, z)).
 Qed.
 
 Lemma finsupp_mapb2l bx :
-  finsupp (names bx) (mapb2 bx).
+  finsupp (names bx) (mapb2 f bx).
 Proof.
 by apply: curry_equivariant=> {bx} s [bx bz] /=; rewrite rename_mapb2.
 Qed.
 
 Lemma finsupp_mapb2r bz :
-  finsupp (names bz) (mapb2^~ bz).
+  finsupp (names bz) (mapb2 f^~ bz).
 Proof.
-apply: (@curry_equivariant _ _ _ (fun bz=> mapb2^~ bz) bz).
+apply: (@curry_equivariant _ _ _ (fun bz=> mapb2 f^~ bz) bz).
 by move=> {bz} s [bz bx] /=; rewrite rename_mapb2.
 Qed.
 
@@ -2311,6 +2318,7 @@ have mf13: mutfresh A1 x1 A3 x3.
 have {sub13 sub23 dis31 dis32} mf23: mutfresh A2 x2 A3 x3.
   apply: mutfreshW=> //; rewrite fsubsetI sub23 andbT.
   by apply/(fsubset_trans _ dis32); rewrite fsubsetI sub23 fsubsetIl.
+(* FIXME: The last "by" is very slow. *)
 rewrite ?mapb2E // ?opA ?fsetUA //; by [apply/mutfreshE2l|apply/mutfreshE2r].
 Qed.
 
