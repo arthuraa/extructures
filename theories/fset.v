@@ -485,6 +485,14 @@ rewrite add0n; congr size; congr val; apply/eq_fset=> x'.
 by rewrite in_fsetD1; have [->|] //= := altP eqP; apply/negbTE.
 Qed.
 
+Lemma fsubDset s1 s2 s3 : fsubset (s1 :\: s2) s3 = fsubset s1 (s2 :|: s3).
+Proof.
+apply/fsubsetP/fsubsetP=> [h x in1|h x ];
+move/(_ x): h; rewrite in_fsetD in_fsetU.
+  by rewrite in1 andbT -implyNb=> /implyP.
+by move=> h /andP [nin2 in1]; move: nin2; apply: implyP; rewrite implyNb; auto.
+Qed.
+
 Lemma fsubD1set s1 x s2 : fsubset (s1 :\ x) s2 = fsubset s1 (x |: s2).
 Proof.
 by apply/fsubsetP/fsubsetP=> h x';
@@ -517,6 +525,38 @@ apply/eq_fset=> x; rewrite !(in_fsetD, in_fsetU, in_fsetI).
 rewrite negb_or (andbC (x \notin s3)) andbA.
 rewrite -[in RHS](andbA (x \notin s2)) andbb -!andbA; congr andb.
 exact: andbC.
+Qed.
+
+Lemma fsetDIl s1 s2 s3 : (s1 :&: s2) :\: s3 = (s1 :\: s3) :&: (s2 :\: s3).
+Proof.
+by apply/eq_fset=> x; rewrite !(in_fsetD, in_fsetI); case: (x \notin s3).
+Qed.
+
+Lemma fsetIDA s1 s2 s3 : s1 :&: (s2 :\: s3) = (s1 :&: s2) :\: s3.
+Proof.
+by apply/eq_fset=> x; rewrite !(in_fsetD, in_fsetI); bool_congr.
+Qed.
+
+Lemma fsetIDAC s1 s2 s3 : (s1 :\: s2) :&: s3 = (s1 :&: s3) :\: s2.
+Proof.
+by apply/eq_fset=> x; rewrite !(in_fsetD, in_fsetI) andbA.
+Qed.
+
+Lemma fsetDIr s1 s2 s3 : s1 :\: (s2 :&: s3) = (s1 :\: s2) :|: (s1 :\: s3).
+Proof.
+apply/eq_fset=> x.
+by rewrite !(in_fsetD, in_fsetU, in_fsetI) negb_and andb_orl.
+Qed.
+
+Lemma fsetDDl s1 s2 s3 : (s1 :\: s2) :\: s3 = s1 :\: (s2 :|: s3).
+Proof.
+by apply/eq_fset=> x; rewrite !(in_fsetD, in_fsetU) negb_or; bool_congr.
+Qed.
+
+Lemma fsetDDr s1 s2 s3 : s1 :\: (s2 :\: s3) = (s1 :\: s2) :|: (s1 :&: s3).
+Proof.
+apply/eq_fset=> x; rewrite !(in_fsetD, in_fsetU, in_fsetI) negb_and negbK.
+by rewrite orbC andb_orl; do !bool_congr.
 Qed.
 
 Lemma fsubset_leq_size s1 s2 : fsubset s1 s2 -> size s1 <= size s2.

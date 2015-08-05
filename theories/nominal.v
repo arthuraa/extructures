@@ -1663,49 +1663,63 @@ rewrite renamefsE -(_ : s n = n).
 by apply/suppPn; move: inA; apply: contraTN; apply/fdisjointP.
 Qed.
 
-Definition hide (n : name) :=
-  elim_bound (fun A x => mask (A :\ n) x).
+Definition hiden A := elim_bound (fun A' x => mask (A' :\: A) x).
+
+Lemma hidenE A A' x : hiden A (mask A' x) = mask (A' :\: A) x.
+Proof.
+rewrite maskE [RHS]maskE fsetIDAC.
+move: (A' :&: names x) (fsubsetIr A' (names x))=> {A'} A' sub.
+rewrite /hiden elim_boundE //.
+move=> s dis; apply/maskP=> //.
+  rewrite fsubDset (fsubset_trans sub) //.
+  by rewrite fsubsetUr.
+exists s=> //; rewrite fdisjointC; apply/fdisjointP=> n'.
+rewrite in_fsetD=> /andP [_]; rewrite fdisjointC in dis.
+by move/fdisjointP: dis; apply.
+Qed.
+
+Lemma names_hiden A bx : names (hiden A bx) = names bx :\: A.
+Proof.
+case: bx / boundP=> [A' x sub]; rewrite hidenE [in RHS]namesbE //.
+by rewrite namesbE // (fsubset_trans _ sub) // fsubDset fsubsetUr.
+Qed.
+
+Lemma rename_hiden s A bx :
+  rename s (hiden A bx) = hiden (s @: A) (rename s bx).
+Proof.
+case: bx / boundP=> [A' x sub]; rewrite hidenE 2!renamebE hidenE.
+congr mask; apply/eq_fset=> n; rewrite in_fsetD renamefsE.
+apply/imfsetP/andP.
+  case=> [n'']; rewrite in_fsetD=> /andP [ne in_A ->].
+  rewrite mem_imfset_inj ?ne ?renamefsE ?mem_imfset_inj //;
+  move=> ??; exact : rename_inj.
+rewrite renamefsE=> - [ne /imfsetP [n' in_A ?]]; subst n.
+exists n'; rewrite // in_fsetD in_A andbT.
+rewrite mem_imfset_inj // in ne.
+move=> ??; exact: rename_inj.
+Qed.
+
+Lemma hiden0 A bx :
+  names bx = fset0 -> hiden A bx = bx.
+Proof.
+case: bx / boundP=> [/= A' x sub].
+by rewrite namesbE // => ->; rewrite hidenE fset0D.
+Qed.
+
+Definition hide (n : name) := hiden (fset1 n).
 
 Lemma hideE n A x : hide n (mask A x) = mask (A :\ n) x.
-Proof.
-rewrite maskE [RHS]maskE (_ : (_ :\ _) :&: _ = (A :&: names x) :\ n).
-  move: (A :&: names x) (fsubsetIr A (names x))=> {A} A sub.
-  rewrite /hide elim_boundE //.
-  move=> s dis; apply/maskP=> //.
-    rewrite fsubD1set (fsubset_trans sub) //.
-    by rewrite fsetU1E fsubsetUr.
-  exists s=> //; rewrite fdisjointC; apply/fdisjointP=> n'.
-  rewrite in_fsetD1=> /andP [_]; rewrite fdisjointC in dis.
-  by move/fdisjointP: dis; apply.
-by apply/eq_fset=> n'; rewrite !(in_fsetI, in_fsetD1) andbA.
-Qed.
+Proof. by rewrite /hide hidenE fsetD1E. Qed.
 
 Lemma names_hide n bx : names (hide n bx) = names bx :\ n.
-Proof.
-case: bx / boundP=> [A x sub]; rewrite hideE [in RHS]namesbE //.
-by rewrite namesbE // (fsubset_trans _ sub) // fsubD1set fsetU1E fsubsetUr.
-Qed.
+Proof. by rewrite /hide names_hiden fsetD1E. Qed.
 
 Lemma rename_hide s n bx :
   rename s (hide n bx) = hide (s n) (rename s bx).
-Proof.
-case: bx / boundP=> [A x sub]; rewrite hideE 2!renamebE hideE.
-congr mask; apply/eq_fset=> n'; rewrite in_fsetD1 renamefsE.
-apply/imfsetP/andP.
-  case=> [n'']; rewrite in_fsetD1=> /andP [ne in_A ->].
-  rewrite inj_eq ?ne ?renamefsE ?mem_imfset_inj //;
-  move=> ??; exact : rename_inj.
-rewrite renamefsE=> - [ne /imfsetP [n'' in_A ?]]; subst n'.
-exists n''; rewrite // in_fsetD1 in_A andbT.
-by apply: contra ne=> /eqP ->.
-Qed.
+Proof. by rewrite /hide rename_hiden imfset1. Qed.
 
-Lemma hide0 n bx :
-  names bx = fset0 -> hide n bx = bx.
-Proof.
-case: bx / boundP=> [/= A x sub].
-by rewrite namesbE // => ->; rewrite hideE fset0D1.
-Qed.
+Lemma hide0 n bx : names bx = fset0 -> hide n bx = bx.
+Proof. by move=> ?; rewrite /hide hiden0. Qed.
 
 End Structures.
 
