@@ -1496,8 +1496,25 @@ move/eqP: (avoidP (D :\: A) (names x))=> ->; rewrite fsetU0.
 by rewrite (fsetIC _ A) -fsetIA fsubsetIl.
 Qed.
 
+End Basic.
+
+Module Type ElimBoundSig.
+Parameter elim_bound :
+  forall (T : nominalType) S,
+    ({fset name} -> T -> S) ->
+    {bound T} -> S.
+Axiom elim_boundE :
+  forall (T : nominalType) S (f : {fset name} -> T -> S) A x,
+    fsubset A (names x) ->
+    (forall s, fdisjoint (supp s) A -> f A x = f A (rename s x)) ->
+    elim_bound f (mask A x) = f A x.
+End ElimBoundSig.
+
+Module Export ElimBoundDef : ElimBoundSig.
+
 Section Elim.
 
+Variable T : nominalType.
 Variable S : Type.
 Variable f : {fset name} -> T -> S.
 
@@ -1518,7 +1535,7 @@ Qed.
 
 End Elim.
 
-End Basic.
+End ElimBoundDef.
 
 Section Structures.
 
