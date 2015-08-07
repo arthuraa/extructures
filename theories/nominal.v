@@ -1706,6 +1706,11 @@ case: bx / boundP=> [/= A' x sub].
 by rewrite namesbE // => ->; rewrite hidenE fset0D.
 Qed.
 
+Lemma hidenn A A' bx : hiden A (hiden A' bx) = hiden (A :|: A') bx.
+Proof.
+by case: bx / boundP=> [/= A'' x sub]; rewrite !hidenE fsetDDl fsetUC.
+Qed.
+
 Definition hide (n : name) := hiden (fset1 n).
 
 Lemma hideE n A x : hide n (mask A x) = mask (A :\ n) x.
