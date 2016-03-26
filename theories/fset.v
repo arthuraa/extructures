@@ -475,6 +475,9 @@ Proof. by rewrite in_fset_filter. Qed.
 Lemma in_fsetD x s1 s2 : (x \in s1 :\: s2) = (x \notin s2) && (x \in s1).
 Proof. by rewrite in_fset_filter. Qed.
 
+Lemma fsetDP x s1 s2 : reflect (x \in s1 /\ x \notin s2) (x \in s1 :\: s2).
+Proof. rewrite in_fsetD andbC; exact: andP. Qed.
+
 Lemma size_fsetD1 x s : size s = (x \in s) + size (s :\ x).
 Proof.
 have [x_in|x_nin] /= := boolP (x \in s).
