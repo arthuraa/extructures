@@ -19,8 +19,6 @@ Definition name_eqMixin := [eqMixin of name by <:].
 Canonical name_eqType := Eval hnf in EqType name name_eqMixin.
 Definition name_choiceMixin := [choiceMixin of name by <:].
 Canonical name_choiceType := Eval hnf in ChoiceType name name_choiceMixin.
-Definition name_partOrdMixin := [partOrdMixin of name by <:].
-Canonical name_partOrdType := Eval hnf in PartOrdType name name_partOrdMixin.
 Definition name_ordMixin := [ordMixin of name by <:].
 Canonical name_ordType := Eval hnf in OrdType name name_ordMixin.
 
@@ -165,7 +163,6 @@ Definition pack m :=
 (* Inheritance *)
 Definition eqType := @Equality.Pack cT xclass xT.
 Definition choiceType := @Choice.Pack cT xclass xT.
-Definition partOrdType := @Ord.Partial.Pack cT xclass xT.
 Definition ordType := @Ord.Total.Pack cT class xT.
 
 End ClassDef.
@@ -178,8 +175,6 @@ Coercion eqType : type >-> Equality.type.
 Canonical eqType.
 Coercion choiceType : type >-> Choice.type.
 Canonical choiceType.
-Coercion partOrdType : type >-> Ord.Partial.type.
-Canonical partOrdType.
 Coercion ordType : type >-> Ord.Total.type.
 Canonical ordType.
 Notation nominalType := type.
@@ -516,7 +511,6 @@ Definition pack b0 (m0 : mixin_of (@Nominal.Pack T b0 T)) :=
 (* Inheritance *)
 Definition eqType := @Equality.Pack cT xclass xT.
 Definition choiceType := @Choice.Pack cT xclass xT.
-Definition partOrdType := @Ord.Partial.Pack cT xclass xT.
 Definition ordType := @Ord.Total.Pack cT class xT.
 Definition nominalType := @Nominal.Pack cT xclass xT.
 
@@ -530,8 +524,6 @@ Coercion eqType : type >-> Equality.type.
 Canonical eqType.
 Coercion choiceType : type >-> Choice.type.
 Canonical choiceType.
-Coercion partOrdType : type >-> Ord.Partial.type.
-Canonical partOrdType.
 Coercion ordType : type >-> Ord.Total.type.
 Canonical ordType.
 Coercion nominalType : type >-> Nominal.type.
@@ -1408,16 +1400,13 @@ Proof.
 by move=> bx1 bx2; rewrite /leq Ord.leq_total.
 Qed.
 
-Definition partOrdMixin := PartOrdMixin leq_refl leq_trans leq_sym.
-Canonical partOrdType := Eval hnf in PartOrdType {bound T} partOrdMixin.
-Definition ordMixin := OrdMixin leq_total.
+Definition ordMixin := OrdMixin leq_refl leq_trans leq_sym leq_total.
 Canonical ordType := Eval hnf in OrdType {bound T} ordMixin.
 
 End Def.
 
 End BoundOrd.
 
-Canonical BoundOrd.partOrdType.
 Canonical BoundOrd.ordType.
 
 Section Basic.

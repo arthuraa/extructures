@@ -41,10 +41,6 @@ Definition partmap_choiceMixin T (S : choiceType) :=
   [choiceMixin of partmap_type T S by <:].
 Canonical partmap_choiceType T (S : choiceType) :=
   Eval hnf in ChoiceType (partmap_type T S) (partmap_choiceMixin T S).
-Definition partmap_partOrdMixin T (S : partOrdType) :=
-  [partOrdMixin of partmap_type T S by <:].
-Canonical partmap_partOrdType T (S : ordType) :=
-  Eval hnf in PartOrdType (partmap_type T S) (partmap_partOrdMixin T S).
 Definition partmap_ordMixin T (S : ordType) :=
   [ordMixin of partmap_type T S by <:].
 Canonical partmap_ordType T (S : ordType) :=

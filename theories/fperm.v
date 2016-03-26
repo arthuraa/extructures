@@ -43,9 +43,6 @@ Canonical fperm_eqType T :=
 Definition fperm_choiceMixin T := [choiceMixin of fperm_type T by <:].
 Canonical fperm_choiceType T :=
   Eval hnf in ChoiceType (fperm_type T) (fperm_choiceMixin T).
-Definition fperm_partOrdMixin T := [partOrdMixin of fperm_type T by <:].
-Canonical fperm_partOrdType T :=
-  Eval hnf in PartOrdType (fperm_type T) (fperm_partOrdMixin T).
 Definition fperm_ordMixin T := [ordMixin of fperm_type T by <:].
 Canonical fperm_ordType T :=
   Eval hnf in OrdType (fperm_type T) (fperm_ordMixin T).

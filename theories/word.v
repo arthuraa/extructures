@@ -32,10 +32,6 @@ Canonical non_zero_countType :=
   Eval hnf in CountType non_zero non_zero_countMixin.
 Canonical non_zero_subCountType :=
   Eval hnf in [subCountType of non_zero].
-Definition non_zero_partOrdMixin :=
-  [partOrdMixin of non_zero by <:].
-Canonical non_zero_partOrdType :=
-  Eval hnf in PartOrdType non_zero non_zero_partOrdMixin.
 Definition non_zero_ordMixin := [ordMixin of non_zero by <:].
 Canonical non_zero_ordType :=
   Eval hnf in OrdType non_zero non_zero_ordMixin.
@@ -63,8 +59,6 @@ Canonical word_subCountType := Eval hnf in [subCountType of word].
 Definition word_finMixin := [finMixin of word by <:].
 Canonical word_finType := Eval hnf in FinType word word_finMixin.
 Canonical word_subFinType := Eval hnf in [subFinType of word].
-Definition word_partOrdMixin := [partOrdMixin of word by <:].
-Canonical word_partOrdType := Eval hnf in PartOrdType word word_partOrdMixin.
 Definition word_ordMixin := [ordMixin of word by <:].
 Canonical word_ordType := Eval hnf in OrdType word word_ordMixin.
 Canonical word_nominalType := Eval hnf in [nominalType for word by //].

@@ -22,9 +22,6 @@ Definition ascii_eqMixin := CanEqMixin tuple_of_asciiK.
 Canonical ascii_eqType := Eval hnf in EqType ascii ascii_eqMixin.
 Definition ascii_choiceMixin := CanChoiceMixin tuple_of_asciiK.
 Canonical ascii_choiceType := Eval hnf in ChoiceType ascii ascii_choiceMixin.
-Definition ascii_partOrdMixin := CanPartOrdMixin tuple_of_asciiK.
-Canonical ascii_partOrdType :=
-  Eval hnf in PartOrdType ascii ascii_partOrdMixin.
 Definition ascii_ordMixin := CanOrdMixin tuple_of_asciiK.
 Canonical ascii_ordType :=
   Eval hnf in OrdType ascii ascii_ordMixin.
@@ -45,9 +42,6 @@ Canonical string_eqType := Eval hnf in EqType string string_eqMixin.
 Definition string_choiceMixin := CanChoiceMixin seq_of_stringK.
 Canonical string_choiceType :=
   Eval hnf in ChoiceType string string_choiceMixin.
-Definition string_partOrdMixin := CanPartOrdMixin seq_of_stringK.
-Canonical string_partOrdType :=
-  Eval hnf in PartOrdType string string_partOrdMixin.
 Definition string_ordMixin := CanOrdMixin seq_of_stringK.
 Canonical string_ordType := Eval hnf in OrdType string string_ordMixin.
 Canonical string_nominalType := Eval hnf in [nominalType for string by //].

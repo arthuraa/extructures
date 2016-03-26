@@ -12,7 +12,7 @@ Delimit Scope ord_scope with ord.
 
 Module Ord.
 
-Module Partial.
+Module Total.
 
 Section ClassDef.
 
@@ -20,7 +20,8 @@ Record mixin_of T := Mixin {
   leq : rel T;
   _ : reflexive leq;
   _ : transitive leq;
-  _ : antisymmetric leq
+  _ : antisymmetric leq;
+  _ : total leq
 }.
 
 Record class_of T := Class {base : Choice.class_of T; mixin : mixin_of T}.
@@ -52,21 +53,22 @@ Coercion eqType : type >-> Equality.type.
 Canonical eqType.
 Coercion choiceType : type >-> Choice.type.
 Canonical choiceType.
-Notation partOrdType := type.
-Notation partOrdMixin := mixin_of.
-Notation PartOrdMixin := Mixin.
-Notation PartOrdType T m := (@pack T m _ _ id).
-Notation "[ 'partOrdType' 'of' T 'for' cT ]" :=  (@clone T cT _ idfun)
-  (at level 0, format "[ 'partOrdType'  'of'  T  'for'  cT ]") : form_scope.
-Notation "[ 'partOrdType' 'of' T ]" := (@clone T _ _ id)
-  (at level 0, format "[ 'partOrdType'  'of'  T ]") : form_scope.
+Notation ordType := type.
+Notation ordMixin := mixin_of.
+Notation OrdMixin := Mixin.
+Notation OrdType T m := (@pack T m _ _ id).
+Notation "[ 'ordType' 'of' T 'for' cT ]" :=  (@clone T cT _ idfun)
+  (at level 0, format "[ 'ordType'  'of'  T  'for'  cT ]") : form_scope.
+Notation "[ 'ordType' 'of' T ]" := (@clone T _ _ id)
+  (at level 0, format "[ 'ordType'  'of'  T ]") : form_scope.
 End Exports.
 
-End Partial.
-Export Partial.Exports.
+End Total.
 
-Definition leq T := Partial.leq (Partial.class T).
-Definition lt (T : partOrdType) (x y : T) := leq x y && (x != y).
+Export Total.Exports.
+
+Definition leq T := Total.leq (Total.class T).
+Definition lt (T : ordType) (x y : T) := leq x y && (x != y).
 
 Notation "x <= y" := (leq x y) : ord_scope.
 Notation "x < y" := (lt x y) : ord_scope.
@@ -75,11 +77,11 @@ Notation "x <= y <  z" := (leq x y && lt  y z) : ord_scope.
 Notation "x <  y <= z" := (lt  x y && leq y z) : ord_scope.
 Notation "x <  y <  z" := (lt  x y && lt  y z) : ord_scope.
 
-Section PartialTheory.
+Section Theory.
 
 Local Open Scope ord_scope.
 
-Variable T : partOrdType.
+Variable T : ordType.
 Implicit Types x y : T.
 
 Lemma leqxx : reflexive (@leq T).
@@ -123,69 +125,6 @@ Qed.
 Lemma lt_neqAle (x y : T) : (x < y) = (x != y) && (x <= y).
 Proof. by rewrite /lt andbC. Qed.
 
-End PartialTheory.
-
-Module Total.
-
-Section ClassDef.
-
-Inductive mixin_of (T : partOrdType) := Mixin of total (@leq T).
-
-Record class_of T := Class {
-  base : Partial.class_of T;
-  mixin : mixin_of (Partial.Pack base T)
-}.
-Local Coercion base : class_of >-> Partial.class_of.
-
-Structure type := Pack {sort; _ : class_of sort; _ : Type}.
-Local Coercion sort : type >-> Sortclass.
-Variables (T : Type) (cT : type).
-Definition class := let: Pack _ c _ as cT' := cT return class_of cT' in c.
-Definition clone c of phant_id class c := @Pack T c T.
-Let xT := let: Pack T _ _ := cT in T.
-Notation xclass := (class : class_of xT).
-
-Definition pack b0 (m0 : mixin_of (@Partial.Pack T b0 T)) :=
-  fun b bT & phant_id (Partial.class bT) b =>
-  fun m & phant_id m0 m => Pack (@Class T b m) T.
-
-(* Inheritance *)
-Definition eqType := @Equality.Pack cT xclass xT.
-Definition choiceType := @Choice.Pack cT xclass xT.
-Definition partOrdType := @Partial.Pack cT xclass xT.
-
-End ClassDef.
-
-Module Import Exports.
-Coercion base : class_of >-> Partial.class_of.
-Coercion mixin : class_of >-> mixin_of.
-Coercion sort : type >-> Sortclass.
-Coercion eqType : type >-> Equality.type.
-Canonical eqType.
-Coercion choiceType : type >-> Choice.type.
-Canonical choiceType.
-Coercion partOrdType : type >-> Partial.type.
-Canonical partOrdType.
-Notation ordType := type.
-Notation ordMixin := mixin_of.
-Notation OrdMixin := Mixin.
-Notation OrdType T m := (@pack T _ m _ _ id _ id).
-Notation "[ 'ordType' 'of' T 'for' cT ]" :=  (@clone T cT _ idfun)
-  (at level 0, format "[ 'ordType'  'of'  T  'for'  cT ]") : form_scope.
-Notation "[ 'ordType' 'of' T ]" := (@clone T _ _ id)
-  (at level 0, format "[ 'ordType'  'of'  T ]") : form_scope.
-End Exports.
-
-End Total.
-Export Total.Exports.
-
-Section TotalTheory.
-
-Variable T : ordType.
-Implicit Types x y : T.
-
-Local Open Scope ord_scope.
-
 Lemma leq_total : total (@leq T).
 Proof. by case: T => [? [? []]]. Qed.
 
@@ -194,7 +133,7 @@ Proof.
 rewrite /lt.
 have [lxy|] := boolP (x <= y).
   have [lyx|gyx] //= := boolP (y <= x).
-  rewrite negbK (@anti_leq _ x y) ?eqxx //.
+  rewrite negbK (@anti_leq x y) ?eqxx //.
   by rewrite lxy lyx.
 have [->{y}|nyx gyx] /= := altP (y =P x).
   by rewrite leqxx.
@@ -219,11 +158,11 @@ rewrite ltNge; have [Hl|Hg] := boolP (x <= y); constructor=> //.
 by rewrite ltNge.
 Qed.
 
-End TotalTheory.
+End Theory.
 
 End Ord.
 
-Export Ord.Partial.Exports Ord.Total.Exports.
+Export Ord.Total.Exports.
 
 Notation "x <= y" := (Ord.leq x y) : ord_scope.
 Notation "x < y" := (Ord.lt x y) : ord_scope.
@@ -232,14 +171,12 @@ Notation "x <= y <  z" := (Ord.leq x y && Ord.lt  y z) : ord_scope.
 Notation "x <  y <= z" := (Ord.lt  x y && Ord.leq y z) : ord_scope.
 Notation "x <  y <  z" := (Ord.lt  x y && Ord.lt  y z) : ord_scope.
 
-Definition nat_partOrdMixin := PartOrdMixin leqnn leq_trans anti_leq.
-Canonical nat_partOrdType := Eval hnf in PartOrdType nat nat_partOrdMixin.
-Definition nat_ordMixin := OrdMixin leq_total.
+Definition nat_ordMixin := OrdMixin leqnn leq_trans anti_leq leq_total.
 Canonical nat_ordType := Eval hnf in OrdType nat nat_ordMixin.
 
-Section ProdPartOrd.
+Section ProdOrd.
 
-Variables T S : partOrdType.
+Variables T S : ordType.
 Local Open Scope ord_scope.
 
 (* For products, we use lexicographic ordering. *)
@@ -273,32 +210,22 @@ have [-> /Ord.anti_leq -> //|Hne /Ord.anti_leq E] := altP (x2 =P _).
 by rewrite E eqxx in Hne.
 Qed.
 
-Definition prod_partOrdMixin :=
-  PartOrdMixin prod_leq_refl prod_leq_trans anti_prod_leq.
-Canonical prod_partOrdType :=
-  Eval hnf in PartOrdType (T * S) prod_partOrdMixin.
-
-End ProdPartOrd.
-
-Section ProdOrd.
-
-Variables T S : ordType.
-Local Open Scope ord_scope.
-
-Lemma prod_leq_total : total (@Ord.leq [partOrdType of T * S]).
+Lemma prod_leq_total : total prod_leq.
 Proof.
 move=> p1 p2; rewrite /Ord.leq /= /prod_leq /= eq_sym.
 by have [_|Hne] := altP (p2.1 =P _); apply Ord.leq_total.
 Qed.
 
-Definition prod_ordMixin := OrdMixin prod_leq_total.
-Canonical prod_ordType := Eval hnf in OrdType (T * S) prod_ordMixin.
+Definition prod_ordMixin :=
+  OrdMixin prod_leq_refl prod_leq_trans anti_prod_leq prod_leq_total.
+Canonical prod_ordType :=
+  Eval hnf in OrdType (T * S) prod_ordMixin.
 
 End ProdOrd.
 
-Section SeqPartOrd.
+Section SeqOrd.
 
-Variable T : partOrdType.
+Variable T : ordType.
 Local Open Scope ord_scope.
 
 Fixpoint seq_leq (s1 s2 : seq T) :=
@@ -334,32 +261,23 @@ have [-> /IH -> //|Hne /Ord.anti_leq E] := altP (_ =P _).
 by rewrite E eqxx in Hne.
 Qed.
 
-Definition seq_partOrdMixin :=
-  PartOrdMixin seq_leq_refl seq_leq_trans anti_seq_leq.
-Canonical seq_partOrdType :=
-  Eval hnf in PartOrdType (seq T) seq_partOrdMixin.
-
-End SeqPartOrd.
-
-Section SeqOrd.
-
-Variable T : ordType.
-
-Lemma seq_leq_total : total (@seq_leq T).
+Lemma seq_leq_total : total seq_leq.
 Proof.
 elim=> [|x1 s1 IH] [|x2 s2] //=.
 rewrite /= eq_sym.
 by have [_|Hne] := altP (_ =P _); auto; apply Ord.leq_total.
 Qed.
 
-Definition seq_ordMixin := OrdMixin seq_leq_total.
-Canonical seq_ordType := Eval hnf in OrdType (seq T) seq_ordMixin.
+Definition seq_ordMixin :=
+  OrdMixin seq_leq_refl seq_leq_trans anti_seq_leq seq_leq_total.
+Canonical seq_ordType :=
+  Eval hnf in OrdType (seq T) seq_ordMixin.
 
 End SeqOrd.
 
-Section SumPartOrd.
+Section SumOrd.
 
-Variables (T S : partOrdType).
+Variables (T S : ordType).
 Local Open Scope ord_scope.
 
 Definition sum_leq (x y : T + S) :=
@@ -379,29 +297,19 @@ Proof. by case=> [x1|y1] [x2|y2] [x3|y3] //=; apply: Ord.leq_trans. Qed.
 Lemma anti_sum_leq : antisymmetric sum_leq.
 Proof. by case=> [x1|y1] [x2|y2] //= => /Ord.anti_leq ->. Qed.
 
-Definition sum_partOrdMixin :=
-  PartOrdMixin sum_leq_refl sum_leq_trans anti_sum_leq.
-Canonical sum_partOrdType :=
-  Eval hnf in PartOrdType (T + S) sum_partOrdMixin.
-
-End SumPartOrd.
-
-Section SumOrd.
-
-Variables (T S : ordType).
-Local Open Scope ord_scope.
-
-Lemma sum_leq_total : total (@sum_leq T S).
+Lemma sum_leq_total : total sum_leq.
 Proof. by case=> [x1|y1] [x2|y2] //=; apply: Ord.leq_total. Qed.
 
-Definition sum_ordMixin := OrdMixin sum_leq_total.
-Canonical sum_ordType := Eval hnf in OrdType (T + S) sum_ordMixin.
+Definition sum_ordMixin :=
+  OrdMixin sum_leq_refl sum_leq_trans anti_sum_leq sum_leq_total.
+Canonical sum_ordType :=
+  Eval hnf in OrdType (T + S) sum_ordMixin.
 
 End SumOrd.
 
-Section OptionPartOrd.
+Section OptionOrd.
 
-Variables (T : partOrdType).
+Variables (T : ordType).
 Local Open Scope ord_scope.
 
 Definition option_leq (x y : option T) :=
@@ -420,29 +328,19 @@ Proof. by case=> [x1|] [x2|] [x3|] //=; apply: Ord.leq_trans. Qed.
 Lemma anti_option_leq : antisymmetric option_leq.
 Proof. by case=> [x1|] [x2|] //= => /Ord.anti_leq ->. Qed.
 
-Definition option_partOrdMixin :=
-  PartOrdMixin option_leq_refl option_leq_trans anti_option_leq.
-Canonical option_partOrdType :=
-  Eval hnf in PartOrdType (option T) option_partOrdMixin.
-
-End OptionPartOrd.
-
-Section OptionOrd.
-
-Variables (T : ordType).
-Local Open Scope ord_scope.
-
-Lemma option_leq_total : total (@option_leq T).
+Lemma option_leq_total : total option_leq.
 Proof. by case=> [x1|] [x2|] //=; apply: Ord.leq_total. Qed.
 
-Definition option_ordMixin := OrdMixin option_leq_total.
-Canonical option_ordType := Eval hnf in OrdType (option T) option_ordMixin.
+Definition option_ordMixin :=
+  OrdMixin option_leq_refl option_leq_trans anti_option_leq option_leq_total.
+Canonical option_ordType :=
+  Eval hnf in OrdType (option T) option_ordMixin.
 
 End OptionOrd.
 
-Section TransferPartOrdType.
+Section TransferOrdType.
 
-Variables (T : Type) (eT : partOrdType) (f : T -> eT).
+Variables (T : Type) (eT : ordType) (f : T -> eT).
 Local Open Scope ord_scope.
 
 Local Notation le := (fun x y => f x <= f y).
@@ -456,55 +354,17 @@ Proof. by move=> x y z /=; exact: Ord.leq_trans. Qed.
 Lemma inj_ord_anti : injective f -> antisymmetric le.
 Proof. by move=> f_inj x y /= /Ord.anti_leq /f_inj. Qed.
 
-Definition InjPartOrdMixin f_inj :=
-  PartOrdMixin inj_ord_refl inj_ord_trans (inj_ord_anti f_inj).
-
-Definition PcanPartOrdMixin g (fK : pcancel f g) :=
-  InjPartOrdMixin (pcan_inj fK).
-
-Definition CanPartOrdMixin g (fK : cancel f g) :=
-  InjPartOrdMixin (can_inj fK).
-
-End TransferPartOrdType.
-
-Section SubPartOrdType.
-
-Variables (T : partOrdType) (P : pred T) (sT : subType P).
-Local Open Scope ord_scope.
-
-Definition sub_partOrdMixin := @InjPartOrdMixin _ _ (@val T P sT) val_inj.
-Canonical sub_partOrdType := Eval hnf in PartOrdType sT sub_partOrdMixin.
-
-Lemma val_pordE (u v : sT) : (val u <= val v) = (u <= v).
-Proof. by []. Qed.
-
-End SubPartOrdType.
-
-Notation "[ 'partOrdMixin' 'of' T 'by' <: ]" :=
-    (sub_partOrdMixin _ : Ord.Partial.mixin_of T)
-  (at level 0, format "[ 'partOrdMixin'  'of'  T  'by'  <: ]") : form_scope.
-
-Section TransferOrdType.
-
-Variables (T : choiceType) (eT : ordType) (f : T -> eT).
-Local Open Scope ord_scope.
-
-Section Inj.
-
-Hypothesis f_inj : injective f.
-
-Let T_partOrdType := PartOrdType T (InjPartOrdMixin f_inj).
-
-Lemma inj_ord_total : total (@Ord.leq T_partOrdType).
+Lemma inj_ord_total : total le.
 Proof. by move=> x y; exact: Ord.leq_total. Qed.
 
-Definition InjOrdMixin := OrdMixin inj_ord_total.
+Definition InjOrdMixin f_inj :=
+  OrdMixin inj_ord_refl inj_ord_trans (inj_ord_anti f_inj) inj_ord_total.
 
-End Inj.
+Definition PcanOrdMixin g (fK : pcancel f g) :=
+  InjOrdMixin (pcan_inj fK).
 
-Definition PcanOrdMixin g (fK : pcancel f g) := InjOrdMixin (pcan_inj fK).
-
-Definition CanOrdMixin g (fK : cancel f g) := InjOrdMixin (can_inj fK).
+Definition CanOrdMixin g (fK : cancel f g) :=
+  InjOrdMixin (can_inj fK).
 
 End TransferOrdType.
 
@@ -516,20 +376,18 @@ Local Open Scope ord_scope.
 Definition sub_ordMixin := @InjOrdMixin _ _ (@val T P sT) val_inj.
 Canonical sub_ordType := Eval hnf in OrdType sT sub_ordMixin.
 
-Lemma val_ordE (u v : sT) : (val u <= val v) = (u <= v).
+Lemma val_pordE (u v : sT) : (val u <= val v) = (u <= v).
 Proof. by []. Qed.
 
 End SubOrdType.
 
 Notation "[ 'ordMixin' 'of' T 'by' <: ]" :=
-    (sub_ordMixin _ : Ord.Total.mixin_of [partOrdType of T])
+    (sub_ordMixin _ : Ord.Total.mixin_of T)
   (at level 0, format "[ 'ordMixin'  'of'  T  'by'  <: ]") : form_scope.
 
-Definition ordinal_partOrdMixin n := [partOrdMixin of 'I_n by <:].
-Canonical ordinal_partOrdType n :=
-  Eval hnf in PartOrdType 'I_n (ordinal_partOrdMixin n).
 Definition ordinal_ordMixin n := [ordMixin of 'I_n by <:].
-Canonical ordinal_ordType n := Eval hnf in OrdType 'I_n (ordinal_ordMixin n).
+Canonical ordinal_ordType n :=
+  Eval hnf in OrdType 'I_n (ordinal_ordMixin n).
 
 Lemma implb_refl : reflexive implb.
 Proof. by case. Qed.
@@ -543,10 +401,8 @@ Proof. by case=> [] []. Qed.
 Lemma implb_total : total implb.
 Proof. by case=> [] []. Qed.
 
-Definition bool_partOrdMixin :=
-  PartOrdMixin implb_refl implb_trans implb_anti.
-Canonical bool_partOrdType := Eval hnf in PartOrdType bool bool_partOrdMixin.
-Definition bool_ordMixin := OrdMixin implb_total.
+Definition bool_ordMixin :=
+  OrdMixin implb_refl implb_trans implb_anti implb_total.
 Canonical bool_ordType := Eval hnf in OrdType bool bool_ordMixin.
 
 Definition unit_leq (x y : unit) := true.
@@ -563,8 +419,6 @@ Proof. by case=> [] []. Qed.
 Lemma unit_leq_total : total unit_leq.
 Proof. by case=> [] []. Qed.
 
-Definition unit_partOrdMixin :=
-  PartOrdMixin unit_leq_refl unit_leq_trans unit_leq_anti.
-Canonical unit_partOrdType := Eval hnf in PartOrdType unit unit_partOrdMixin.
-Definition unit_ordMixin := OrdMixin unit_leq_total.
+Definition unit_ordMixin :=
+  OrdMixin unit_leq_refl unit_leq_trans unit_leq_anti unit_leq_total.
 Canonical unit_ordType := Eval hnf in OrdType unit unit_ordMixin.

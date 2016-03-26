@@ -39,9 +39,6 @@ Canonical fset_eqType T :=
 Definition fset_choiceMixin T := [choiceMixin of fset_type T by <:].
 Canonical fset_choiceType T :=
   Eval hnf in ChoiceType (fset_type T) (fset_choiceMixin T).
-Definition fset_partOrdMixin T := [partOrdMixin of fset_type T by <:].
-Canonical fset_partOrdType T :=
-  Eval hnf in PartOrdType (fset_type T) (fset_partOrdMixin T).
 Definition fset_ordMixin T := [ordMixin of fset_type T by <:].
 Canonical fset_ordType T :=
   Eval hnf in OrdType (fset_type T) (fset_ordMixin T).
