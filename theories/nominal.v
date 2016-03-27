@@ -880,6 +880,26 @@ Lemma namesfs_subset X Y :
   fsubset (names X) (names Y).
 Proof. by move=> /eqP <-; rewrite namesfsU /fsubset fsetUA fsetUid. Qed.
 
+Lemma renamefsU s X Y : rename s (X :|: Y) = rename s X :|: rename s Y.
+Proof. exact: imfsetU. Qed.
+
+Lemma renamefsI s X Y : rename s (X :&: Y) = rename s X :&: rename s Y.
+Proof. apply: imfsetI=> ????; exact: rename_inj. Qed.
+
+Lemma renamefsD s X Y : rename s (X :\: Y) = rename s X :\: rename s Y.
+Proof.
+apply/eq_fset=> x.
+by rewrite !(mem_imfset_can _ _ (renameK s) (renameKV s), in_fsetD).
+Qed.
+
+Lemma renamefs_disjoint s X Y :
+  fdisjoint X Y = fdisjoint (rename s X) (rename s Y).
+Proof.
+rewrite /fdisjoint -renamefsI -{2}[fset0](renameKV s) [rename _ fset0]imfset0.
+(* FIXME: This annotation should not be needed... *)
+rewrite inj_eq //=; exact: (@rename_inj fset_nominalType).
+Qed.
+
 End SetNominalType.
 
 Lemma namesfsnE (A : {fset name}) : names A = A.
