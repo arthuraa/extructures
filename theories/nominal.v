@@ -163,7 +163,7 @@ Definition pack m :=
 (* Inheritance *)
 Definition eqType := @Equality.Pack cT xclass xT.
 Definition choiceType := @Choice.Pack cT xclass xT.
-Definition ordType := @Ord.Total.Pack cT class xT.
+Definition ordType := @Ord.Total.Pack cT xclass xT.
 
 End ClassDef.
 
