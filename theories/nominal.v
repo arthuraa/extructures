@@ -900,6 +900,13 @@ rewrite /fdisjoint -renamefsI -{2}[fset0](renameKV s) [rename _ fset0]imfset0.
 rewrite inj_eq //=; exact: (@rename_inj fset_nominalType).
 Qed.
 
+Lemma renamefs_subset s X Y :
+  fsubset X Y = fsubset (rename s X) (rename s Y).
+Proof.
+apply/idP/idP; first exact: imfsetS.
+rewrite -{2}(renameK s X) -{2}(renameK s Y); exact: imfsetS.
+Qed.
+
 End SetNominalType.
 
 Lemma namesfsnE (A : {fset name}) : names A = A.
