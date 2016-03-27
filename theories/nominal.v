@@ -511,7 +511,7 @@ Definition pack b0 (m0 : mixin_of (@Nominal.Pack T b0 T)) :=
 (* Inheritance *)
 Definition eqType := @Equality.Pack cT xclass xT.
 Definition choiceType := @Choice.Pack cT xclass xT.
-Definition ordType := @Ord.Total.Pack cT class xT.
+Definition ordType := @Ord.Total.Pack cT xclass xT.
 Definition nominalType := @Nominal.Pack cT xclass xT.
 
 End ClassDef.
