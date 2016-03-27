@@ -1267,6 +1267,95 @@ Qed.
 
 End MorePartMap.
 
+Module SubNominal.
+
+Section ClassDef.
+
+Local Open Scope fset_scope.
+Local Open Scope fperm_scope.
+
+Variable T : nominalType.
+Variable P : pred T.
+
+Structure type := Pack {
+  sort : subType P;
+  _ : forall s x, P x = P (rename s x)
+}.
+
+Local Coercion sort : type >-> subType.
+
+Implicit Type (s : {fperm name}).
+
+Variable (sT : type).
+
+Let subeqvar s x : P x = P (rename s x).
+Proof. by case: sT. Qed.
+
+Implicit Type (x : sT).
+
+Definition subType_rename s x : sT :=
+  Sub (rename s (val x))
+      (eq_ind (P (val x)) is_true (valP x) _ (subeqvar s _)).
+
+Definition subType_names x := names (val x).
+
+Lemma subType_renameD s1 s2 x :
+  subType_rename s1 (subType_rename s2 x) =
+  subType_rename (s1 * s2) x.
+Proof. by apply: val_inj; rewrite /subType_rename /= !SubK renameD. Qed.
+
+Lemma subType_namesNNE n n' x :
+  n \notin subType_names x -> n' \notin subType_names x ->
+  subType_rename (fperm2 n n') x = x.
+Proof.
+move=> n_nin n'_nin; apply: val_inj; rewrite /subType_rename /= !SubK.
+by apply: namesNNE.
+Qed.
+
+Lemma subType_namesTeq n n' x :
+  n \in subType_names x -> subType_rename (fperm2 n n') x = x ->
+  n' \in subType_names x.
+Proof.
+move=> n_in /(f_equal val); rewrite /subType_rename /= !SubK.
+by apply: namesTeq.
+Qed.
+
+Definition nominalMixin :=
+  NominalMixin subType_renameD subType_namesNNE subType_namesTeq.
+Definition nominalType := NominalType sT nominalMixin.
+
+Definition pack (sT : subType P) m & phant sT := Pack sT m.
+
+End ClassDef.
+
+Module Import Exports.
+Coercion sort : type >-> subType.
+Coercion nominalType : type >-> Nominal.type.
+Canonical nominalType.
+Notation subNominalType := type.
+Notation SubNominalType T m := (@pack _ _ _ m (Phant T)).
+Notation "[ 'nominalMixin' 'of' T 'by' <: ]" :=
+    (nominalMixin _ : Nominal.mixin_of T)
+  (at level 0, format "[ 'nominalMixin'  'of'  T  'by'  <: ]") : form_scope.
+End Exports.
+
+End SubNominal.
+Export SubNominal.Exports.
+
+Section SubNominalTheory.
+
+Variables (T : nominalType) (P : pred T) (sT : subNominalType P).
+
+Implicit Types (s : {fperm name}) (x : sT).
+
+Lemma subrenameE s x : val (rename s x) = rename s (val x).
+Proof. exact: SubK. Qed.
+
+Lemma subnamesE x : names x = names (val x).
+Proof. by []. Qed.
+
+End SubNominalTheory.
+
 Section TransferNominalType.
 
 Local Open Scope fset_scope.
