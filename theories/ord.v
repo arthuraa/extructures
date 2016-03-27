@@ -2,6 +2,8 @@ Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
 Require Import Ssreflect.ssrnat Ssreflect.eqtype Ssreflect.seq.
 Require Import Ssreflect.choice Ssreflect.fintype.
 
+Require Import MathComp.generic_quotient.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -422,3 +424,17 @@ Proof. by case=> [] []. Qed.
 Definition unit_ordMixin :=
   OrdMixin unit_leq_refl unit_leq_trans unit_leq_anti unit_leq_total.
 Canonical unit_ordType := Eval hnf in OrdType unit unit_ordMixin.
+
+Section EquivQuotOrd.
+
+Local Open Scope quotient_scope.
+
+Variable T : ordType.
+Variable e : equiv_rel T.
+
+Definition equivQuotient_ordMixin :=
+  CanOrdMixin (@reprK _ [quotType of {eq_quot e}]).
+Canonical equivQuotient_ordType :=
+  OrdType {eq_quot e} equivQuotient_ordMixin.
+
+End EquivQuotOrd.
