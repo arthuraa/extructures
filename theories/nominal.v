@@ -1359,55 +1359,13 @@ Canonical bound_eqType :=
 Definition bound_choiceMixin := [choiceMixin of bound_type by <:].
 Canonical bound_choiceType :=
   Eval hnf in ChoiceType bound_type bound_choiceMixin.
+Definition bound_ordMixin := [ordMixin of bound_type by <:].
+Canonical bound_ordType := Eval hnf in OrdType bound_type bound_ordMixin.
 
 End Def.
 
 Notation "{ 'bound' T }" := (@bound_of _ (Phant T))
   (at level 0, format "{ 'bound'  T }") : type_scope.
-
-
-(* FIXME: For some reason, subtype structure inference is not working here... *)
-Module BoundOrd.
-
-Section Def.
-
-Variable T : nominalType.
-
-Implicit Type (bx : {bound T}).
-
-Local Open Scope ord_scope.
-
-Definition leq bx1 bx2 :=
-  repr (val bx1) <= repr (val bx2).
-
-Lemma leq_refl : reflexive leq.
-Proof. by move=> [bx]; rewrite /leq Ord.leqxx. Qed.
-
-Lemma leq_sym : antisymmetric leq.
-Proof.
-move=> [bx1] [bx2]; rewrite /leq=> /Ord.anti_leq /= => e.
-congr Bound; exact: (can_inj (@reprK _ _)).
-Qed.
-
-Lemma leq_trans : transitive leq.
-Proof.
-move=> bx1 bx2 bx3; rewrite /leq=> h1 h2.
-exact: (Ord.leq_trans h1 h2).
-Qed.
-
-Lemma leq_total : total leq.
-Proof.
-by move=> bx1 bx2; rewrite /leq Ord.leq_total.
-Qed.
-
-Definition ordMixin := OrdMixin leq_refl leq_trans leq_sym leq_total.
-Canonical ordType := Eval hnf in OrdType {bound T} ordMixin.
-
-End Def.
-
-End BoundOrd.
-
-Canonical BoundOrd.ordType.
 
 Section Basic.
 
