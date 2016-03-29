@@ -184,6 +184,8 @@ CoInductive fset_spec : {fset T} -> Type :=
 | FSetSpec0 : fset_spec fset0
 | FSetSpecS x s of x \notin s : fset_spec (x |: s).
 
+(* FIXME: This name is inconsistent with MathComp *)
+
 Lemma fsetP s : fset_spec s.
 Proof.
 case: s=> [[|x xs] /= Pxs]; first by rewrite eq_axiomK; apply: FSetSpec0.
@@ -436,6 +438,15 @@ Proof.
 move=> sub1 sub2; rewrite (fsubset_trans (fsetIS _ sub2)) //.
 by rewrite fsetSI.
 Qed.
+
+Lemma fsetIidPl s1 s2 : reflect (s1 :&: s2 = s1) (fsubset s1 s2).
+Proof.
+apply: (iffP (fsubsetP _ _)) => [sAB | <- x /fsetIP[] //].
+apply/eq_fset=> x; rewrite in_fsetI; apply: andb_idr; exact: sAB.
+Qed.
+
+Lemma fsetIidPr s1 s2 : reflect (s1 :&: s2 = s2) (fsubset s2 s1).
+Proof. rewrite fsetIC; exact: fsetIidPl. Qed.
 
 Lemma fdisjointC : commutative (@fdisjoint T).
 Proof. by move=> s1 s2; rewrite /fdisjoint fsetIC. Qed.
