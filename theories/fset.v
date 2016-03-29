@@ -448,6 +448,12 @@ Qed.
 Lemma fsetIidPr s1 s2 : reflect (s1 :&: s2 = s2) (fsubset s2 s1).
 Proof. rewrite fsetIC; exact: fsetIidPl. Qed.
 
+Lemma fsetUidPl s1 s2 : reflect (s1 :|: s2 = s1) (fsubset s2 s1).
+Proof. by rewrite /fsubset fsetUC; apply: eqP. Qed.
+
+Lemma fsetUidPr s1 s2 : reflect (s1 :|: s2 = s2) (fsubset s1 s2).
+Proof. exact: eqP. Qed.
+
 Lemma fdisjointC : commutative (@fdisjoint T).
 Proof. by move=> s1 s2; rewrite /fdisjoint fsetIC. Qed.
 
