@@ -949,6 +949,16 @@ Proof.
 by rewrite /fdisjoint fsetIUr -fsubset0 fsubUset 2!fsubset0.
 Qed.
 
+Lemma sizesUIdis s1 s2 :
+  fdisjoint s1 s2 -> size (s1 :|: s2) = size s1 + size s2.
+Proof.
+elim/fset_ind: s1 s2 => [|x s1 x_nin1 IH] s2.
+  by rewrite fset0U size_fset0.
+rewrite {1 2}fsetU1E fdisjointUl fdisjointC fdisjoints1.
+case/andP=> x_nin2 dis; rewrite -fsetUA -fsetU1E !size_fsetU1.
+by rewrite IH // in_fsetU negb_or x_nin1 x_nin2.
+Qed.
+
 Lemma fset0D s : fset0 :\: s = fset0.
 Proof. by []. Qed.
 

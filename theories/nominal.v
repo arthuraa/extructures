@@ -299,6 +299,12 @@ rewrite fperm2J n'_fix -renameD; apply: contra n'_fresh=> /eqP.
 by apply/namesTeq.
 Qed.
 
+Lemma renameP s x : rename s x = rename (fperm s (names x)) x.
+Proof.
+apply/eq_in_rename=> n n_in; symmetry; apply/fpermE=> // n1 n2 _ _.
+exact: fperm_inj.
+Qed.
+
 End Basics.
 
 Section Equivariance.
@@ -1422,14 +1428,14 @@ apply/(iffP idP).
 case=> [eq_supp [s dis e]]; rewrite /bound_eq {1}eq_supp eqxx /=.
 apply/hasP.
 have inj: {in names x.2 &, injective s} by move=> ????; apply: fperm_inj.
-exists (fperm_gen inj).
-  by rewrite -enum_fpermE -e names_rename supp_fperm_gen.
+exists (fperm s (names x.2)).
+  by rewrite -enum_fpermE -e names_rename supp_fperm.
 apply/andP; split.
   move: dis; rewrite 2![fdisjoint _ (x.1 :&: _)]fdisjointC.
   move=> /fdisjointP dis; apply/fdisjointP=> n n_in.
   move: (dis _ n_in); rewrite 2!mem_suppN=> /eqP {2}<-; apply/eqP.
-  by apply/fperm_genE; case/fsetIP: n_in.
-by rewrite -e; apply/eqP/eq_in_rename=> n n_in; apply/fperm_genE.
+  by apply/fpermE=> //; case/fsetIP: n_in.
+by rewrite -e; apply/eqP/eq_in_rename=> n n_in; apply/fpermE=> //.
 Qed.
 
 Lemma bound_eq_refl : reflexive bound_eq.
@@ -1894,14 +1900,14 @@ rewrite [LHS]maskE [RHS]maskE.
 pose s' := s2 * s * s1^-1.
 have inj: {in names (rename s1 x) &, injective s'}.
   by move=> ?? _ _; apply: fperm_inj.
-pose s'' := fperm_gen inj.
+pose s'' := fperm s' (names (rename s1 x)).
 have disA : fdisjoint (supp s'') A.
   rewrite fdisjointC; apply/fdisjointP=> /= n inA.
   have es1n: s1 n = n.
     apply/suppPn; move: (supp_avoid _ _ : fdisjoint (supp s1) _).
     rewrite fdisjointC; move/fdisjointP; apply.
     by rewrite 2!in_fsetD inA; move: inA; apply/fsubsetP.
-  apply/suppPn; rewrite fperm_genE; last first.
+  apply/suppPn; rewrite fpermE //; last first.
     rewrite names_rename -es1n.
     by apply/mem_imfset; move: inA; apply/fsubsetP.
   move/suppPn: es1n; rewrite -supp_inv=> /suppPn es1n.
@@ -1917,7 +1923,7 @@ have disD : fdisjoint (supp s'') D.
   rewrite fdisjointC; apply/fdisjointP=> /= n inN.
   have [|ninA] := boolP (n \in A).
     by apply/fdisjointP; rewrite fdisjointC.
-  move/fsubsetP/(_ n)/contra: (supp_fperm_gen _ : fsubset (supp s'') _).
+  move/fsubsetP/(_ n)/contra: (supp_fperm _ _ : fsubset (supp s'') _).
   apply; rewrite in_fsetU negb_or {1}names_rename.
   move: (avoidP _ _ : fdisjoint (s1 @: _) _); rewrite fdisjointC.
   move=> /fdisjointP/(_ n); rewrite in_fsetD ninA inN=> /(_ erefl) nin_im.
@@ -1934,12 +1940,12 @@ rewrite -(_ : A1 = A2).
   exists s''=> //.
     apply/fdisjointP=> /= n inS; rewrite in_fsetI negb_and.
     by move/fdisjointP/(_ _ inS): disDA=> ->.
-  rewrite fs_f // (eq_in_rename (fperm_genE inj)) 2!renameD.
+  rewrite fs_f // (eq_in_rename (fpermE inj)) 2!renameD.
   by rewrite /s' fperm_mulsKV.
 apply/eq_fset=> /= n; rewrite 2!in_fsetI.
 have [inDA|//] /= := boolP (n \in D :|: A).
 rewrite renameD -(fperm_mulsKV s1 (s2 * s)) -renameD.
-rewrite -(eq_in_rename (fperm_genE inj)) -[in RHS]fs_f //.
+rewrite -(eq_in_rename (fpermE inj)) -[in RHS]fs_f //.
 rewrite [in RHS]names_rename -[in RHS](_ : s'' n = n).
   rewrite mem_imfset_inj //; exact: fperm_inj.
 by apply/suppPn; move: inDA; apply/fdisjointP; rewrite fdisjointC.
