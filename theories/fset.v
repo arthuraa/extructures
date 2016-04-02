@@ -576,6 +576,21 @@ apply/eq_fset=> x; rewrite !(in_fsetD, in_fsetU, in_fsetI) negb_and negbK.
 by rewrite orbC andb_orl; do !bool_congr.
 Qed.
 
+Lemma fsetSD s1 s2 s3 : fsubset s1 s2 -> fsubset (s1 :\: s3) (s2 :\: s3).
+Proof.
+move=> /fsubsetP sub; apply/fsubsetP=> x /fsetDP [/sub ??].
+by apply/fsetDP; split.
+Qed.
+
+Lemma fsetDS s1 s2 s3 : fsubset s1 s2 -> fsubset (s3 :\: s2) (s3 :\: s1).
+Proof.
+move=> /fsubsetP sub; apply/fsubsetP=> x /fsetDP [hin hnin].
+by apply/fsetDP; split=> //; apply: contra hnin; apply: sub.
+Qed.
+
+Lemma fdisjoint_fsetI0 s1 s2 : fdisjoint s1 s2 -> s1 :&: s2 = fset0.
+Proof. by move=> ?; apply/eqP. Qed.
+
 Lemma fsubset_leq_size s1 s2 : fsubset s1 s2 -> size s1 <= size s2.
 Proof.
 elim/fset_ind: s1 s2 => [|x s1 Px IH] s2; first by rewrite leq0n.
@@ -965,9 +980,19 @@ Proof. by []. Qed.
 Lemma fset0D1 (x : T) : fset0 :\ x = fset0.
 Proof. by []. Qed.
 
+Lemma fsetD0 s : s :\: fset0 = s.
+Proof. by apply/eq_fset=> x; rewrite in_fsetD. Qed.
+
 Lemma fsetDv s : s :\: s = fset0.
 Proof.
 by apply/eqP; rewrite -fsubset0; apply/fsubsetP=> x; rewrite in_fsetD andNb.
+Qed.
+
+Lemma fsetDidPl s1 s2 : reflect (s1 :\: s2 = s1) (fdisjoint s1 s2).
+Proof.
+apply/(iffP idP).
+  by move=> /fdisjoint_fsetI0 dis; rewrite -[LHS]fset0U -dis fsetID.
+by move=> dis; rewrite /fdisjoint -dis fsetIDAC -fsetIDA fsetDv fsetI0 eqxx.
 Qed.
 
 End Properties2.
