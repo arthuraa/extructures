@@ -282,6 +282,9 @@ apply/names_disjointE/fdisjointP=> n; rewrite mem_supp fpermM /=.
 by rewrite (can2_eq (fpermKV s2) (fpermK _)); apply/contra=> /e ->.
 Qed.
 
+(* FIXME: It would be better to state the right-hand side with rename
+   instead *)
+
 Lemma names_rename s x : names (rename s x) = s @: names x.
 Proof.
 apply/(canRL (imfsetK (fpermKV s))); apply/eq_fset=> n.
@@ -409,10 +412,7 @@ Variables (T S R : nominalType).
 Lemma finsupp_comp ns ns' (g : S -> R) (f : T -> S) :
   finsupp ns g -> finsupp ns' f -> finsupp (ns :|: ns') (g \o f).
 Proof.
-move=> fs_f fs_g s dis x /=.
-have {dis} /andP [dis1 dis2]:
-  fdisjoint (supp s) ns && fdisjoint (supp s) ns'.
-  by move: dis; rewrite /fdisjoint fsetIUr fsetU_eq0.
+move=> fs_f fs_g s; rewrite fdisjointUr=> /andP [dis1 dis2] x.
 by rewrite (fs_f _ dis1) (fs_g _ dis2).
 Qed.
 
@@ -914,8 +914,17 @@ Lemma namesfs_subset X Y :
   fsubset (names X) (names Y).
 Proof. by move=> /eqP <-; rewrite namesfsU /fsubset fsetUA fsetUid. Qed.
 
+Lemma renamefs0 s : rename s (@fset0 T') = fset0.
+Proof. exact: imfset0. Qed.
+
+Lemma renamefs1 s x : rename s (fset1 x) = fset1 (rename s x).
+Proof. exact: imfset1. Qed.
+
 Lemma renamefsU s X Y : rename s (X :|: Y) = rename s X :|: rename s Y.
 Proof. exact: imfsetU. Qed.
+
+Lemma renamefsU1 s x X : rename s (x |: X) = rename s x |: rename s X.
+Proof. by rewrite fsetU1E renamefsU renamefs1. Qed.
 
 Lemma renamefsI s X Y : rename s (X :&: Y) = rename s X :&: rename s Y.
 Proof. apply: imfsetI=> ????; exact: rename_inj. Qed.
@@ -1520,34 +1529,34 @@ Definition ordMixin := [ordMixin of bound_type by <:].
 Canonical ordType := Eval hnf in OrdType bound_type ordMixin.
 
 Implicit Types (D : {fset name}) (x y : T).
-Implicit Types (bx : bound_type).
+Implicit Types (xx : bound_type).
 
 Lemma bind_key : unit. Proof. exact: tt. Qed.
 Definition bind := locked_with bind_key (fun x => Bound (\pi x)).
 
 Lemma unbind_key : unit. Proof. exact: tt. Qed.
 Local Notation unbind_def :=
-  (fun D bx =>
-     let x := repr (val bx) in
+  (fun D xx =>
+     let x := repr (val xx) in
      rename (avoid (D :\: (names x :\: l x)) (names x)) x).
 Definition unbind := locked_with unbind_key unbind_def.
 
 Lemma unbindK D : cancel (unbind D) bind.
 Proof.
-case=> bx; rewrite [bind]unlock [unbind]unlock /unbind_def /=; congr Bound.
+case=> xx; rewrite [bind]unlock [unbind]unlock /unbind_def /=; congr Bound.
 symmetry; rewrite -[LHS]reprK /=; apply/eqmodP/BoundEq.eqP.
 eexists; last by eauto.
-move: (repr bx)=> {bx} x.
+move: (repr xx)=> {xx} x.
 move: (supp_avoid (D :\: (names x :\: l x)) (names x)).
 rewrite ![fdisjoint (supp _) _]fdisjointC; apply: fdisjoint_trans.
 apply/fsubsetP=> n /fsetDP [n_in n_nin].
 by rewrite !(in_fsetD, negb_and, negb_or, negbK) /= n_in n_nin.
 Qed.
 
-Lemma unbindP D bx : fdisjoint D (l (unbind D bx)).
+Lemma unbindP D xx : fdisjoint D (l (unbind D xx)).
 Proof.
-case: bx=> bx; rewrite [unbind]unlock /=.
-move: (repr bx) => {bx} x.
+case: xx=> xx; rewrite [unbind]unlock /=.
+move: (repr xx) => {xx} x.
 set s := avoid (D :\: (names x :\: l x)) (names x); set x' := rename _ _.
 rewrite -(fsetID D (names x :\: l x)) fdisjointUl; apply/andP; split.
   apply: (fdisjoint_trans (fsubsetIr _ _)).
@@ -1574,14 +1583,13 @@ rewrite [bind]unlock /=; split.
 by move=> [] /eqmodP/BoundEq.eqP.
 Qed.
 
-CoInductive bind_spec x : T -> Prop :=
+CoInductive bind_spec D x : T -> Prop :=
 | BindSpec s of fdisjoint (supp s) (names x :\: l x)
-           & fsubset (supp s) (l x :|: s @: l x)
-  : bind_spec x (rename s x).
+  & fdisjoint (supp s) D : bind_spec D x (rename s x).
 
-Lemma bindP D x : bind_spec x (unbind D (bind x)).
+Lemma fbindP D x : fdisjoint D (l x) -> bind_spec D x (unbind D (bind x)).
 Proof.
-case/esym/bind_eqP: (unbindK D (bind x))=> s dis <-.
+case/esym/bind_eqP: (unbindK D (bind x)) (unbindP D (bind x))=> s dis <- disx.
 pose s' := fperm s (l x).
 have dis': fdisjoint (supp s') (names x :\: l x).
   apply: (fdisjoint_trans (supp_fperm s (l x))).
@@ -1597,12 +1605,15 @@ have e: rename s x = rename s' x.
     rewrite fpermE // => ????; exact: fperm_inj.
   by transitivity n; last symmetry; apply/suppPn; [move: dis'|move: dis];
   rewrite fdisjointC; move/fdisjointP; apply; apply/fsetDP; split.
-rewrite e; apply: BindSpec=> //.
-rewrite -renamefsE eqvarE -e -eqvarE renamefsE.
-exact: supp_fperm.
+move=> dis''; rewrite e; apply: BindSpec=> //.
+apply: (fdisjoint_trans (supp_fperm _ _)).
+by rewrite fdisjointUl fdisjointC dis'' /= -renamefsE eqvarE fdisjointC.
 Qed.
 
-Definition bound_rename s bx := bind (rename s (unbind fset0 bx)).
+Lemma bindP x : bind_spec fset0 x (unbind fset0 (bind x)).
+Proof. exact: fbindP (fdisjoint0 _). Qed.
+
+Definition bound_rename s xx := bind (rename s (unbind fset0 xx)).
 
 Let bound_rename_morph s x : bound_rename s (bind x) = bind (rename s x).
 Proof.
@@ -1612,8 +1623,8 @@ by rewrite suppJ names_rename -eqvarE -!renamefsE -renamefsD
    -renamefs_disjoint.
 Qed.
 
-Definition bound_names bx :=
-  let x := unbind fset0 bx in
+Definition bound_names xx :=
+  let x := unbind fset0 xx in
   names x :\: l x.
 
 Let bound_names_morph x : bound_names (bind x) = names x :\: l x.
@@ -1623,32 +1634,32 @@ rewrite names_rename -eqvarE -!renamefsE -renamefsD names_disjointE //.
 by rewrite namesfsnE.
 Qed.
 
-Lemma bound_renameD s1 s2 bx :
-  bound_rename s1 (bound_rename s2 bx) =
-  bound_rename (s1 * s2) bx.
+Lemma bound_renameD s1 s2 xx :
+  bound_rename s1 (bound_rename s2 xx) =
+  bound_rename (s1 * s2) xx.
 Proof.
-rewrite -[bx](unbindK fset0).
+rewrite -[xx](unbindK fset0).
 rewrite bound_rename_morph //= bound_rename_morph //= ?renameD.
 by rewrite bound_rename_morph.
 Qed.
 
-Lemma bound_namesTeq n n' bx :
-  n \in bound_names bx ->
-  bound_rename (fperm2 n n') bx = bx ->
-  n' \in bound_names bx.
+Lemma bound_namesTeq n n' xx :
+  n \in bound_names xx ->
+  bound_rename (fperm2 n n') xx = xx ->
+  n' \in bound_names xx.
 Proof.
-rewrite -[bx](unbindK fset0) bound_names_morph; set s := fperm2 n n'.
+rewrite -[xx](unbindK fset0) bound_names_morph; set s := fperm2 n n'.
 move/(mem_imfset s); rewrite -renamefsE renamefsD renamefsE -names_rename.
-move: {bx} (unbind _ _)=> x; rewrite bound_rename_morph {1}/s fperm2L eqvarE.
+move: {xx} (unbind _ _)=> x; rewrite bound_rename_morph {1}/s fperm2L eqvarE.
 by move=> n'_in e; rewrite -bound_names_morph -e bound_names_morph.
 Qed.
 
-Lemma bound_namesNNE n n' bx :
-  n \notin bound_names bx ->
-  n' \notin bound_names bx ->
-  bound_rename (fperm2 n n') bx = bx.
+Lemma bound_namesNNE n n' xx :
+  n \notin bound_names xx ->
+  n' \notin bound_names xx ->
+  bound_rename (fperm2 n n') xx = xx.
 Proof.
-rewrite -[bx](unbindK fset0) bound_names_morph; move: (unbind _ _)=> {bx} x.
+rewrite -[xx](unbindK fset0) bound_names_morph; move: (unbind _ _)=> {xx} x.
 rewrite bound_rename_morph=> n_nin n'_nin; apply/esym/bind_eqP; eexists=> //.
 apply: (fdisjoint_trans (fsubset_supp_fperm2 n n')).
 by rewrite /fset2 fsetU1E fdisjointC fdisjointUr !fdisjoints1 n'_nin.
@@ -1672,14 +1683,79 @@ Notation "{ 'bound' l }" := (@bound_of _ _ l id)
 
 Arguments bind {_ _} _.
 
+Section Bound2.
+
+Local Open Scope fset_scope.
+Local Open Scope fperm_scope.
+
+Variables (T S : nominalType).
+Variables (lT : {eqvar T -> {fset name}}) (lS : {eqvar S -> {fset name}}).
+
+Implicit Types (x : T) (y : S) (xx : {bound lT}) (yy : {bound lS}).
+
+Definition unbind2 D xx yy :=
+  let x := unbind (D :|: names yy) xx in
+  let y := unbind (D :|: names x) yy in
+  (x, y).
+
+CoInductive bind2_spec D x y : T * S -> Prop :=
+| Bind2Spec s of fdisjoint (supp s) (names x :\: lT x)
+  & fdisjoint (supp s) (names y :\: lS y)
+  & fdisjoint (supp s) D
+  : bind2_spec D x y (rename s x, rename s y).
+
+Lemma fbind2P D x y :
+  fdisjoint D (lT x :|: lS y) ->
+  fdisjoint (lT x) (names y) ->
+  fdisjoint (lS y) (names x) ->
+  bind2_spec D x y (unbind2 D (bind x) (bind y)).
+Proof.
+rewrite fdisjointUr /unbind2=> /andP [dis_x dis_y] disxy disyx.
+set xx := bind x; set yy := bind y.
+have dis: fdisjoint (D :|: names yy) (lT x).
+  rewrite /yy fdisjointUl dis_x /=.
+  move: disxy; rewrite fdisjointC; apply: fdisjoint_trans.
+  by apply: equivariant_names; apply: renamebE.
+case: (fbindP dis)=> s1 dis_s1; rewrite fdisjointUr.
+case/andP => dis_s1D dis_s1_yy.
+rewrite -(names_disjointE dis_s1_yy) /yy renamebE.
+have dis': fdisjoint (D :|: names (rename s1 x)) (lS (rename s1 y)).
+  rewrite fdisjointUl names_rename -renamefsE -eqvarE -renamefs_disjoint.
+  rewrite andbC fdisjointC disyx /=.
+  by rewrite -(@names_disjointE _ s1 D) -?renamefs_disjoint // namesfsnE.
+case: (fbindP dis') => /= s2 dis_s2; rewrite fdisjointUr.
+case/andP=> dis_s2D dis_s2_x.
+rewrite -(names_disjointE dis_s2_x) !renameD.
+apply: Bind2Spec.
+- apply: (fdisjoint_trans (supp_mul _ _)).
+  rewrite fdisjointUl dis_s1 andbT; rewrite -[_ :\: _]namesfsnE in dis_s1.
+  rewrite -(names_disjointE dis_s1) renamefsD eqvarE renamefsE.
+  rewrite -names_rename fdisjointC; move: dis_s2_x; rewrite fdisjointC.
+  by apply: fdisjoint_trans; rewrite fsubDset fsubsetUr.
+- apply: (fdisjoint_trans (supp_mul s2 s1)); rewrite fdisjointUl.
+  rewrite /yy namesbE in dis_s1_yy; rewrite dis_s1_yy.
+  rewrite names_rename -eqvarE -renamefsE -renamefsD in dis_s2.
+  rewrite names_disjointE ?namesfsnE // in dis_s2.
+  by rewrite dis_s2.
+by apply: (fdisjoint_trans (supp_mul s2 s1)); rewrite fdisjointUl dis_s2D.
+Qed.
+
+Lemma bind2 x y :
+  fdisjoint (lT x) (names y) ->
+  fdisjoint (lS y) (names x) ->
+  bind2_spec fset0 x y (unbind2 fset0 (bind x) (bind y)).
+Proof. exact: fbind2P (fdisjoint0 _). Qed.
+
+End Bound2.
+
 Section TrivialNominalType.
 
 Variable T : trivialNominalType.
 Variable l : {eqvar T -> {fset name}}.
 
-Let bound_renameT s (bx : {bound l}) : rename s bx = bx.
+Let bound_renameT s (xx : {bound l}) : rename s xx = xx.
 Proof.
-rewrite -(unbindK fset0 bx) renamebE names_disjointE // namesT.
+rewrite -(unbindK fset0 xx) renamebE names_disjointE // namesT.
 by rewrite fdisjointC fdisjoint0.
 Qed.
 
@@ -1688,42 +1764,6 @@ Canonical bound_trivialNominalType :=
                                  (TrivialNominalMixin bound_renameT).
 
 End TrivialNominalType.
-
-Section LiftBound1.
-
-Local Open Scope fperm_scope.
-Local Open Scope fset_scope.
-
-Variables (T : nominalType) (l : {eqvar T -> {fset name}}) (S : nominalType).
-Variables (D : {fset name}) (f : T -> S).
-
-Implicit Types (x : T) (bx : {bound l}).
-
-Definition blift_fun1 bx := f (unbind D bx).
-
-Variable (x : T).
-Hypothesis f_fs : forall s : {fperm name}, fdisjoint (supp s) D ->
-                                           rename s (f x) = f (rename s x).
-Hypothesis f_l : fdisjoint (names (f x)) (l x).
-Hypothesis dis_l : fdisjoint D (l x).
-
-Lemma blift_fun1E : blift_fun1 (bind x) = f x.
-Proof.
-rewrite /blift_fun1; move: (@unbindP _ l D (bind x)).
-case: bindP=> /= s dis_s sub dis_x.
-have dis4: fdisjoint (supp s) D.
-  apply: (fdisjoint_trans sub); rewrite fdisjointUl !(fdisjointC _ D).
-  by rewrite dis_l -renamefsE eqvarE.
-rewrite -f_fs //; apply: names_disjointE.
-have sub2: fsubset (names (f x)) (D :|: (names x :\: l x)).
-  apply/fsubsetP=> n n_in; move/fdisjointP/(_ _ n_in): f_l=> n_nin.
-  move/fsubsetP/(_ _ n_in): (names_disjoint' f_fs); rewrite in_fsetU=> n_in'.
-  by rewrite in_fsetU in_fsetD n_nin /=.
-rewrite fdisjointC; apply: (fdisjoint_trans sub2); rewrite fdisjointC.
-by rewrite fdisjointUr dis4.
-Qed.
-
-End LiftBound1.
 
 Section Restriction.
 
@@ -1781,7 +1821,7 @@ Section TrivialNominalType.
 
 Variable (T : trivialNominalType).
 
-Implicit Types (s : {fperm name}) (x : prerestr T) (bx : {restr T}).
+Implicit Types (s : {fperm name}) (x : prerestr T) (xx : {restr T}).
 
 Lemma prerestr_renameT s x : rename s x = x.
 Proof.
@@ -1809,7 +1849,7 @@ Section Basic.
 
 Variable (T : nominalType).
 
-Implicit Types (s : {fperm name}) (A D : {fset name}) (x : T) (bx : {restr T}).
+Implicit Types (s : {fperm name}) (A D : {fset name}) (x : T) (xx : {restr T}).
 
 Lemma maskI A x : mask A x = mask (A :&: names x) x.
 Proof.
@@ -1820,27 +1860,34 @@ Qed.
 CoInductive mask_spec D A x : {fset name} * T -> Prop :=
 | MaskSpec s of fdisjoint D (rename s A)
   & fdisjoint (supp s) (names x :\: A)
+  & fdisjoint (supp s) D
   : mask_spec D A x (rename s A, rename s x).
 
-Lemma maskP D A x :
+Lemma fmaskP D A x :
+  fdisjoint D A ->
   fsubset A (names x) ->
   mask_spec D A x (val (unbind D (mask A x))).
 Proof.
-move=> /fsetIidPl e; rewrite [mask]unlock; set bx := bind _.
-move/esym/bind_eqP: (unbindK D bx) (unbindP D bx)=> {bx} [s dis <-].
-move: dis; rewrite subnamesE subrenameE renamepE /= /prerestr_op /=.
-rewrite e namespE /= namesfsnE fsetDUl fsetDv fset0U=> dis1 dis2.
-exact: MaskSpec.
+move=> dis /fsetIidPl e; move: (unbindP D (mask A x)); rewrite [mask]unlock /=.
+case: fbindP; first by rewrite /= /prerestr_op /= e.
+move=> //= s; rewrite subnamesE /prerestr_op renamepE /= e.
+rewrite {1}/names /= fsetDUl /= namesfsnE fsetDv fset0U.
+move=> dis_s sub disD; exact: MaskSpec.
 Qed.
+
+Lemma maskP A x :
+  fsubset A (names x) ->
+  mask_spec fset0 A x (val (unbind fset0 (mask A x))).
+Proof. exact: fmaskP (fdisjoint0 _). Qed.
 
 CoInductive restr_spec D : {restr T} -> Prop :=
 | RestrSpec A x of fdisjoint D A & fsubset A (names x)
   : restr_spec D (mask A x).
 
-Lemma restrP D bx : restr_spec D bx.
+Lemma restrP D xx : restr_spec D xx.
 Proof.
-rewrite -[bx](unbindK D).
-case: (unbind _ _) (unbindP D bx) => {bx} - [A x] /= sub dis.
+rewrite -[xx](unbindK D).
+case: (unbind _ _) (unbindP D xx) => {xx} - [A x] /= sub dis.
 rewrite (_ : bind _ = mask A x); first exact: RestrSpec.
 rewrite [mask]unlock; congr bind; apply: val_inj=> /=; congr pair.
 by apply/esym/fsetIidPl.
@@ -1862,51 +1909,21 @@ Qed.
 
 End Basic.
 
-Section Lift.
-
-Variables (T S : nominalType) (D : {fset name}) (f : {fset name} -> T -> S).
-Implicit Types (bx : {restr T}) (x : T).
-
-Definition rlift_fun1 bx :=
-  blift_fun1 D (fun p => f (val p).1 (val p).2) bx.
-
-Variables (A : {fset name}) (x : T).
-
-Hypothesis f_fs : forall s, fdisjoint (supp s) D ->
-                            rename s (f A x) = f (rename s A) (rename s x).
-Hypothesis f_l : fdisjoint (names (f A x)) A.
-Hypothesis sub : fsubset A (names x).
-Hypothesis dis : fdisjoint D A.
-
-Lemma rlift_fun1E :
-  rlift_fun1 (mask A x) = f A x.
-Proof.
-rewrite /rlift_fun1 [mask]unlock blift_fun1E //=.
-- by move/fsetIidPl: sub=> ->.
-- by move=> s /= dis'; rewrite (fsetIidPl _ _ sub) f_fs.
-- rewrite /prerestr_op /= (fsetIidPl _ _ sub); exact: f_l.
-by rewrite /prerestr_op /= (fsetIidPl _ _ sub).
-Qed.
-
-End Lift.
-
 Section Hide.
 
 Variable (T : nominalType).
 
-Implicit Types (s : {fperm name}) (A D : {fset name}) (x : T) (bx : {restr T}).
+Implicit Types (s : {fperm name}) (A D : {fset name}) (x : T) (xx : {restr T}).
 
-(* FIXME: Use lift for this? *)
-
-Definition hiden A bx :=
-  let: (A', x) := val (unbind fset0 bx) in
+Definition hiden A xx :=
+  let: (A', x) := val (unbind fset0 xx) in
   mask (A :|: A') x.
 
 Lemma hidenE A A' x : hiden A (mask A' x) = mask (A :|: A') x.
 Proof.
 rewrite /hiden (maskI A') (maskI (_ :|: _)) fsetIUl.
 move: (A' :&: names x) (fsubsetIr A' (names x)) => {A'} A' subA'.
-case: (maskP _ subA')=> s _ dis.
+case: (maskP subA')=> s _ dis sub.
 rewrite -{1}(renameKV s A) -renamefsU -renamerE names_disjointE; last first.
   rewrite namesrE fsetUC fdisjointC; rewrite fdisjointC in dis.
   by apply: fdisjoint_trans dis; rewrite -fsetDDl fsubDset fsubsetUr.
@@ -1918,29 +1935,29 @@ rewrite supp_inv fdisjointC namesfsnE; rewrite fdisjointC in dis.
 apply: fdisjoint_trans dis; exact: fsubsetIr.
 Qed.
 
-Lemma hidenI A bx : hiden A bx = hiden (A :&: names bx) bx.
+Lemma hidenI A xx : hiden A xx = hiden (A :&: names xx) xx.
 Proof.
-case/(restrP fset0): bx=> A' x _ sub; rewrite !hidenE.
+case/(restrP fset0): xx=> A' x _ sub; rewrite !hidenE.
 rewrite namesrE [LHS]maskI fsetIUl (fsetIidPl _ _ sub); congr mask.
 rewrite -{1}(fsetID (names x) A') [in A :&: _]fsetUC fsetIUr -fsetUA.
 by rewrite fsetIA (fsetUidPr _ _ (fsubsetIr _ _)).
 Qed.
 
-Lemma hiden0 bx : hiden fset0 bx = bx.
+Lemma hiden0 xx : hiden fset0 xx = xx.
 Proof.
-by case/(restrP fset0): bx=> A x _ sub; rewrite hidenE fset0U.
+by case/(restrP fset0): xx=> A x _ sub; rewrite hidenE fset0U.
 Qed.
 
-Lemma rename_hiden s A bx :
-  rename s (hiden A bx) = hiden (rename s A) (rename s bx).
+Lemma rename_hiden s A xx :
+  rename s (hiden A xx) = hiden (rename s A) (rename s xx).
 Proof.
-case/(restrP fset0): bx=> A' x _ sub.
+case/(restrP fset0): xx=> A' x _ sub.
 by rewrite !(renamerE, hidenE) renamefsU.
 Qed.
 
-Lemma names_hiden A bx : names (hiden A bx) = names bx :\: A.
+Lemma names_hiden A xx : names (hiden A xx) = names xx :\: A.
 Proof.
-case/(restrP fset0): bx=> A' x _ sub.
+case/(restrP fset0): xx=> A' x _ sub.
 by rewrite hidenE !namesrE fsetDDl fsetUC.
 Qed.
 
@@ -1951,41 +1968,41 @@ Definition hide (n : name) := hiden (fset1 n).
 Lemma hideE n A x : hide n (mask A x) = mask (n |: A) x.
 Proof. by rewrite /hide hidenE fsetU1E. Qed.
 
-Lemma names_hide n bx : names (hide n bx) = names bx :\ n.
+Lemma names_hide n xx : names (hide n xx) = names xx :\ n.
 Proof. by rewrite /hide names_hiden fsetD1E. Qed.
 
-Lemma rename_hide s n bx :
-  rename s (hide n bx) = hide (s n) (rename s bx).
+Lemma rename_hide s n xx :
+  rename s (hide n xx) = hide (s n) (rename s xx).
 Proof. by rewrite /hide rename_hiden renamefsE imfset1. Qed.
 
-Lemma hide0 n bx : names bx = fset0 -> hide n bx = bx.
-Proof. by rewrite /hide hidenI -{4}[bx]hiden0=> ->; rewrite fsetI0. Qed.
+Lemma hide0 n xx : names xx = fset0 -> hide n xx = xx.
+Proof. by rewrite /hide hidenI -{4}[xx]hiden0=> ->; rewrite fsetI0. Qed.
 
 End Hide.
 
-Lemma hidenT (T : trivialNominalType) A bx : @hiden T A bx = bx.
+Lemma hidenT (T : trivialNominalType) A xx : @hiden T A xx = xx.
 Proof. by rewrite hidenI namesT fsetI0 hiden0. Qed.
 
-Lemma hideT (T : trivialNominalType) n bx : @hide T n bx = bx.
+Lemma hideT (T : trivialNominalType) n xx : @hide T n xx = xx.
 Proof. by rewrite hide0 // namesT. Qed.
 
 Section Join.
 
 Variable (T : nominalType).
 
-Implicit Types (s : {fperm name}) (A D : {fset name}) (x : T) (bx : {restr T}).
+Implicit Types (s : {fperm name}) (A D : {fset name}) (x : T) (xx : {restr T}).
 
-Definition join_restr (bbx : {restr {restr T}}) : {restr T} :=
-  let: (A, bx) := val (unbind fset0 bbx) in
-  hiden A bx.
+Definition join_restr (bxx : {restr {restr T}}) : {restr T} :=
+  let: (A, xx) := val (unbind fset0 bxx) in
+  hiden A xx.
 
 Lemma join_restrE A A' x :
   join_restr (mask A (mask A' x)) = mask (A :|: A') x.
 Proof.
-rewrite -hidenE; move: (mask A' _)=> {A' x} bx; rewrite /join_restr.
-rewrite maskI hidenI; move: (_ :&: _) (fsubsetIr A (names bx))=> {A} A subA.
-case: maskP=> // s _ dis; rewrite -rename_hiden names_disjointE //.
-by rewrite names_hiden.
+rewrite -hidenE; move: (mask A' _)=> {A' x} xx; rewrite /join_restr.
+rewrite maskI hidenI; move: (_ :&: _) (fsubsetIr A (names xx))=> {A} A subA.
+case: maskP => // s _ dis sub.
+by rewrite -rename_hiden names_disjointE // names_hiden.
 Qed.
 
 End Join.
@@ -1994,8 +2011,9 @@ Section Iso.
 
 Variable T : nominalType.
 
-Definition orestr : {restr option T} -> option {restr T} :=
-  rlift_fun1 fset0 (fun A x => omap (mask A) x).
+Definition orestr (xx : {restr option T}) : option {restr T} :=
+  let: (A, x) := val (unbind fset0 xx) in
+  omap (mask A) x.
 
 Lemma orestrE A x : orestr (mask A x) = omap (mask A) x.
 Proof.
@@ -2003,11 +2021,9 @@ transitivity (omap (mask (A :&: names x)) x); last first.
   by case: x=> //= x; rewrite [in RHS]maskI.
 rewrite [in LHS]maskI.
 move: (_ :&: _) (fsubsetIr A (names x))=> {A} A subA.
-rewrite /orestr rlift_fun1E //.
-- by case: x subA=> //= x subA s _; rewrite renameoE /= renamerE.
-- case: x subA=> //= [x|] subA /=; last exact: fdisjoint0.
-  by rewrite /names /= namesrE; apply/fdisjointP=> n /fsetDP [].
-exact: fdisjoint0.
+rewrite /orestr; case: maskP=> // s _ dis sub.
+case: x subA dis sub => //= x subA dis sub.
+by rewrite -renamerE names_disjointE // namesrE.
 Qed.
 
 Lemma rename_orestr : equivariant orestr.
@@ -2017,10 +2033,10 @@ rewrite orestrE renamerE orestrE //=.
 by case: x=> //= x; rewrite renameoE /= renamerE.
 Qed.
 
-Lemma orestr_hiden A bx :
-  orestr (hiden A bx) = omap (hiden A) (orestr bx).
+Lemma orestr_hiden A xx :
+  orestr (hiden A xx) = omap (hiden A) (orestr xx).
 Proof.
-case/(restrP fset0): bx=> A' x _ _.
+case/(restrP fset0): xx=> A' x _ _.
 rewrite hidenE !orestrE; case: x => [x|] //=.
 by rewrite hidenE.
 Qed.
@@ -2033,35 +2049,36 @@ Section FinSupp.
 
 Variables T S : nominalType.
 Variables (D : {fset name}) (f : T -> S).
+Implicit Types (x : T) (xx : {restr T}).
 
 Lemma mapr_fs_key : unit. Proof. exact: tt. Qed.
-Definition mapr_fs_def :=
-  rlift_fun1 D (fun A x => mask A (f x)).
+Definition mapr_fs_def xx :=
+  let: (A, x) := val (unbind D xx) in
+  mask A (f x).
 Definition mapr_fs := locked_with mapr_fs_key mapr_fs_def.
 
 Lemma mapr_fsE :
   finsupp D f ->
   forall A x, fdisjoint D A ->
-              mapr_fs (mask A x) =
-              mask A (f x).
+              mapr_fs (mask A x) = mask A (f x).
 Proof.
 move=> f_fs A x dis; rewrite [mapr_fs]unlock /mapr_fs_def.
-transitivity (mask (A :&: names x) (f x)); last first.
-  move/(fsetIS A): (names_finsupp x f_fs).
-  rewrite
-  rewrite fsetIUr (.
-
-apply: rlift_fun1ES=> //.
-- by move=> {A x dis} /= s dis A x _; rewrite renamerE f_fs.
-- move=> {A x dis} /= A s _ dis; rewrite namesrE.
-  by apply/fdisjointP=> n /fsetDP [].
-move=> {A x dis} /= A x dis; rewrite maskI [RHS]maskI.
-congr mask; apply/eq_fset=> n; rewrite !in_fsetI.
-have [n_in|] //= := boolP (n \in A).
-rewrite andbC; have [n_in'|] //= := boolP (n \in names (f x)).
-move/(names_finsupp x)/fsubsetP/(_ _ n_in'): f_fs.
-move: dis; rewrite in_fsetU fdisjointC=> /fdisjointP/(_ _ n_in)/negbTE.
-by move=> /= -> /= ->.
+have dis': fdisjoint D (A :&: names x).
+  rewrite fdisjointC; move: dis; rewrite fdisjointC.
+  by apply: fdisjoint_trans; rewrite fsubsetIl.
+rewrite maskI; case: (fmaskP _ (fsubsetIr _ _))=> //= s disD dis_s dis_sD.
+rewrite -f_fs -1?renamerE ?names_disjointE //.
+  rewrite [LHS]maskI [RHS]maskI -fsetIA (fsetIC (names x)) fsetIA.
+  congr mask; apply: fsetIidPl; apply: fsubset_trans (fsubsetIr A _).
+  move/(fsetIS A): (names_finsupp x f_fs)=> sub; apply: (fsubset_trans sub).
+  rewrite -[_ :&: names x]fset0U -(fdisjoint_fsetI0 dis) (fsetIC D).
+  by rewrite -fsetIUr fsetIS // fsubsetxx.
+rewrite namesrE /fdisjoint -fsubset0 fsetIDA fsubDset fsetU0.
+move/(fsetIS (supp s)): (names_finsupp x f_fs); rewrite fsetIUr.
+move: dis_sD; rewrite /fdisjoint=> /eqP ->; rewrite fset0U => sub'.
+apply: (fsubset_trans sub'); rewrite fsubsetI fsubsetIr andbT.
+rewrite -(fsetID (names x) (A :&: names x)) fsetIUr (fdisjoint_fsetI0 dis_s).
+by rewrite fsetU0 (fsetIC A) !fsetIA fsubsetIr.
 Qed.
 
 End FinSupp.
@@ -2070,19 +2087,19 @@ Section Properties.
 
 Variables T S R : nominalType.
 
-Lemma mapr_fs_id D (bx : {restr T}) :
-  mapr_fs D id bx = bx.
+Lemma mapr_fs_id D (xx : {restr T}) :
+  mapr_fs D id xx = xx.
 Proof.
-case: bx / (restrP D)=> [A x dis sub].
+case: xx / (restrP D)=> [A x dis sub].
 by rewrite mapr_fsE=> //.
 Qed.
 
-Lemma mapr_fs_comp Dg Df (g : S -> R) (f : T -> S) bx :
+Lemma mapr_fs_comp Dg Df (g : S -> R) (f : T -> S) xx :
   finsupp Dg g -> finsupp Df f ->
-  mapr_fs (Dg :|: Df) (g \o f) bx =
-  mapr_fs Dg g (mapr_fs Df f bx).
+  mapr_fs (Dg :|: Df) (g \o f) xx =
+  mapr_fs Dg g (mapr_fs Df f xx).
 Proof.
-case: bx / (restrP (Dg :|: Df))=> [A x dis sub] fs_g fs_f.
+case: xx / (restrP (Dg :|: Df))=> [A x dis sub] fs_g fs_f.
 move: (dis); rewrite fdisjointUl=> /andP [disg disf].
 rewrite !mapr_fsE //.
 by apply: finsupp_comp.
@@ -2107,7 +2124,7 @@ Qed.
 
 Lemma rename_mapr : equivariant f -> equivariant mapr.
 Proof.
-move=> equi_f s /= bx; case: bx / (restrP fset0) => [A x sub _].
+move=> equi_f s /= xx; case: xx / (restrP fset0) => [A x sub _].
 by rewrite maprE // !renamerE maprE // equi_f.
 Qed.
 
@@ -2118,14 +2135,14 @@ End Functor.
 Section FinSuppFacts.
 
 Variables T S R : nominalType.
-Implicit Types (D A : {fset name}) (x : T) (bx : {restr T}).
+Implicit Types (D A : {fset name}) (x : T) (xx : {restr T}).
 Implicit Types (f : T -> S) (g : T -> S -> R).
 
 Lemma finsupp_mapr_fs D f :
   finsupp D f ->
   finsupp D (mapr_fs D f).
 Proof.
-move=> fs_f s dis /= bx; case: bx / (restrP D)=> [A x sub fr].
+move=> fs_f s dis /= xx; case: xx / (restrP D)=> [A x sub fr].
 have dis': fdisjoint (supp s) (names D).
   rewrite fdisjointC; apply/fdisjointP=> /= n /namesfsP [n' inD /namesnP ?].
   by subst n'; apply: contraTN inD; apply/fdisjointP.
@@ -2143,192 +2160,125 @@ Qed.
 
 End FinSuppFacts.
 
-(*Section Merging.
-
-(* Tensorial strengthening of the {bound -} monad *)
-
-Variables T S R : nominalType.
-
-Implicit Types (A B : {fset name}) (x : T) (z : S).
-Implicit Types (bx : {bound T}) (bz : {bound S}).
-
-Definition merge (x : T) (bz : {bound S}) : {bound T * S} :=
-  mapr_fs (names x) (pair x) bz.
-
-Lemma mergeE x B z :
-  fsubset (names x :&: names z) B ->
-  merge x (mask B z) = mask (names x :|: B) (x, z).
-Proof.
-move=> lim; rewrite /merge mapr_fsE //.
-exact: curry_equivariant.
-Qed.
-
-Lemma rename_merge s x bz :
-  rename s (merge x bz) = merge (rename s x) (rename s bz).
-Proof.
-case: bz / (fboundP (names x))=> [B z sub lim].
-rewrite mergeE // 2!renamebE mergeE.
-  by rewrite renamefsE imfsetU names_rename.
-rewrite 2!names_rename -imfsetI; first exact: imfsetS.
-by move=> ?? _ _; apply/fperm_inj.
-Qed.
-
-End Merging. *)
-
 Section Functor2.
 
 Lemma mapr2_key : unit. Proof. exact: tt. Qed.
-(*Definition mapr2_def (T S R : nominalType) (f : T -> S -> R) bx bz :=
-  (mapr (fun p => f p.2 p.1) \o
-   @join_bound _ \o
-   mapr (fun p => merge p.2 p.1) \o
-   (fun p => merge p.1 p.2)) (bx, bz).*)
-Definition mapr2_def (T S R : nominalType) (f : T -> S -> R) bx bz :=
-  rlift_fun1 (names bz)
-             (fun A x => rlift_fun1 (names x)
-                                    (fun B z => mask (A :|: B) (f x z)) bz) bx.
+Definition mapr2_def (T S R : nominalType) (f : T -> S -> R)
+                     (xx : {restr T}) (yy : {restr S}) :=
+  let: (px, py) := unbind2 fset0 xx yy in
+  let: (A, x) := val px in
+  let: (B, y) := val py in
+  mask (A :|: B) (f x y).
 Definition mapr2 := locked_with mapr2_key mapr2_def.
 
 Variables T S R : nominalType.
 Variable f : T -> S -> R.
 
-Implicit Types (A B : {fset name}) (x : T) (z : S).
-Implicit Types (bx : {restr T}) (bz : {restr S}).
+Implicit Types (A B : {fset name}) (x : T) (y : S).
+Implicit Types (xx : {restr T}) (yy : {restr S}).
 
 Hypothesis equi_f : equivariant (fun p => f p.1 p.2).
 
-Definition mutfresh A x B z :=
-  [&& fdisjoint A (names z) & fdisjoint (names x) B].
+Definition mutfresh A x B y :=
+  [&& fdisjoint A (names y) & fdisjoint B (names x)].
 
-Lemma rename_mutfresh s A x B z :
-  mutfresh (rename s A) (rename s x) (rename s B) (rename s z) =
-  mutfresh A x B z.
+Lemma rename_mutfresh s A x B y :
+  mutfresh (rename s A) (rename s x) (rename s B) (rename s y) =
+  mutfresh A x B y.
 Proof.
 by rewrite /mutfresh !names_rename -!renamefs_disjoint.
 Qed.
 
-Lemma mapr2E A x B z :
-  mutfresh A x B z ->
-  mapr2 f (mask A x) (mask B z) = mask (A :|: B) (f x z).
+Lemma mapr2E A x B y :
+  mutfresh A x B y ->
+  mapr2 f (mask A x) (mask B y) = mask (A :|: B) (f x y).
 Proof.
 case/andP=> disA disB.
-transitivity (mask (A :&: names x :|: B :&: names z) (f x z)); last first.
-  have sub: fsubset (names (f x z)) (names x :|: names z).
-    exact: (equivariant_names equi_f (x, z)).
-  move/(fsetIS A): (sub); rewrite fsetIUr.
-  move/eqP: (disA) => ->; rewrite fsetU0 => /fsetIidPl.
-  rewrite -fsetIA (fsetIA _ A) (fsetIC _ A) !fsetIA fsetIid.
-  rewrite -fsetIA (fsetIC _ (names x)) fsetIA => eA.
-  move/(fsetIS B): (sub); rewrite fsetIUr {1}(fsetIC _ (names x)).
-  move/eqP: (disB) => ->; rewrite fset0U => /fsetIidPr.
-  rewrite -fsetIA (fsetIA _ B) (fsetIC _ B) !fsetIA fsetIid => eB.
-  by rewrite maskI fsetIUl eA eB -fsetIUl -maskI.
-have {disA} disA: fdisjoint (A :&: names x) (names z).
+have sub: fsubset (names (f x y)) (names x :|: names y).
+  exact: (equivariant_names equi_f (x, y)).
+rewrite [RHS]maskI -(fsetIidPr _ _ sub) fsetIA -maskI fsetIUl !fsetIUr.
+rewrite (fdisjoint_fsetI0 disA) (fdisjoint_fsetI0 disB) fsetU0 fset0U.
+have {disA} disA: fdisjoint (A :&: names x) (names y).
   exact: (fdisjoint_trans (fsubsetIl _ _)).
-have {disB} disB: fdisjoint (B :&: names z) (names x).
-  rewrite fdisjointC in disB.
+have {disB} disB: fdisjoint (B :&: names y) (names x).
   exact: (fdisjoint_trans (fsubsetIl _ _)).
-rewrite (maskI A) (maskI B).
-move: (A :&: names x) (B :&: names z) disA disB
-      (fsubsetIr A (names x)) (fsubsetIr B (names z))
-      => /= {A B} A B disA disB subA subB.
-rewrite [mapr2]unlock /mapr2_def !rlift_fun1ES //.
-- move=> {B disA disB subB z} s dis_x B z subB.
-  rewrite renamerE renamefsU (equi_f s (x, z)) /=.
-  rewrite [rename s x]names_disjointE // names_disjointE //.
-  rewrite namesfsnE // fdisjointC; apply: (fdisjoint_trans subA).
-  by rewrite fdisjointC.
-
-
-case/and3P=> [subx subz lim].
-rewrite [RHS](_ : _ = mask (A :&: names x :|: B :&: names z) (f x z)).
-  have {lim} lim: fsubset (names x :&: names z)
-                          ((A :&: names x) :&: (B :&: names z)).
-    apply/fsubsetP=> /= n inNxz.
-    case/fsubsetP/(_ _ inNxz)/fsetIP: lim=> [inA inB].
-    by rewrite !in_fsetI inA inB /= -in_fsetI.
-  rewrite (maskE A) (maskE B).
-  move: {subx subz} (A :&: _) (fsubsetIr A (names x))
-        (B :&: _) (fsubsetIr B (names z)) lim => {A B} /= A sub B sub' lim.
-  rewrite [mapr2]unlock /mapr2_def /= mergeE //; last first.
-    rewrite namesbE //.
-    apply/(fsubset_trans _ (fsubsetIr A B))/(fsubset_trans _ lim).
-    exact: fsetSI.
-  rewrite namesbE // maprE /=; first last.
-    move=> s [??] /=; exact: rename_merge.
-  rewrite mergeE //; last first.
-    by rewrite fsetIC (fsubset_trans lim) // fsubsetIl.
-  rewrite (fsetUC _ A) join_boundE ?fsetUS // maprE //.
-  by move=> s [z' x'] /=; rewrite (equi_f s (x', z')).
-rewrite [LHS]maskE [RHS]maskE; congr mask.
-apply/eqP; rewrite eqEfsubset; apply/andP; split; last first.
-  by rewrite fsetSI // fsetUSS // fsubsetIl.
-apply/fsubsetP=> /= n /fsetIP [inAB inNfxz].
-rewrite in_fsetI inNfxz andbT.
-move: (equivariant_names equi_f (x, z))=> /= /fsubsetP/(_ _ inNfxz) inNxz.
-rewrite in_fsetU !in_fsetI; case/fsetUP: inAB=> [inA|inB].
-  rewrite inA /=; case/fsetUP: inNxz=> /= [inNx|inNz].
-    by rewrite inNx.
-  rewrite inNz andbT; apply/orP; right.
-  by move/fsubsetP: subz; apply; apply/fsetIP; split.
-rewrite inB /=; case/fsetUP: inNxz=> /= [inNx|inNz].
-  rewrite inNx andbT; apply/orP; left.
-  by move/fsubsetP: subx; apply; apply/fsetIP; split.
-by rewrite inNz orbT.
+rewrite (maskI A) (maskI B) [mapr2]unlock /mapr2_def {1 2}[mask]unlock.
+case: (@fbind2P _ _ _ _ fset0); rewrite ?subnamesE /= /prerestr_op /=.
+- exact: fdisjoint0.
+- rewrite -!fsetIA !fsetIid {2}/names /= /prod_names /= namesfsnE.
+  by rewrite (fsetUidPr _ _ (fsubsetIr _ _)).
+- rewrite -!fsetIA !fsetIid {2}/names /= /prod_names /= namesfsnE.
+  by rewrite (fsetUidPr _ _ (fsubsetIr _ _)).
+rewrite -!fsetIA !fsetIid=> s dis1 dis2 _.
+rewrite -!renamefsU -(equi_f s (x, y)) -renamerE /=.
+rewrite names_disjointE // namesrE.
+move: (A :&: names x) (B :&: names y) disA disB dis1 dis2
+      (fsubsetIr A (names x)) (fsubsetIr B (names y))
+      => /= {A B} A B disA disB dis1 dis2 subA subB.
+move/(fsetSD (A :|: B)) in sub; rewrite fdisjointC.
+apply: (fdisjoint_trans sub); rewrite fsetDUl fdisjointUl.
+rewrite fdisjointC in dis1; rewrite fdisjointC in dis2.
+apply/andP; split.
+  apply: fdisjoint_trans dis1; rewrite fsetDUl /= namesfsnE fsetDv.
+  rewrite fset0U.
+  apply: fsetDS; exact: fsubsetUl.
+apply: fdisjoint_trans dis2; rewrite fsetDUl /= namesfsnE fsetDv.
+rewrite fset0U.
+apply: fsetDS; exact: fsubsetUr.
 Qed.
 
-CoInductive fbound2_spec D : {bound T} -> {bound S} -> Type :=
-| FBound2Spec A x B z of mutfresh A x B z
-                      &  fsubset (D :&: names x) A
+CoInductive frestr2_spec D : {restr T} -> {restr S} -> Prop :=
+| FRestr2Spec A x B y of mutfresh A x B y
+                      &  fdisjoint D (A :|: B)
                       &  fsubset A (names x)
-                      &  fsubset (D :&: names z) B
-                      &  fsubset B (names z)
-                      :  fbound2_spec D (mask A x) (mask B z).
+                      &  fsubset B (names y)
+                      :  frestr2_spec D (mask A x) (mask B y).
 
-Lemma fbound2P D bx bz : fbound2_spec D bx bz.
+Lemma frestr2P D xx yy : frestr2_spec D xx yy.
 Proof.
-case: bx / (fboundP (D :|: names bz))=> [A x subA disA].
-move: disA; rewrite fsetIUl fsubUset=> /andP [fA disA].
-case: bz / (fboundP (D :|: names x)) disA => [B z subB disB].
-move: disB; rewrite fsetIUl fsubUset=> /andP [fB disB].
-rewrite namesbE // => disA; constructor=> //.
-rewrite /mutfresh fsetIC disA /=; apply/andP; split.
-  by apply/(fsubset_trans _ disB)/fsetSI.
-rewrite fsubsetI disB andbT.
-apply/(fsubset_trans _ disA); rewrite fsubsetI disB /=.
-exact: fsubsetIl.
+case: xx / (restrP (D :|: names yy))=> [A x disA subA].
+move: disA; rewrite fdisjointUl=> /andP [fA disA].
+case: yy / (restrP (D :|: names x)) disA => [B y disB subB].
+move: disB; rewrite fdisjointUl=> /andP [fB disB].
+rewrite namesrE // => disA; constructor=> //.
+  rewrite /mutfresh andbC fdisjointC disB /= fdisjointC.
+  rewrite -(fsetID (names y) B) fdisjointUl andbC disA /=.
+  rewrite fdisjointC; apply: (fdisjoint_trans subA).
+  rewrite fdisjointC; apply: (fdisjoint_trans (fsubsetIr _ _)).
+  by rewrite fdisjointC.
+by rewrite fdisjointUr fA.
 Qed.
 
-CoInductive bound2_spec : {bound T} -> {bound S} -> Type :=
-| Bound2Spec A x B z of mutfresh A x B z
+CoInductive restr2_spec : {restr T} -> {restr S} -> Prop :=
+| Restr2Spec A x B z of mutfresh A x B z
                      &  fsubset A (names x)
                      &  fsubset B (names z)
-                     :  bound2_spec (mask A x) (mask B z).
+                     :  restr2_spec (mask A x) (mask B z).
 
-Lemma bound2P bx bz : bound2_spec bx bz.
+Lemma restr2P xx yy : restr2_spec xx yy.
 Proof.
-by case: bx bz / (fbound2P fset0)=> ???????; constructor.
+by case: xx yy / (frestr2P fset0)=> ???????; constructor.
 Qed.
 
-Lemma rename_mapr2 s bx bz :
-  rename s (mapr2 f bx bz) = mapr2 f (rename s bx) (rename s bz).
+Lemma rename_mapr2 s xx yy :
+  rename s (mapr2 f xx yy) = mapr2 f (rename s xx) (rename s yy).
 Proof.
-case: bx bz / bound2P=> [A x B z mf]; rewrite mapr2E //.
-rewrite 3!renamebE mapr2E; last by rewrite rename_mutfresh.
-by rewrite !renamefsE imfsetU (equi_f s (x, z)).
+case: xx yy / restr2P=> [A x B y mf]; rewrite mapr2E //.
+rewrite 3!renamerE mapr2E; last by rewrite rename_mutfresh.
+by rewrite !renamefsE imfsetU (equi_f s (x, y)).
 Qed.
 
-Lemma finsupp_mapr2l bx :
-  finsupp (names bx) (mapr2 f bx).
+Lemma finsupp_mapr2l xx :
+  finsupp (names xx) (mapr2 f xx).
 Proof.
-by apply: curry_equivariant=> {bx} s [bx bz] /=; rewrite rename_mapr2.
+by apply: curry_equivariant=> {xx} s [xx yy] /=; rewrite rename_mapr2.
 Qed.
 
-Lemma finsupp_mapr2r bz :
-  finsupp (names bz) (mapr2 f^~ bz).
+Lemma finsupp_mapr2r yy :
+  finsupp (names yy) (mapr2 f^~ yy).
 Proof.
-apply: (@curry_equivariant _ _ _ (fun bz=> mapr2 f^~ bz) bz).
-by move=> {bz} s [bz bx] /=; rewrite rename_mapr2.
+apply: (@curry_equivariant _ _ _ (fun yy=> mapr2 f^~ yy) yy).
+by move=> {yy} s [yy xx] /=; rewrite rename_mapr2.
 Qed.
 
 End Functor2.
@@ -2337,12 +2287,9 @@ Section Independence.
 
 Implicit Types T S R : nominalType.
 
-Lemma mutfresh_sym T S A (x : T) B (z : S) :
-  mutfresh A x B z = mutfresh B z A x.
-Proof.
-rewrite /mutfresh andbA (andbC (fsubset _ _)) -andbA.
-by rewrite (fsetIC A) (fsetIC B) (fsetIC A B) (fsetIC (names x) (names z)).
-Qed.
+Lemma mutfresh_sym T S A (x : T) B (y : S) :
+  mutfresh A x B y = mutfresh B y A x.
+Proof. by rewrite /mutfresh andbC. Qed.
 
 Lemma mutfreshS T T' S S' A x x' B y y' :
   @mutfresh T S A x B y ->
@@ -2350,20 +2297,19 @@ Lemma mutfreshS T T' S S' A x x' B y y' :
   fsubset (names y') (names y) ->
   @mutfresh T' S' A x' B y'.
 Proof.
-move=> /and3P [sA sB dis] sx sy.
-rewrite /mutfresh; apply/and3P; split.
-- by apply/(fsubset_trans _ sA)/fsetSI.
-- by apply/(fsubset_trans _ sB)/fsetIS.
-by apply/(fsubset_trans _ dis)/fsetISS.
+move=> /andP [disA disB] sx sy.
+rewrite /mutfresh; apply/andP; split.
+  by rewrite fdisjointC; apply: (fdisjoint_trans sy); rewrite fdisjointC.
+by rewrite fdisjointC; apply: (fdisjoint_trans sx); rewrite fdisjointC.
 Qed.
 
-Lemma mutfreshEl T S R (f : T -> R) A x B (z : S) :
+Lemma mutfreshEl T S R (f : T -> R) A x B (y : S) :
   equivariant f ->
-  mutfresh A x B z -> mutfresh A (f x) B z.
+  mutfresh A x B y -> mutfresh A (f x) B y.
 Proof.
-move=> equi_f /and3P [subA subB dis]; apply/and3P; split=> //.
-  by apply/(fsubset_trans _ subA)/fsetSI/equivariant_names.
-by apply/(fsubset_trans _ dis)/fsetSI/equivariant_names.
+move=> equi_f /andP [disA disB]; apply/andP; split=> //.
+rewrite fdisjointC.
+by apply: (fdisjoint_trans (equivariant_names equi_f x)); rewrite fdisjointC.
 Qed.
 
 Lemma mutfreshEr T S R (g : S -> R) A (x : T) B z :
@@ -2371,18 +2317,17 @@ Lemma mutfreshEr T S R (g : S -> R) A (x : T) B z :
   mutfresh A x B z -> mutfresh A x B (g z).
 Proof. by rewrite !(mutfresh_sym A); apply/mutfreshEl. Qed.
 
-Lemma mutfreshE2l T1 T2 S R (f : T1 -> T2 -> R) A1 x1 A2 x2 B (z : S) :
+Lemma mutfreshE2l T1 T2 S R (f : T1 -> T2 -> R) A1 x1 A2 x2 B (y : S) :
   equivariant (fun p => f p.1 p.2) ->
-  mutfresh A1 x1 B z -> mutfresh A2 x2 B z ->
-  mutfresh (A1 :|: A2) (f x1 x2) B z.
+  mutfresh A1 x1 B y -> mutfresh A2 x2 B y ->
+  mutfresh (A1 :|: A2) (f x1 x2) B y.
 Proof.
-move=> equi_f /and3P [subA1 subB1 dis1] /and3P [subA2 subB2 dis2].
-apply/and3P; split=> //.
-- apply/(fsubset_trans (fsetSI _ (equivariant_names equi_f (x1, x2)))).
-  by rewrite fsetIUl /=; apply/fsetUSS.
-- by rewrite fsetIUl fsubUset subB1.
-apply/(fsubset_trans (fsetSI _ (equivariant_names equi_f (x1, x2)))).
-by rewrite 2!fsetIUl /=; apply/fsetUSS.
+move=> equi_f /andP [disA1 disB1] /andP [disA2 disB2].
+apply/andP; split=> //.
+- by rewrite fdisjointUl disA1 disA2.
+rewrite fdisjointC.
+apply/(fdisjoint_trans (equivariant_names equi_f (x1, x2))).
+by rewrite fdisjointC fdisjointUr disB1.
 Qed.
 
 Lemma mutfreshE2r T S1 S2 R (g : S1 -> S2 -> R) A (x : T) B1 z1 B2 z2 :
@@ -2395,80 +2340,61 @@ End Independence.
 
 Section Hiding.
 
-Lemma hiden_mapb T S A f bx :
-  equivariant f -> hiden A (@mapb T S f bx) = mapb f (hiden A bx).
+Lemma hiden_mapr T S A f xx :
+  equivariant f -> hiden A (@mapr T S f xx) = mapr f (hiden A xx).
 Proof.
-move=> equi_f; case: bx / boundP=> [/= A' x sub].
-by rewrite mapbE // !hidenE mapbE.
+move=> equi_f; case: xx / (restrP fset0)=> [/= A' x _ sub].
+by rewrite maprE // !hidenE maprE.
 Qed.
 
-Lemma hiden_mapb2l T S R A f bx bz :
+Lemma hiden_mapr2l T S R A f xx yy :
   equivariant (fun p => f p.1 p.2) ->
-  fdisjoint A (names bz) ->
-  hiden A (@mapb2 T S R f bx bz) = mapb2 f (hiden A bx) bz.
+  fdisjoint A (names yy) ->
+  hiden A (@mapr2 T S R f xx yy) = mapr2 f (hiden A xx) yy.
 Proof.
 move=> equi ninN.
-case: bx bz / bound2P ninN => [/= A' x B z mf sub1 sub2].
-rewrite namesbE // => dis.
-rewrite mapb2E // !hidenE mapb2E //.
-  rewrite fsetDUl (_ : B :\: A = B) //.
-  apply/eqP; rewrite eqEfsubset fsubDset fsubsetUr /=.
-  apply/fsubsetP=> n' ninA; rewrite in_fsetD ninA andbT.
-  by apply: contraTN ninA; move/fdisjointP: dis; apply.
-case/and3P: mf=> [disA' disB dis']; apply/and3P; split.
-- apply/fsubsetP=> n'; rewrite in_fsetI in_fsetD=> /andP [inA' inN].
-  apply/andP; split; first by apply: contraTN inN; move/fdisjointP: dis; apply.
-  by move/fsubsetP: disA'; apply; apply/fsetIP; split.
-- apply/fsubsetP=> n'; rewrite in_fsetI in_fsetD -andbA => /and3P [_ ? ?].
-  by move/fsubsetP: disB; apply; apply/fsetIP; split.
-apply/fsubsetP=> n' inN; move/fsubsetP/(_ _ inN): dis'.
-rewrite !in_fsetI in_fsetD=> /andP [-> inB].
-by rewrite inB /= !andbT; apply: contraTN inB; move/fdisjointP: dis; apply.
+case: xx yy / (frestr2P A) ninN => [/= A' x B y mf].
+rewrite fdisjointUr namesrE // => /andP [disA1 disA2] sub1 sub2 dis'.
+rewrite mapr2E // !hidenE mapr2E // ?fsetUA //.
+case/andP: mf=> [subA subB]; apply/andP; split=> //.
+rewrite fdisjointUl subA andbT fdisjointC -(fsetID (names y) B) fdisjointUl.
+by rewrite (fsetIidPr _ _ sub2) fdisjointC disA2 /= fdisjointC.
 Qed.
 
-Lemma hiden_mapb2r T S R A f bx bz :
+Lemma hiden_mapr2r T S R A f xx yy :
   equivariant (fun p => f p.1 p.2) ->
-  fdisjoint A (names bx) ->
-  hiden A (@mapb2 T S R f bx bz) = mapb2 f bx (hiden A bz).
+  fdisjoint A (names xx) ->
+  hiden A (@mapr2 T S R f xx yy) = mapr2 f xx (hiden A yy).
 Proof.
 move=> equi ninN.
-case: bx bz / bound2P ninN => [/= A' x B z mf sub1 sub2].
-rewrite namesbE // => dis.
-rewrite mapb2E // !hidenE mapb2E //.
-  rewrite fsetDUl (_ : A' :\: A = A') //.
-  apply/eqP; rewrite eqEfsubset fsubDset fsubsetUr /=.
-  apply/fsubsetP=> n' ninA; rewrite in_fsetD ninA andbT.
-  by apply: contraTN ninA; move/fdisjointP: dis; apply.
-case/and3P: mf=> [disA' disB dis']; apply/and3P; split.
-- apply/fsubsetP=> n'; rewrite in_fsetI in_fsetD => /and3P [? _ ?].
-  by move/fsubsetP: disA'; apply; apply/fsetIP; split.
-- apply/fsubsetP=> n'; rewrite in_fsetI in_fsetD=> /andP [inA inN].
-  apply/andP; split; first by apply: contraTN inA; move/fdisjointP: dis; apply.
-  by move/fsubsetP: disB; apply; apply/fsetIP; split.
-apply/fsubsetP=> n' inN; move/fsubsetP/(_ _ inN): dis'.
-rewrite !in_fsetI in_fsetD=> /andP [inA' ->].
-by rewrite inA' /= !andbT; apply: contraTN inA'; move/fdisjointP: dis; apply.
+case: xx yy / (frestr2P A) ninN => [/= A' x B y mf].
+rewrite fdisjointUr namesrE // => /andP [disA1 disA2] sub1 sub2 dis'.
+rewrite mapr2E // !hidenE mapr2E //.
+  by rewrite fsetUA (fsetUC A) -fsetUA.
+case/andP: mf=> [subA subB]; apply/andP; split=> //.
+rewrite fdisjointUl subB andbT fdisjointC -(fsetID (names x) A') fdisjointUl.
+by rewrite (fsetIidPr _ _ sub1) fdisjointC disA1 /= fdisjointC.
 Qed.
 
-Lemma hide_mapb T S n f bx :
-  equivariant f -> hide n (@mapb T S f bx) = mapb f (hide n bx).
-Proof. exact: hiden_mapb. Qed.
+Lemma hide_mapr T S n f xx :
+  equivariant f -> hide n (@mapr T S f xx) = mapr f (hide n xx).
+Proof. exact: hiden_mapr. Qed.
 
-Lemma hide_mapb2l T S R n f bx bz :
+Lemma hide_mapr2l T S R n f xx yy :
   equivariant (fun p => f p.1 p.2) ->
-  n \notin names bz ->
-  hide n (@mapb2 T S R f bx bz) = mapb2 f (hide n bx) bz.
+  n \notin names yy ->
+  hide n (@mapr2 T S R f xx yy) = mapr2 f (hide n xx) yy.
 Proof.
-move=> e pn; apply: (hiden_mapb2l _ e).
+move=> e pn; apply: (hiden_mapr2l _ e).
 by rewrite fdisjointC fdisjoints1.
 Qed.
 
-Lemma hide_mapb2r T S R n f bx bz :
+Lemma hide_mapr2r T S R n f xx yy :
   equivariant (fun p => f p.1 p.2) ->
-  n \notin names bx ->
-  hide n (@mapb2 T S R f bx bz) = mapb2 f bx (hide n bz).
+  n \notin names xx ->
+  hide n (@mapr2 T S R f xx yy) = mapr2 f xx (hide n yy).
 Proof.
-move=> e pn; apply: (hiden_mapb2r _ e).
+move=> e pn; apply: (hiden_mapr2r _ e).
 by rewrite fdisjointC fdisjoints1.
 Qed.
 
@@ -2478,14 +2404,14 @@ Section Flip.
 
 Variables T S R : nominalType.
 
-Lemma flip_mapb2 (op : T -> S -> R) bx bz :
+Lemma flip_mapr2 (op : T -> S -> R) xx yy :
   equivariant (fun p => op p.1 p.2) ->
-  mapb2 (fun z x => op x z) bz bx =
-  mapb2 op bx bz.
+  mapr2 (fun z x => op x z) yy xx =
+  mapr2 op xx yy.
 Proof.
 move=> equi_op.
-case: bx bz / bound2P=> [A x B z mf].
-rewrite mapb2E // -1?mutfresh_sym // 1?mapb2E // 1?fsetUC //.
+case: xx yy / restr2P=> [A x B z mf].
+rewrite mapr2E // -1?mutfresh_sym // 1?mapr2E // 1?fsetUC //.
 by move=> s [z' x'] /=; rewrite (equi_op s (x', z')).
 Qed.
 
@@ -2499,41 +2425,30 @@ Variables (T : nominalType) (op : T -> T -> T) (idx : T).
 
 Hypothesis equi_op : equivariant (fun p => op p.1 p.2).
 
-Lemma bound_left_id :
-  left_id idx op -> left_id (mask fset0 idx) (mapb2 op).
+Lemma restr_left_id :
+  left_id idx op -> left_id (mask fset0 idx) (mapr2 op).
 Proof.
-move=> op1x bx.
-move: {1 3}(mask fset0 idx) (erefl (mask fset0 idx))=> idx'.
-case: idx' / (fboundP (names bx))=> [fset0' idx' sub0 lim] e.
-have ?: fset0' = fset0.
-  by move: (congr1 (@names _) e); rewrite namesbE // namesbE ?fsub0set.
-subst fset0'; move/(maskP _ sub0): e=> [s dis eidx].
-case: bx / (fboundP (names idx')) lim=> [A x subA lim'].
-rewrite namesbE // => lim''; rewrite mapb2E //.
-  rewrite fset0U -(renameK s (op _ _)) (equi_op s (idx', x)) /=.
-  by rewrite eidx op1x renameK.
-apply: mutfreshW=>//.
-rewrite fset0I; apply/(fsubset_trans _ lim'').
-by rewrite fsubsetI lim' fsubsetIl.
+move=> op1x xx; case: xx / (restrP (names idx))=> A x dis sub.
+by rewrite mapr2E // ?fset0U ?op1x // /mutfresh fdisjoint0 /= fdisjointC.
 Qed.
 
-Lemma bound_associative : associative op -> associative (mapb2 op).
+Lemma restr_associative : associative op -> associative (mapr2 op).
 Proof.
-move=> opA bx1 bx2 bx3.
-case: bx1 bx2 / (fbound2P (names bx3))
-      => [A1 x1 A2 x2 mf12 dis1 sub1 dis2 sub2].
-case: bx3 / (fboundP (names x1 :|: names x2)) dis1 dis2
-      => /= [A3 x3 sub3].
-rewrite namesbE; try assumption.
-rewrite fsetIUl fsubUset=> /andP [sub13 sub23] dis31 dis32.
+move=> opA xx1 xx2 xx3.
+case: xx1 xx2 / (frestr2P (names xx3))
+      => [A1 x1 A2 x2 mf12 dis sub1 sub2].
+case: xx3 / (restrP (names x1 :|: names x2)) dis => /= [A3 x3].
+rewrite fdisjointC fdisjointUr=> /andP [mf mf'] sub3.
+rewrite fdisjointC namesrE fdisjointUl=> /andP [mf5 mf6].
 have mf13: mutfresh A1 x1 A3 x3.
-  apply: mutfreshW=> //; rewrite fsubsetI sub13 andbT.
-  by apply/(fsubset_trans _ dis31); rewrite fsubsetI sub13 fsubsetIl.
-have {sub13 sub23 dis31 dis32} mf23: mutfresh A2 x2 A3 x3.
-  apply: mutfreshW=> //; rewrite fsubsetI sub23 andbT.
-  by apply/(fsubset_trans _ dis32); rewrite fsubsetI sub23 fsubsetIl.
-(* FIXME: The last "by" is very slow. *)
-rewrite ?mapb2E // ?opA ?fsetUA //; by [apply/mutfreshE2l|apply/mutfreshE2r].
+  rewrite /mutfresh mf andbT -(fsetID (names x3) A3) fdisjointUr mf5 andbT.
+  apply: (fdisjoint_trans sub1); rewrite fdisjointC.
+  by apply: (fdisjoint_trans (fsubsetIr _ _)).
+have mf23: mutfresh A2 x2 A3 x3.
+  rewrite /mutfresh mf' andbT -(fsetID (names x3) A3) fdisjointUr mf6 andbT.
+  apply:  (fdisjoint_trans sub2); rewrite fdisjointC.
+  by apply: (fdisjoint_trans (fsubsetIr _ _)).
+rewrite ?mapr2E // ?opA ?fsetUA //; by [apply/mutfreshE2l|apply/mutfreshE2r].
 Qed.
 
 End BasicFacts.
@@ -2544,12 +2459,12 @@ Variables (T : nominalType) (op : T -> T -> T) (idx : T).
 
 Hypothesis equi_op : equivariant (fun p => op p.1 p.2).
 
-Lemma bound_right_id :
-  right_id idx op -> right_id (mask fset0 idx) (mapb2 op).
+Lemma restr_right_id :
+  right_id idx op -> right_id (mask fset0 idx) (mapr2 op).
 Proof.
-move=> opx1 bx; rewrite -(flip_mapb2 _ _ equi_op).
-rewrite bound_left_id // => s [bx1 bx2] /=.
-by rewrite (equi_op s (bx2, bx1)).
+move=> opx1 xx; rewrite -(flip_mapr2 _ _ equi_op).
+rewrite restr_left_id // => s [xx1 xx2] /=.
+by rewrite (equi_op s (xx2, xx1)).
 Qed.
 
 End RightId.
@@ -2562,7 +2477,7 @@ Section Basic.
 
 Variable T : nominalType.
 
-Definition new (ns : {fset name}) (f : name -> {bound T}) :=
+Definition new (ns : {fset name}) (f : name -> {restr T}) :=
   hide (fresh ns) (f (fresh ns)).
 
 Lemma newP ns f g :
@@ -2596,17 +2511,14 @@ rewrite (newE n_nin_ns') 1?(newE n_nin_ns) //.
 exact: finsuppS fs_f sub.
 Qed.
 
-Lemma new_const bx : new (names bx) (fun _ => bx) = bx.
+Lemma new_const xx : new (names xx) (fun _ => xx) = xx.
 Proof.
-rewrite (newE (freshP (names bx)) (@const_finsupp _ _ bx)).
-case: bx / boundP=> [A x sub]; rewrite hideE; congr mask.
-apply/eqP; rewrite eqEfsubset fsubD1set fsetU1E fsubsetUr /=.
-apply/fsubsetP=> n n_in_A; rewrite in_fsetD1 n_in_A andbT.
-rewrite namesbE //; apply: contraTN n_in_A=> /eqP ->.
-exact: freshP.
+rewrite (newE (freshP (names xx)) (@const_finsupp _ _ xx)) /hide.
+rewrite hidenI -[RHS]hiden0; congr hiden.
+by apply: fdisjoint_fsetI0; rewrite fdisjointC fdisjoints1 freshP.
 Qed.
 
-Lemma rename_new s A (f : name -> {bound T}) :
+Lemma rename_new s A (f : name -> {restr T}) :
   finsupp A f ->
   rename s (new A f) = new (s @: A) (rename s \o f \o rename s^-1).
 Proof.
@@ -2618,34 +2530,29 @@ rewrite (newE ninA) // rename_hide (newE ninSA); last exact: finsuppJ.
 by rewrite ninS /= renamenE -{4}ninS fpermK.
 Qed.
 
-Lemma newC ns f :
-  finsupp ns (fun p => f p.1 p.2) ->
-  new ns (fun n => new (n |: ns) (fun n' => f n n')) =
-  new ns (fun n' => new (n' |: ns) (fun n => f n n')).
+Lemma newC D f :
+  finsupp D (fun p => f p.1 p.2) ->
+  new D (fun n => new (n |: D) (fun n' => f n n')) =
+  new D (fun n' => new (n' |: D) (fun n => f n n')).
 Proof.
 move=> fs_f; rewrite /new.
-move: (fresh _) (freshP ns)=> n pn.
-move: (fresh _) (freshP (n |: ns))=> n'.
+move: (fresh _) (freshP D)=> n pn.
+move: (fresh _) (freshP (n |: D))=> n'.
 rewrite in_fsetU1 negb_or=> /andP [nn' pn'].
-have dis: fdisjoint (supp (fperm2 n n')) ns.
+have dis: fdisjoint (supp (fperm2 n n')) D.
   apply/(fdisjoint_trans (fsubset_supp_fperm2 _ _)).
   by apply/fdisjointP=> /= n'' /fset2P [->|->].
 move/(_ _ dis (n, n')): (fs_f); rewrite /= !renamenE fperm2L fperm2R => <-.
-have: fsubset (names (f n n')) (ns :|: (fset1 n :|: fset1 n')).
+have: fsubset (names (f n n')) (D :|: (fset1 n :|: fset1 n')).
   exact: (names_finsupp (n, n') fs_f).
-move: (f n n') {fs_f}=> bx; case: bx / (fboundP ns)=> [A x sub dis'].
-rewrite namesbE // renamebE !hideE => sub'.
-rewrite (_ : rename _ _ :\ _ :\ _ = A :\ n' :\ n).
-  apply/maskP.
-    apply/(fsubset_trans _ sub); rewrite !fsubD1set !fsetU1E.
-    by do 2![apply/fsubsetU/orP; right]; rewrite fsubsetxx.
-  exists (fperm2 n n')=> //.
-  apply/(fdisjoint_trans (fsubset_supp_fperm2 _ _)).
-  by apply/fdisjointP=> n'' /fset2P [->|->]; rewrite !in_fsetD1 !eqxx ?andbF.
-apply/eq_fset=> n''; rewrite !in_fsetD1.
-have [|nn''] //= := altP (n'' =P n); have [|n'n''] //= := altP (n'' =P n').
-rewrite (mem_imfset_can _ _ (renameK _) (renameKV _)) fperm2V.
-by rewrite renamenE fperm2D.
+move: (f n n') {fs_f}=> xx; case: xx / (restrP D)=> [A x sub dis'].
+rewrite namesrE // renamerE !hideE => sub'.
+rewrite 2!fsetU1E fsetUA [fset1 n :|: _]fsetUC -fsetUA -2!fsetU1E.
+rewrite -{3}(fperm2L n n') -{5}(fperm2R n n') -2!renamenE.
+rewrite -!renamefsU1 -!renamerE names_disjointE //.
+rewrite namesrE; move/fsubsetP: (fsubset_supp_fperm2 n n')=> sub''.
+apply/fdisjointP=> n'' /sub''; rewrite in_fset2 !in_fsetD !in_fsetU1.
+by rewrite !negb_or !negb_and !negbK=> /orP [->|->] //; rewrite orbT.
 Qed.
 
 End Basic.
@@ -2654,31 +2561,25 @@ Section Composition.
 
 Variables T S : nominalType.
 
-Lemma new_comp B A (g : T -> S) (f : name -> {bound T}) :
+Lemma new_comp B A (g : T -> S) (f : name -> {restr T}) :
   finsupp B g -> finsupp A f ->
-  mapb_fs B g (new A f) =
-  new (A :|: B) (mapb_fs B g \o f).
+  mapr_fs B g (new A f) =
+  new (A :|: B) (mapr_fs B g \o f).
 Proof.
 move=> fs_g fs_f.
 move: (fresh _) (freshP (A :|: B))=> n ninAB.
 rewrite (newE ninAB) /=; last first.
   rewrite fsetUC; apply/finsupp_comp=> //.
-  exact/finsupp_mapb_fs.
+  exact/finsupp_mapr_fs.
 have ninA: n \notin A.
   by apply: contra ninAB; apply/fsubsetP/fsubsetUl.
 have ninB: n \notin B.
   by apply: contra ninAB; apply/fsubsetP/fsubsetUr.
 rewrite (newE ninA) //.
-case: (fboundP B (f n)) (names_finsupp n fs_f)=> [/= A' x sub dis].
-rewrite namesbE // => sub'; rewrite hideE mapb_fsE //.
-  rewrite mapb_fsE // hideE; congr mask.
-  rewrite fsetD1U; congr fsetU.
-  apply/eqP; rewrite eqEfsubset fsubD1set fsetU1E fsubsetUr andbT.
-  apply/fsubsetP=> /= n' inB; rewrite in_fsetD1 inB andbT.
-  by apply: contraTN inB=> /eqP ->.
-apply/fsubsetP=> /= n' inI; rewrite in_fsetD1.
-rewrite (fsubsetP _ _ dis _ inI) andbT.
-by apply: contraTN inI=> /eqP ->; rewrite in_fsetI negb_and ninB.
+case: (restrP B (f n)) (names_finsupp n fs_f)=> [/= A' x sub dis].
+rewrite namesrE // => sub'; rewrite hideE mapr_fsE //.
+  by rewrite mapr_fsE // hideE; congr mask.
+by rewrite fsetU1E fdisjointUr fdisjoints1 ninB.
 Qed.
 
 End Composition.
@@ -2687,38 +2588,31 @@ Section Left.
 
 Variables T S R : nominalType.
 
-Lemma new_comp2l (op : T -> S -> R) A (f : name -> {bound T}) bz :
+Lemma new_comp2l (op : T -> S -> R) A (f : name -> {restr T}) yy :
   equivariant (fun p => op p.1 p.2) ->
   finsupp A f ->
-  mapb2 op (new A f) bz =
-  new (A :|: names bz) (fun n => mapb2 op (f n) bz).
+  mapr2 op (new A f) yy =
+  new (A :|: names yy) (fun n => mapr2 op (f n) yy).
 Proof.
 move=> equi_op fs_f.
-move: (fresh _) (freshP (A :|: names bz))=> n ninAN.
+move: (fresh _) (freshP (A :|: names yy))=> n ninAN.
 rewrite (newE ninAN) /=; last first.
   rewrite fsetUC.
-  exact: (finsupp_comp (@finsupp_mapb2r _ _ _ _ equi_op bz) fs_f).
+  exact: (finsupp_comp (@finsupp_mapr2r _ _ _ _ equi_op yy) fs_f).
 have ninA: n \notin A.
   by apply: contra ninAN; apply/fsubsetP/fsubsetUl.
-have ninB: n \notin (names bz).
+have ninB: n \notin (names yy).
   by apply: contra ninAN; apply/fsubsetP/fsubsetUr.
 rewrite (newE ninA) //.
-case: (bound2P (f n) bz) (names_finsupp n fs_f) ninAN ninB => /= [A' x B z mf].
-move=> subA' subB; rewrite !namesbE // namesnE fsetUC -fsetU1E.
-move=> sub' ninAB ninB; rewrite hideE mapb2E //.
-  rewrite mapb2E // hideE.
-  rewrite fsetD1U (_ : B :\ n = B) //.
-  apply/eqP; rewrite eqEfsubset fsubD1set fsetU1E fsubsetUr /=.
-  apply/fsubsetP=> /= n' inB; rewrite in_fsetD1 inB andbT.
-  by apply: contraTN inB=> /eqP -> {n'}.
-apply: mutfreshW=> //.
-  by rewrite fsubD1set (fsubset_trans subA') // fsetU1E fsubsetUr.
-case/and3P: mf=> [_ _]; rewrite fsubsetI=> /andP [sub1 sub2].
-rewrite fsubsetI sub2 // andbT.
-apply/fsubsetP=> /= n' inI; rewrite in_fsetD1.
-rewrite (fsubsetP _ _ sub1 _ inI) andbT.
-apply: contra ninAB=> /eqP <-; move: inI; apply/fsubsetP.
-by apply/(fsubset_trans sub2)/fsubsetUr.
+case: yy / (frestr2P (fset1 n) (f n)) (names_finsupp n fs_f) ninAN ninB
+      => /= [A' x B y mf].
+rewrite fdisjointUr !(fdisjointC (fset1 n)) !fdisjoints1=> /andP [dis1 dis2].
+move=> subA' subB; rewrite !namesrE // namesnE fsetUC -fsetU1E.
+move=> sub' ninAB ninB; rewrite hideE mapr2E //.
+  by rewrite mapr2E // hideE fsetU1E -fsetUA -fsetU1E.
+case/andP: mf=> [mfA mfB]; rewrite /mutfresh mfB andbT.
+rewrite fsetU1E fdisjointUl mfA andbT fdisjointC fdisjoints1.
+by apply: contra ninB; rewrite in_fsetD dis2.
 Qed.
 
 End Left.
@@ -2727,17 +2621,17 @@ Section Right.
 
 Variables T S R : nominalType.
 
-Lemma new_comp2r (op : T -> S -> R) B (f : name -> {bound S}) bx :
+Lemma new_comp2r (op : T -> S -> R) B (f : name -> {restr S}) xx :
   equivariant (fun p => op p.1 p.2) ->
   finsupp B f ->
-  mapb2 op bx (new B f) =
-  new (names bx :|: B) (fun n => mapb2 op bx (f n)).
+  mapr2 op xx (new B f) =
+  new (names xx :|: B) (fun n => mapr2 op xx (f n)).
 Proof.
 move=> equi_op fs_f.
-rewrite -(flip_mapb2 _ _ equi_op).
+rewrite -(flip_mapr2 _ _ equi_op).
 rewrite new_comp2l //; last first.
   by move=> s [z x] /=; rewrite (equi_op s (x, z)).
-by rewrite fsetUC; apply/newP=> n ninNB; rewrite flip_mapb2.
+by rewrite fsetUC; apply/newP=> n ninNB; rewrite flip_mapr2.
 Qed.
 
 End Right.
@@ -2748,20 +2642,20 @@ Section Trivial.
 
 Variable T : trivialNominalType.
 
-Definition expose : {bound T} -> T :=
-  elim_bound (fun _ x => x).
+Definition expose (xx : {restr T}) : T :=
+  let: (_, x) := val (unbind fset0 xx) in x.
 
 Lemma exposeE A x : expose (mask A x) = x.
 Proof.
-rewrite /expose maskE namesT fsetI0 elim_boundE //.
+rewrite /expose maskI namesT fsetI0; case: maskP.
   exact: fsub0set.
 by move=> s _; rewrite renameT.
 Qed.
 
 Lemma rename_expose : equivariant expose.
 Proof.
-move=> s x; case: x / boundP => /= [A x sub].
-by rewrite exposeE renamebE exposeE.
+move=> s x; case: x / (restrP fset0) => /= [A x sub].
+by rewrite exposeE renamerE exposeE.
 Qed.
 
 End Trivial.
@@ -2770,34 +2664,28 @@ Section OExpose.
 
 Variable T : nominalType.
 
-Definition oexpose (bx : {bound T}) : option T :=
-  elim_bound (fun A x => if fsubset (names x) A then Some x
-                         else None) bx.
+Definition oexpose (xx : {restr T}) : option T :=
+  let: (A, x) := val (unbind fset0 xx) in
+  if A == fset0 then Some x else None.
 
 Lemma oexposeE A x :
-  oexpose (mask A x) = (if fsubset (names x) A then Some x else None).
+  oexpose (mask A x) = (if A :&: names x == fset0 then Some x else None).
 Proof.
-rewrite maskE -[fsubset _ _]andbT -(fsubsetxx (names x)) -fsubsetI.
-move: (_ :&: _) (fsubsetIr A (names x))=> {A} A subA.
-rewrite /oexpose elim_boundE // => s dis.
-rewrite names_rename {2}(_ : A = s @: A); last first.
-  rewrite -[LHS]imfset_id; apply: eq_in_imfset => n inA.
-  apply/esym/suppPn; apply: contraTN inA.
-  by move/fdisjointP: dis; apply.
-rewrite {2}/fsubset -imfsetU (inj_eq (imfset_inj (@fperm_inj _ s))).
-rewrite -[_ == _]/(fsubset (names x) A).
-have [sub|//] := boolP (fsubset (names x) A).
-congr Some; apply/esym/names_disjointE.
-by rewrite fdisjointC (fdisjoint_trans sub) // fdisjointC.
+rewrite maskI /oexpose; move: (fsubsetIr A (names x))=> sub.
+case: maskP=> // s _ dis _.
+rewrite -{1}(renamefs0 _ s) inj_eq; last exact: @rename_inj.
+case: (A :&: names x =P fset0) dis=> // ->.
+by rewrite fsetD0 => dis; rewrite names_disjointE.
 Qed.
 
 Lemma oexpose_rename : equivariant oexpose.
 Proof.
-move=> s bx; case: bx / boundP => [A x subA].
-rewrite renamebE !oexposeE renamefsE -[rename s @: A]/(s @: A).
-rewrite names_rename {2}/fsubset -imfsetU.
-rewrite (inj_eq (imfset_inj (@fperm_inj _ s))) -[_ == _]/(fsubset (names x) A).
-by rewrite [LHS]fun_if.
+move=> s xx; case: xx / (restrP fset0) => [A x _].
+rewrite renamerE !oexposeE renamefsE -[rename s @: A]/(s @: A).
+rewrite names_rename -renamefsI -{2}(renamefs0 _ s) inj_eq.
+  by have [e|] //= := A :&: names x =P fset0.
+(* FIXME: Why these annotations????? *)
+by move=> ??; apply: (@rename_inj [nominalType of {fset name}] s).
 Qed.
 
 End OExpose.
