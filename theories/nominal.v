@@ -1815,8 +1815,15 @@ Canonical restr_nominalType := [nominalType of restr_type].
 
 End Def.
 
+End Restriction.
+
 Notation "{ 'restr' T }" := (@restr_of _ (Phant T))
   (at level 0, format "{ 'restr'  T }") : type_scope.
+
+Section RestrictionTheory.
+
+Local Open Scope fset_scope.
+Local Open Scope fperm_scope.
 
 Section TrivialNominalType.
 
@@ -2691,4 +2698,4 @@ Qed.
 
 End OExpose.
 
-End Restriction.
+End RestrictionTheory.
