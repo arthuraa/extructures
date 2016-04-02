@@ -1520,13 +1520,14 @@ Identity Coercion type_of_bound_of : bound_of >-> bound_type.
 
 Definition quot_of_bound b := let: Bound b := b in b.
 
-Canonical newType := [newType for quot_of_bound].
-Definition eqMixin := [eqMixin of bound_type by <:].
-Canonical eqType := Eval hnf in EqType bound_type eqMixin.
-Definition choiceMixin := [choiceMixin of bound_type by <:].
-Canonical choiceType := Eval hnf in ChoiceType bound_type choiceMixin.
-Definition ordMixin := [ordMixin of bound_type by <:].
-Canonical ordType := Eval hnf in OrdType bound_type ordMixin.
+Canonical bound_newType := [newType for quot_of_bound].
+Definition bound_eqMixin := [eqMixin of bound_type by <:].
+Canonical bound_eqType := Eval hnf in EqType bound_type bound_eqMixin.
+Definition bound_choiceMixin := [choiceMixin of bound_type by <:].
+Canonical bound_choiceType :=
+  Eval hnf in ChoiceType bound_type bound_choiceMixin.
+Definition bound_ordMixin := [ordMixin of bound_type by <:].
+Canonical bound_ordType := Eval hnf in OrdType bound_type bound_ordMixin.
 
 Implicit Types (D : {fset name}) (x y : T).
 Implicit Types (xx : bound_type).
