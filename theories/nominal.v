@@ -914,6 +914,9 @@ Lemma namesfs_subset X Y :
   fsubset (names X) (names Y).
 Proof. by move=> /eqP <-; rewrite namesfsU /fsubset fsetUA fsetUid. Qed.
 
+Lemma namesfs0 : names fset0 = fset0.
+Proof. by rewrite namesfsE big_nil. Qed.
+
 Lemma renamefs0 s : rename s (@fset0 T') = fset0.
 Proof. exact: imfset0. Qed.
 
@@ -1865,6 +1868,22 @@ rewrite [mask]unlock; congr bind; apply: val_inj=> /=.
 by rewrite -fsetIA fsetIid.
 Qed.
 
+Lemma mask_eqP A1 x1 A2 x2 :
+  (exists2 s, fdisjoint (supp s) (names x1 :\: A1) &
+              (rename s (A1 :&: names x1), rename s x1) =
+              (A2 :&: names x2, x2))
+  <-> mask A1 x1 = mask A2 x2.
+Proof.
+rewrite [mask]unlock -bind_eqP /= /prerestr_op /=; split.
+  case=> s dis [e1 e2]; exists s.
+    rewrite subnamesE /= fsetDUl /= namesfsnE fsetDv fset0U.
+    by rewrite fsetDIr fsetDv fsetU0.
+  by apply/val_inj=> /=; rewrite renamepE /= e1 e2.
+rewrite !subnamesE /= namespE /= fsetDUl /= namesfsnE fsetDv fset0U.
+rewrite fsetDIr fsetDv fsetU0=> - [s dis /(congr1 val) /= <-].
+by exists s.
+Qed.
+
 CoInductive mask_spec D A x : {fset name} * T -> Prop :=
 | MaskSpec s of fdisjoint D (rename s A)
   & fdisjoint (supp s) (names x :\: A)
@@ -2677,9 +2696,9 @@ Definition oexpose (xx : {restr T}) : option T :=
   if A == fset0 then Some x else None.
 
 Lemma oexposeE A x :
-  oexpose (mask A x) = (if A :&: names x == fset0 then Some x else None).
+  oexpose (mask A x) = (if fdisjoint A (names x) then Some x else None).
 Proof.
-rewrite maskI /oexpose; move: (fsubsetIr A (names x))=> sub.
+rewrite maskI /oexpose /fdisjoint; move: (fsubsetIr A (names x))=> sub.
 case: maskP=> // s _ dis _.
 rewrite -{1}(renamefs0 _ s) inj_eq; last exact: @rename_inj.
 case: (A :&: names x =P fset0) dis=> // ->.
@@ -2689,7 +2708,7 @@ Qed.
 Lemma oexpose_rename : equivariant oexpose.
 Proof.
 move=> s xx; case: xx / (restrP fset0) => [A x _].
-rewrite renamerE !oexposeE renamefsE -[rename s @: A]/(s @: A).
+rewrite renamerE !oexposeE renamefsE -[rename s @: A]/(s @: A) /fdisjoint.
 rewrite names_rename -renamefsI -{2}(renamefs0 _ s) inj_eq.
   by have [e|] //= := A :&: names x =P fset0.
 (* FIXME: Why these annotations????? *)
