@@ -168,7 +168,7 @@ Definition mkpartmapf (f : T -> S) (ks : seq T) : {partmap T -> S} :=
 Definition mkpartmapfp (f : T -> option S) (ks : seq T) : {partmap T -> S} :=
   mkpartmap (pmap (fun k => omap (pair k) (f k)) ks).
 
-Definition domm m := locked (mkfset (unzip1 m)).
+Definition domm m := fset (unzip1 m).
 
 End Operations.
 
@@ -240,7 +240,7 @@ Qed.
 
 Lemma mem_domm m k : k \in domm m = m k.
 Proof.
-rewrite inE /domm -lock /= in_mkfset.
+rewrite inE /domm /= in_fset.
 case: m => [s Ps] /=; rewrite /getm /=.
 by elim: s {Ps} => [|p s IH] //=; rewrite inE IH; case: (k == p.1).
 Qed.
@@ -316,7 +316,6 @@ Proof.
 by apply/eq_fset=> k; rewrite mem_domm.
 Qed.
 
-
 Lemma mapmE S' (f : S -> S') m : mapm f m =1 omap f \o m.
 Proof.
 case: m=> [s Ps] k; rewrite /mapm /getm /=.
@@ -386,16 +385,16 @@ by case: ifP.
 Qed.
 
 Lemma domm_mkpartmapf (f : T -> S) (ks : seq T) :
-  domm (mkpartmapf f ks) = mkfset ks.
+  domm (mkpartmapf f ks) = fset ks.
 Proof.
-apply/eq_fset=> k; rewrite mem_domm mkpartmapfE in_mkfset.
+apply/eq_fset=> k; rewrite mem_domm mkpartmapfE in_fset.
 by case: (k \in ks).
 Qed.
 
 Lemma domm_mkpartmapfp (f : T -> option S) (ks : seq T) :
-  domm (mkpartmapfp f ks) = mkfset [seq k <- ks | f k].
+  domm (mkpartmapfp f ks) = fset [seq k <- ks | f k].
 Proof.
-apply/eq_fset=> k; rewrite mem_domm mkpartmapfpE in_mkfset mem_filter andbC.
+apply/eq_fset=> k; rewrite mem_domm mkpartmapfpE in_fset mem_filter andbC.
 by case: (k \in ks).
 Qed.
 
@@ -610,7 +609,7 @@ by move: (h k'); rewrite h' eqxx.
 Qed.
 
 Lemma codomm0 : codomm (@emptym T S) = fset0.
-Proof. by rewrite /codomm /domm -lock. Qed.
+Proof. by rewrite /codomm /domm fset0E. Qed.
 
 Lemma codomm_rem m k : fsubset (codomm (remm m k)) (codomm m).
 Proof.
@@ -775,93 +774,42 @@ End Currying.
 
 Section Enumeration.
 
-Variable T S : ordType.
-Implicit Type (m : {partmap T -> S}).
-Implicit Types (xs : {fset T}) (ys : {fset S}).
+Variables (T S : ordType).
+Implicit Types (m : {partmap T -> S}) (xs : seq T) (ys : seq S).
 
 Local Open Scope fset_scope.
 
-Let bindings ys x (ms : {fset {partmap T -> S}}) :=
-  ms :|: \bigcup_(m <- ms) setm m x @: ys.
-
-Let bindingsP m ys x ms :
-  reflect (m \in ms \/ exists p, [/\ p.1 \in ys,
-                                     p.2 \in ms &
-                                     m = setm p.2 x p.1 ])
-          (m \in bindings ys x ms).
-Proof.
-rewrite in_fsetU; apply(iffP orP)=> [[|]|[|]]; try by intuition.
-  case/bigcupP=> [m' m'_in _ /imfsetP [y y_in ->]]; right.
-  by exists (y, m'); split.
-case=> [[y m'] /= [y_in m'_in ->]]; right.
-by apply/bigcupP; econstructor; eauto; rewrite mem_imfset.
-Qed.
-
 Definition enum_partmap xs ys :=
-  foldr (bindings ys) (fset1 emptym) xs.
+  foldr (fun x ms => ms ++ [seq setm m x y | m <- ms, y <- ys]) [:: emptym] xs.
 
-Lemma enum_partmap_fsetU1 x xs ys :
-  enum_partmap (x |: xs) ys =
-  bindings ys x (enum_partmap xs ys).
+Lemma enum_partmapP xs ys m :
+  reflect ({subset domm m <= xs} /\ {subset codomm m <= ys})
+          (m \in enum_partmap xs ys).
 Proof.
-case: xs=> [xs Pxs] /=; rewrite /fsetU1 /enum_partmap /=.
-elim: xs Pxs=> [|x' xs IH] //= Pxs.
-move/(_ (path_sorted Pxs)) in IH.
-case: Ord.ltgtP=> [lt|gt|<-{x' Pxs}] //=.
-  rewrite {}IH; move: (foldr _ _ _)=> {xs Pxs} ms.
-  rewrite /bindings -!fsetUA; congr fsetU.
-  rewrite 2!bigcup_fsetU 2!fsetUA; congr fsetU; first by rewrite fsetUC.
-  rewrite 2!bigcup_bigcup; apply: eq_bigr=> m _.
-  rewrite 2?big_idem_imfset /=; try apply: fsetUid.
-  apply/eq_fset=> m'; apply/(sameP (bigcupP _ _ _ _))/(iffP idP).
-    case/bigcupP=> y y_in _ /imfsetP [y' y'_in ->{m'}].
-    econstructor; eauto; apply/imfsetP; exists y=> //.
-    by rewrite setmC //; apply: contraTN gt=> /eqP ->; rewrite Ord.ltxx.
-  case=> y y_in _ /imfsetP [y' y'_in ->{m'}].
-  apply/bigcupP; econstructor; eauto; apply/imfsetP.
-  exists y; eauto; rewrite setmC //; apply: contraTN gt=> /eqP ->.
-  by rewrite Ord.ltxx.
-move: {IH} (foldr _ _ _)=> {xs} ms; rewrite /bindings.
-rewrite bigcup_fsetU fsetUA -(fsetUA ms) fsetUid bigcup_bigcup -fsetUA.
-congr fsetU; rewrite -[LHS]fsetUid; congr fsetU; apply/eq_bigr=> m _.
-apply/eq_fset=> m'; apply/(sameP idP)/(iffP idP).
-  case/bigcupP=> [m'' /imfsetP [y y_in ->] {m''} _].
-  by rewrite (@eq_imfset _ _ _ (setm m x)) // => y'; rewrite setmxx.
-move=> /imfsetP [y y_in ->]; rewrite big_idem_imfset /=; last exact: fsetUid.
-apply/bigcupP; econstructor; eauto; apply/imfsetP; exists y=> //.
-by rewrite setmxx.
-Qed.
-
-Lemma enum_partmapE m xs ys :
-  m \in enum_partmap xs ys
-  = (fsubset (domm m) xs) && (fsubset (codomm m) ys).
-Proof.
-elim/fset_ind: xs m=> [|x xs Px IH] m.
-  rewrite in_fset1 fsubset0 eq_domm0.
-  apply/(sameP idP)/(iffP idP)=> [/andP [] //|/eqP ->].
-  by rewrite codomm0 fsub0set.
-rewrite enum_partmap_fsetU1.
-apply/bindingsP/andP.
-  rewrite IH; case=> [/andP [/fsubsetP Pxs Pys]|]; first split=> //.
-    by apply/fsubsetP=> x' /Pxs; rewrite in_fsetU1 orbC=> ->.
-  case=> [[y m'] /= [y_in m'_in ->]].
-  rewrite IH in m'_in; case/andP: m'_in=> [Pdom Pcodom].
-  rewrite domm_set 2!fsetU1E fsetUS //; split=> //.
-  apply/fsubsetP=> y' /codommP [x']; rewrite setmE.
-  have [_{x'}[<-]//|_ Px'] := altP eqP.
-  by move/fsubsetP/(_ y'): Pcodom; apply; apply/codommP; eauto.
-have [x_in|/dommPn x_nin] := boolP (x \in domm m).
-  rewrite -fsubD1set -domm_rem.
-  case/dommP: (x_in)=> [y Py] [Pdom Pcodom].
-  have /(fsubsetP _ _ Pcodom) Py': y \in codomm m by apply/codommP; eauto.
-  have Pcodom' : fsubset (codomm (remm m x)) ys.
-    by rewrite (fsubset_trans (codomm_rem _ _)).
-  right; exists (y, remm m x)=> /=; split=>//; first by rewrite IH Pdom.
-  apply/eq_partmap=> x'; rewrite setmE remmE.
-  by case: eqP=> // ->.
-case=> [Pdom Pcodom]; left; rewrite IH Pcodom andbT.
-apply/fsubsetP=> x' Px'; move: Px' (fsubsetP _ _ Pdom _ Px').
-by rewrite mem_domm in_fsetU1; case: eqP => // ->; rewrite x_nin.
+elim: xs m=> [|x xs IHx] //= m.
+  rewrite inE; apply/(iffP eqP)=> [->|[eq0 _]].
+    by rewrite domm0 codomm0; split=> ?; rewrite in_fset0.
+  apply/eqP; rewrite -eq_domm0 -fsubset0.
+  by apply/fsubsetP=> x /eq0.
+rewrite mem_cat.
+apply/(iffP orP) => [[/IHx [subx suby] | /allpairsP h] | [subx suby]].
+- by split=> // x' x'_in; rewrite inE; apply/orP; right; apply: subx.
+- move: m h => m' [[m y] /= [/IHx [subx suby] h ->]] {m'}; split.
+    rewrite domm_set=> x' /fsetU1P [->|/subx]; rewrite inE ?eqxx //.
+    by move=> ->; rewrite orbT.
+  move=> y' /codommP [x']; rewrite setmE.
+  case: eqP=> [_ [<-] //| _ m_x']; apply: suby.
+  by apply/codommP; eauto.
+have [/dommP [y h]|x_nin] := boolP (x \in domm m).
+  right; apply/allpairsP; exists (remm m x, y)=> /=; split.
+  - apply/IHx; rewrite domm_rem; split.
+      by move=> x' /fsetDP [/subx]; rewrite inE => /orP [/eqP -> /fset1P|].
+    move=> y' /codommP [x' m_x']; apply: suby; apply/codommP.
+    by exists x'; move: m_x'; rewrite remmE; case: ifP.
+  - by apply: suby; apply/codommP; exists x.
+  by apply/eq_partmap=> x'; rewrite setmE remmE; case: eqP => [->|].
+left; apply/IHx; split=> // x' x'_in; move/(_ _ x'_in): subx (x'_in) x_nin.
+by rewrite inE => /orP [/eqP -> ->|].
 Qed.
 
 End Enumeration.

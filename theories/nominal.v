@@ -52,14 +52,14 @@ Proof.
 elim: k ns => [|k IH] ns /=; first exact: fdisjoint0.
 apply/fdisjointP=> n /fsetU1P [->|]; first exact: freshP.
 move: n; apply/fdisjointP; rewrite fdisjointC.
-apply/(fdisjoint_trans (fsubsetUr (fset1 (fresh ns)) ns)); rewrite -fsetU1E.
+apply/(fdisjoint_trans (fsubsetUr (fset1 (fresh ns)) ns)).
 by rewrite fdisjointC.
 Qed.
 
 Lemma size_freshk k ns : size (freshk k ns) = k.
 Proof.
 elim: k ns=> [//|k IH] ns.
-rewrite (lock val) /= -lock size_fsetU1 IH -add1n; congr addn.
+rewrite (lock val) /= -lock sizesU1 IH -add1n; congr addn.
 move: (fresh _) (freshP ns)=> n Pn.
 move: (freshkP k (n |: ns)); rewrite fdisjointC=> /fdisjointP/(_ n).
 by rewrite in_fsetU1 eqxx /= => /(_ erefl) ->.
@@ -377,7 +377,7 @@ Lemma equivariant_finsupp f : equivariant f <-> finsupp fset0 f.
 Proof.
 split=> [equi_f|fs_f].
   by move=> s _ x; rewrite equi_f.
-by move=> s x; rewrite fs_f.
+by move=> s x; rewrite fs_f // fdisjointC fdisjoint0.
 Qed.
 
 Lemma finsuppJ A f (s : {fperm name}) :
@@ -685,7 +685,10 @@ Proof.
 move=> h1 h2.
 have h: forall n x, n \notin seq_names xs -> x \in xs -> n \notin names x.
   move=> {n n' h1 h2} n x Pn /seq_tnthP [i ->]; apply: contra Pn.
-  by rewrite /seq_names big_tnth; move: n; apply/fsubsetP/bigcup_sup.
+  rewrite /seq_names big_tnth; move: n; apply/fsubsetP.
+  (* FIXME: This used to work without the annotation *)
+  apply/(@bigcup_sup _ _ _ _ _ (fun i => names (tnth (in_tuple xs) i)))=> //.
+  exact: mem_index_enum.
 rewrite /seq_rename -[in RHS](map_id xs); apply/eq_in_map=> x Px.
 by apply namesNNE; eauto.
 Qed.
@@ -697,7 +700,10 @@ Lemma seq_namesTeq n n' xs :
 Proof.
 rewrite /seq_names big_tnth => /bigcup_finP [i _ Pin e].
 suff e': rename (fperm2 n n') (tnth (in_tuple xs) i) = tnth (in_tuple xs) i.
-  by move: {e e'} n' (namesTeq Pin e'); apply/fsubsetP/bigcup_sup.
+  move: {e e'} n' (namesTeq Pin e'); apply/fsubsetP.
+  (* FIXME: This used to work without the annotation *)
+  apply/(@bigcup_sup _ _ _ _ _ (fun i => names (tnth (in_tuple xs) i)))=> //.
+  exact: mem_index_enum.
 rewrite (tnth_nth (tnth (in_tuple xs) i)) /=.
 by move: {Pin} i (tnth _ _)=> [i Pi] /= x; rewrite -{2}e {e} (nth_map x).
 Qed.
@@ -716,7 +722,9 @@ rewrite {2}/names/=/seq_names; apply/(iffP idP).
   rewrite big_tnth=> /bigcupP [i _]; eexists; eauto.
   exact/mem_tnth.
 move=> [x /(tnthP (in_tuple xs)) [i {x}->]].
-by rewrite big_tnth; move: n; apply/fsubsetP/bigcup_sup.
+rewrite big_tnth; move: n; apply/fsubsetP.
+(* FIXME: Same annotation problem. *)
+apply/(@bigcup_sup _ _ _ _ _ (fun x => names _))=> //.
 Qed.
 
 Lemma renames_nth s d xs n :
@@ -861,7 +869,7 @@ apply: eq_in_imfset=> x x_in; apply: names_disjointE.
 apply/fdisjointP=> n'' /(fsubsetP _ _ (fsubset_supp_fperm2 n n')).
 have sub: fsubset (names x) (fset_names X).
   case/seq_tnthP: x_in=> [/= i ->]; rewrite /fset_names big_tnth.
-  by apply/bigcup_sup.
+  by apply/(@bigcup_sup _ _ _ _ _ (fun x => names _)).
 by case/fset2P=> ->; [move: Pn|move: Pn']; apply: contra; [move: n|move: n'];
 apply/fsubsetP.
 Qed.
@@ -876,7 +884,8 @@ have {i Pi} [x x_in Pn] : exists2 x, x \in X & n \in names x.
   by eexists; eauto; apply: mem_tnth.
 move: x_in Pn; rewrite -{1}e => /imfsetP [y Py ->]; rewrite names_rename.
 rewrite (mem_imfset_can _ _ (fpermK _) (fpermKV _)) fperm2V fperm2L.
-by case/seq_tnthP: Py=> {y} [y ->]; move: {e} n'; apply/fsubsetP/bigcup_sup.
+case/seq_tnthP: Py=> {y} [y ->]; move: {e} n'; apply/fsubsetP.
+by apply/(@bigcup_sup _ _ _ _ _ (fun x => names _)).
 Qed.
 
 Definition fset_nominalMixin :=
@@ -927,7 +936,7 @@ Lemma renamefsU s X Y : rename s (X :|: Y) = rename s X :|: rename s Y.
 Proof. exact: imfsetU. Qed.
 
 Lemma renamefsU1 s x X : rename s (x |: X) = rename s x |: rename s X.
-Proof. by rewrite fsetU1E renamefsU renamefs1. Qed.
+Proof. by rewrite renamefsU renamefs1. Qed.
 
 Lemma renamefsI s X Y : rename s (X :&: Y) = rename s X :&: rename s Y.
 Proof. apply: imfsetI=> ????; exact: rename_inj. Qed.
@@ -1666,7 +1675,8 @@ Proof.
 rewrite -[xx](unbindK fset0) bound_names_morph; move: (unbind _ _)=> {xx} x.
 rewrite bound_rename_morph=> n_nin n'_nin; apply/esym/bind_eqP; eexists=> //.
 apply: (fdisjoint_trans (fsubset_supp_fperm2 n n')).
-by rewrite /fset2 fsetU1E fdisjointC fdisjointUr !fdisjoints1 n'_nin.
+rewrite fdisjointC !fdisjointUr !fdisjoints1 n'_nin n_nin fdisjointC.
+exact: fdisjoint0.
 Qed.
 
 Definition bound_nominalMixin :=
@@ -1993,10 +2003,10 @@ Qed.
 Definition hide (n : name) := hiden (fset1 n).
 
 Lemma hideE n A x : hide n (mask A x) = mask (n |: A) x.
-Proof. by rewrite /hide hidenE fsetU1E. Qed.
+Proof. by rewrite /hide hidenE. Qed.
 
 Lemma names_hide n xx : names (hide n xx) = names xx :\ n.
-Proof. by rewrite /hide names_hiden fsetD1E. Qed.
+Proof. by rewrite /hide names_hiden. Qed.
 
 Lemma rename_hide s n xx :
   rename s (hide n xx) = hide (s n) (rename s xx).
@@ -2525,7 +2535,7 @@ rewrite -{1 2}(fperm2R n' n : s n = n') -(fs_f _ dis) -rename_hide.
 rewrite ?names_disjointE // names_hide.
 suff sub': fsubset (names (f n) :\ n) ns.
   by rewrite fdisjointC (fdisjoint_trans sub') // fdisjointC.
-by rewrite fsubD1set fsetU1E fsetUC (names_finsupp n fs_f).
+by rewrite fsubD1set fsetUC (names_finsupp n fs_f).
 Qed.
 
 Lemma newS ns ns' f :
@@ -2574,9 +2584,9 @@ have: fsubset (names (f n n')) (D :|: (fset1 n :|: fset1 n')).
   exact: (names_finsupp (n, n') fs_f).
 move: (f n n') {fs_f}=> xx; case: xx / (restrP D)=> [A x sub dis'].
 rewrite namesrE // renamerE !hideE => sub'.
-rewrite 2!fsetU1E fsetUA [fset1 n :|: _]fsetUC -fsetUA -2!fsetU1E.
-rewrite -{3}(fperm2L n n') -{5}(fperm2R n n') -2!renamenE.
+rewrite -{2}(fperm2L n n') -{2}(fperm2R n n') -2!renamenE.
 rewrite -!renamefsU1 -!renamerE names_disjointE //.
+  by rewrite fsetUA [n |: _]fsetUC -fsetUA.
 rewrite namesrE; move/fsubsetP: (fsubset_supp_fperm2 n n')=> sub''.
 apply/fdisjointP=> n'' /sub''; rewrite in_fset2 !in_fsetD !in_fsetU1.
 by rewrite !negb_or !negb_and !negbK=> /orP [->|->] //; rewrite orbT.
@@ -2606,7 +2616,7 @@ rewrite (newE ninA) //.
 case: (restrP B (f n)) (names_finsupp n fs_f)=> [/= A' x sub dis].
 rewrite namesrE // => sub'; rewrite hideE mapr_fsE //.
   by rewrite mapr_fsE // hideE; congr mask.
-by rewrite fsetU1E fdisjointUr fdisjoints1 ninB.
+by rewrite fdisjointUr fdisjoints1 ninB.
 Qed.
 
 End Composition.
@@ -2634,11 +2644,11 @@ rewrite (newE ninA) //.
 case: yy / (frestr2P (fset1 n) (f n)) (names_finsupp n fs_f) ninAN ninB
       => /= [A' x B y mf].
 rewrite fdisjointUr !(fdisjointC (fset1 n)) !fdisjoints1=> /andP [dis1 dis2].
-move=> subA' subB; rewrite !namesrE // namesnE fsetUC -fsetU1E.
+move=> subA' subB; rewrite !namesrE // namesnE fsetUC.
 move=> sub' ninAB ninB; rewrite hideE mapr2E //.
-  by rewrite mapr2E // hideE fsetU1E -fsetUA -fsetU1E.
+  by rewrite mapr2E // hideE -fsetUA.
 case/andP: mf=> [mfA mfB]; rewrite /mutfresh mfB andbT.
-rewrite fsetU1E fdisjointUl mfA andbT fdisjointC fdisjoints1.
+rewrite fdisjointUl mfA andbT fdisjointC fdisjoints1.
 by apply: contra ninB; rewrite in_fsetD dis2.
 Qed.
 
