@@ -63,10 +63,12 @@ Export FSet.Exports.
 Delimit Scope fset_scope with fset.
 
 Lemma fset_key : unit. Proof. exact: tt. Qed.
-Definition fset : forall T : ordType, seq T -> {fset T} :=
+Definition fset (T : ordType) : seq T -> {fset T} :=
   locked_with fset_key
-              (fun (T : ordType) (s : seq T) =>
+              (fun (s : seq T) =>
                  @FSet.FSet T _ (FSet.fset_subproof s)).
+
+Prenex Implicits fset.
 
 Section Basics.
 
