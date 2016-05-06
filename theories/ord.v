@@ -376,7 +376,7 @@ Local Open Scope ord_scope.
 Definition sub_ordMixin := @InjOrdMixin _ _ (@val T P sT) val_inj.
 Canonical sub_ordType := Eval hnf in OrdType sT sub_ordMixin.
 
-Lemma val_pordE (u v : sT) : (val u <= val v) = (u <= v).
+Lemma val_ordE (u v : sT) : (val u <= val v) = (u <= v).
 Proof. by []. Qed.
 
 End SubOrdType.
