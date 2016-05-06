@@ -1,8 +1,6 @@
-Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
-Require Import Ssreflect.ssrnat Ssreflect.eqtype Ssreflect.seq.
-Require Import Ssreflect.choice Ssreflect.fintype.
-
-Require Import MathComp.generic_quotient.
+From mathcomp Require Import
+  ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype
+  generic_quotient.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

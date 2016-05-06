@@ -1,8 +1,6 @@
-Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
-Require Import Ssreflect.ssrnat Ssreflect.eqtype Ssreflect.seq.
-Require Import Ssreflect.choice Ssreflect.fintype.
-
-Require Import MathComp.tuple MathComp.bigop MathComp.generic_quotient.
+From mathcomp Require Import
+  ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype tuple bigop
+  generic_quotient.
 
 Require Import ord fset partmap fperm.
 
@@ -1184,9 +1182,9 @@ Proof.
 rewrite /names/=/partmap_names; apply/(iffP idP).
   case/fsetUP; rewrite !namesfsE big_tnth=> /bigcup_finP [i _].
     move: (mem_tnth i (in_tuple (domm m)))=> /dommP [v Pv].
-    by apply: PMFreeNamesKey.
+    by apply: PMFreeNamesKey Pv.
   move: (mem_tnth i (in_tuple (domm (invm m))))=> /codommP [x m_x].
-  by apply: PMFreeNamesVal.
+  by apply: PMFreeNamesVal m_x.
 case=> [k v m_k n_in|k v m_k n_in]; apply/fsetUP.
   have /(tnthP (in_tuple (domm m))) [i i_in]: k \in domm m.
     by rewrite mem_domm m_k.
@@ -1440,7 +1438,7 @@ Lemma bij_namesTeq n n' x :
   n \in bij_names x -> bij_rename (fperm2 n n') x = x ->
   n' \in bij_names x.
 Proof.
-rewrite /bij_names /bij_rename=> Pn h; apply: namesTeq=> //.
+rewrite /bij_names /bij_rename=> Pn h; apply: namesTeq; eauto.
 by apply: (canRL gK).
 Qed.
 
@@ -1662,7 +1660,8 @@ Lemma bound_namesTeq n n' xx :
   n' \in bound_names xx.
 Proof.
 rewrite -[xx](unbindK fset0) bound_names_morph; set s := fperm2 n n'.
-move/(mem_imfset s); rewrite -renamefsE renamefsD renamefsE -names_rename.
+move/(mem_imfset s).
+rewrite -[s @: _]renamefsE renamefsD renamefsE -names_rename.
 move: {xx} (unbind _ _)=> x; rewrite bound_rename_morph {1}/s fperm2L eqvarE.
 by move=> n'_in e; rewrite -bound_names_morph -e bound_names_morph.
 Qed.

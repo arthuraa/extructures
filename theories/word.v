@@ -1,10 +1,6 @@
-Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
-Require Import Ssreflect.ssrnat Ssreflect.eqtype Ssreflect.seq.
-Require Import Ssreflect.choice Ssreflect.fintype.
-
-Require Import MathComp.div MathComp.ssralg MathComp.finalg MathComp.zmodp.
-Require Import MathComp.bigop MathComp.tuple MathComp.finfun MathComp.binomial.
-Require Import MathComp.ssrint MathComp.intdiv MathComp.ssrnum.
+From mathcomp Require Import
+  ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype div ssralg finalg
+  zmodp bigop tuple finfun binomial ssrint intdiv ssrnum.
 
 Require Import hseq ord nominal.
 

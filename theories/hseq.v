@@ -1,8 +1,6 @@
-Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
-Require Import Ssreflect.ssrnat Ssreflect.seq Ssreflect.eqtype.
-Require Import Ssreflect.choice Ssreflect.fintype.
-
-Require Import MathComp.tuple MathComp.bigop MathComp.finfun.
+From mathcomp Require Import
+  ssreflect ssrfun ssrbool ssrnat seq eqtype choice fintype
+  tuple bigop finfun.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
