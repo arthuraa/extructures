@@ -684,9 +684,7 @@ move=> h1 h2.
 have h: forall n x, n \notin seq_names xs -> x \in xs -> n \notin names x.
   move=> {n n' h1 h2} n x Pn /seq_tnthP [i ->]; apply: contra Pn.
   rewrite /seq_names big_tnth; move: n; apply/fsubsetP.
-  (* FIXME: This used to work without the annotation *)
-  apply/(@bigcup_sup _ _ _ _ _ (fun i => names (tnth (in_tuple xs) i)))=> //.
-  exact: mem_index_enum.
+  apply/bigcup_sup=> //; exact: mem_index_enum.
 rewrite /seq_rename -[in RHS](map_id xs); apply/eq_in_map=> x Px.
 by apply namesNNE; eauto.
 Qed.
@@ -699,9 +697,7 @@ Proof.
 rewrite /seq_names big_tnth => /bigcup_finP [i _ Pin e].
 suff e': rename (fperm2 n n') (tnth (in_tuple xs) i) = tnth (in_tuple xs) i.
   move: {e e'} n' (namesTeq Pin e'); apply/fsubsetP.
-  (* FIXME: This used to work without the annotation *)
-  apply/(@bigcup_sup _ _ _ _ _ (fun i => names (tnth (in_tuple xs) i)))=> //.
-  exact: mem_index_enum.
+  apply/bigcup_sup=> //; exact: mem_index_enum.
 rewrite (tnth_nth (tnth (in_tuple xs) i)) /=.
 by move: {Pin} i (tnth _ _)=> [i Pi] /= x; rewrite -{2}e {e} (nth_map x).
 Qed.
@@ -720,9 +716,7 @@ rewrite {2}/names/=/seq_names; apply/(iffP idP).
   rewrite big_tnth=> /bigcupP [i _]; eexists; eauto.
   exact/mem_tnth.
 move=> [x /(tnthP (in_tuple xs)) [i {x}->]].
-rewrite big_tnth; move: n; apply/fsubsetP.
-(* FIXME: Same annotation problem. *)
-apply/(@bigcup_sup _ _ _ _ _ (fun x => names _))=> //.
+by rewrite big_tnth; move: n; apply/fsubsetP/bigcup_sup.
 Qed.
 
 Lemma renames_nth s d xs n :
