@@ -1,9 +1,15 @@
 This is a basic set of libraries for Coq based on Ssreflect.
-It requires Coq v8.5 and MathComp v1.6.
+It requires:
+
+- Coq v8.5
+- Some MathComp packages, version 1.6 (https://github.com/math-comp/math-comp). In OPAM, just look for:
+  * coq-mathcomp-ssreflect
+  * coq-mathcomp-fingroup
+  * coq-mathcomp-algebra
 
 To compile:
 
-coq_makefile -f Make -o Makefile
+coq_makefile -f _CoqProject -o Makefile
 make
 
 To install:
