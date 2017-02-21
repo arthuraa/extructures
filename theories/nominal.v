@@ -741,6 +741,15 @@ Proof. by rewrite namessE. Qed.
 Lemma namess1 x xs : names (x :: xs) = names x :|: names xs.
 Proof. by rewrite 2!namessE. Qed.
 
+Lemma names_nseq k x : names (nseq k x) = if 0 < k then names x else fset0.
+Proof.
+apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP=> n.
+  by case/namessP=> [x' /nseqP [-> ->]].
+case: ifP=> gt_0; last by rewrite in_fset0.
+move=> n_x; apply/namessP; exists x=> //.
+by apply/nseqP; split.
+Qed.
+
 End SeqNominalType.
 
 Section SumNominalType.
@@ -952,6 +961,15 @@ Lemma renamefs_subset s X Y :
 Proof.
 apply/idP/idP; first exact: imfsetS.
 rewrite -{2}(renameK s X) -{2}(renameK s Y); exact: imfsetS.
+Qed.
+
+Lemma names_fset (xs : seq T') : names (fset xs) = names xs.
+Proof.
+apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP.
+  move=> n /namesfsP [x]; rewrite in_fset => x_xs n_x.
+  by apply/namessP; eauto.
+move=> n /namessP [x x_xs n_x].
+by apply/namesfsP; exists x; rewrite ?in_fset.
 Qed.
 
 End SetNominalType.

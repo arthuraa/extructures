@@ -759,6 +759,18 @@ rewrite /uncurrym mkpartmapfpE /=.
 by case: ifP=> [inU|] //=; case: (n x) => [n'|] //= get_y; eauto.
 Qed.
 
+Lemma uncurrymE n p :
+  uncurrym n p = if n p.1 is Some n' then n' p.2 else None.
+Proof.
+case: p=> x y /=.
+case e: (uncurrym n (x, y))=> [v|].
+  by have /uncurrymP [n' -> ->] := e.
+case e': (n x) => [n'|] //=.
+case e'': (n' y) => [v|] //=.
+have/uncurrymP : exists2 n', n x = Some n' & n' y = Some v by eauto.
+by rewrite e.
+Qed.
+
 Lemma currymK : cancel currym uncurrym.
 Proof.
 move=> m; apply/eq_partmap=> - [x y].

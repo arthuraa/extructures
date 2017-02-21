@@ -117,7 +117,7 @@ case: s1 s2 => [s1 Ps1] [s2 Ps2] /= E; apply/val_inj=> /=.
 have anti: antisymmetric (@Ord.lt T).
   move=> x y /andP [/Ord.ltW xy /Ord.ltW yx].
   exact: Ord.anti_leq (introT andP (conj xy yx)).
-have {E} E := E : s1 =i s2; apply: (eq_sorted _ _ Ps1 Ps2) => //.
+rewrite -[s1 =i s2]/(_) in E; apply: (eq_sorted _ _ Ps1 Ps2) => //.
   exact: Ord.lt_trans.
 apply: uniq_perm_eq => //; [move: Ps1|move: Ps2]; apply/sorted_uniq => //;
 by [apply: Ord.ltxx|apply: Ord.lt_trans].

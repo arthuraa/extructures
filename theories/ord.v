@@ -206,14 +206,14 @@ Qed.
 Lemma anti_prod_leq : antisymmetric prod_leq.
 Proof.
 move=> [x1 y1] [x2 y2]; rewrite /prod_leq /= eq_sym.
-have [-> /Ord.anti_leq -> //|Hne /Ord.anti_leq E] := altP (x2 =P _).
+have [/eqP -> /Ord.anti_leq -> //|Hne /Ord.anti_leq E] := ifP.
 by rewrite E eqxx in Hne.
 Qed.
 
 Lemma prod_leq_total : total prod_leq.
 Proof.
 move=> p1 p2; rewrite /Ord.leq /= /prod_leq /= eq_sym.
-by have [_|Hne] := altP (p2.1 =P _); apply Ord.leq_total.
+by case: ifP=> ?; apply: Ord.leq_total.
 Qed.
 
 Definition prod_ordMixin :=
