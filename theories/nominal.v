@@ -1996,6 +1996,9 @@ Proof.
 by case/(restrP fset0): xx=> A x _ sub; rewrite hidenE fset0U.
 Qed.
 
+Lemma hidenD A xx : fdisjoint A (names xx) -> hiden A xx = xx.
+Proof. by move=> /eqP dis; rewrite -[RHS]hiden0 -dis hidenI. Qed.
+
 Lemma rename_hiden s A xx :
   rename s (hiden A xx) = hiden (rename s A) (rename s xx).
 Proof.
@@ -2025,6 +2028,9 @@ Proof. by rewrite /hide rename_hiden renamefsE imfset1. Qed.
 
 Lemma hide0 n xx : names xx = fset0 -> hide n xx = xx.
 Proof. by rewrite /hide hidenI -{4}[xx]hiden0=> ->; rewrite fsetI0. Qed.
+
+Lemma hideD n xx : n \notin names xx -> hide n xx = xx.
+Proof. by move=> nin; rewrite /hide hidenD // fdisjointC fdisjoints1. Qed.
 
 End Hide.
 
