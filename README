@@ -1,7 +1,7 @@
 This is a basic set of libraries for Coq based on Ssreflect.
 It requires:
 
-- Coq v8.5
+- Coq v8.6
 - Some MathComp packages, version 1.6 (https://github.com/math-comp/math-comp). In OPAM, just look for:
   * coq-mathcomp-ssreflect
   * coq-mathcomp-fingroup
