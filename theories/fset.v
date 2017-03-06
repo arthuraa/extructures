@@ -59,6 +59,20 @@ Export FSet.Exports.
 
 Delimit Scope fset_scope with fset.
 
+Section ReExports.
+
+(** This redundancy is needed to make inference more robust when using
+    [fset_of] instead of [fset_type]. *)
+
+Variable T : ordType.
+
+Canonical fset_of_subType := Eval hnf in [subType of {fset T}].
+Canonical fset_of_eqType := Eval hnf in [eqType of {fset T}].
+Canonical fset_of_choiceType := Eval hnf in [choiceType of {fset T}].
+Canonical fset_of_ordType := Eval hnf in [ordType of {fset T}].
+
+End ReExports.
+
 Lemma fset_key : unit. Proof. exact: tt. Qed.
 Definition fset (T : ordType) : seq T -> {fset T} :=
   locked_with fset_key

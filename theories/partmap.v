@@ -61,6 +61,19 @@ End PartMap.
 
 Export PartMap.Exports.
 
+Section ReExports.
+
+Variable T : ordType.
+Canonical partmap_of_subType S := Eval hnf in [subType of {partmap T -> S}].
+Canonical partmap_of_eqType (S : eqType) :=
+  Eval hnf in [eqType of {partmap T -> S}].
+Canonical partmap_of_choiceType (S : choiceType) :=
+  Eval hnf in [choiceType of {partmap T -> S}].
+Canonical partmap_of_ordType (S : ordType) :=
+  Eval hnf in [ordType of {partmap T -> S}].
+
+End ReExports.
+
 (* Redefine the partmap constructor with a different signature, in
 order to keep types consistent. *)
 Definition partmap (T : ordType) S s Ps : {partmap T -> S} :=
