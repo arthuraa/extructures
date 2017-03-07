@@ -1314,19 +1314,21 @@ Section MorePartMap.
 Local Open Scope fset_scope.
 Local Open Scope fperm_scope.
 
-Lemma renamem_partmap_of_seq (T : nominalType) : eqvar (@partmap_of_seq T).
+Implicit Types T S R : nominalType.
+
+Global Instance partmap_of_seq_eqvar T : eqvar (@partmap_of_seq T).
 Proof.
 move=> ????; eapply getm_nomR=> ???; rewrite !partmap_of_seqE.
 by typeclasses eauto.
 Qed.
 
-Lemma renamem_uncurry (T S R : nominalType) : eqvar (@uncurrym T S R).
+Global Instance uncurrym_eqvar T S R : eqvar (@uncurrym T S R).
 Proof.
 move=> s ???.
 by eapply getm_nomR=> ???; rewrite !uncurrymE; typeclasses eauto.
 Qed.
 
-Lemma renamem_curry (T S R : nominalType) : eqvar (@currym T S R).
+Global Instance currym_eqvar T S R : eqvar (@currym T S R).
 Proof.
 move=> s m _ <-.
 apply/eq_partmap=> x.
