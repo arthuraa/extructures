@@ -1433,9 +1433,12 @@ Implicit Types (s : {fperm name}) (x : sT).
 Global Instance val_eqvar : eqvar (@val _ _ sT).
 Proof. move=> s x _ <-; symmetry; exact: SubK. Qed.
 
-Lemma nomR_val s x1 x2 :
-  nomR s (val x1) (val x2) -> nomR s x1 x2.
+Lemma nomR_val s x1 x2 : nomR s (val x1) (val x2) -> nomR s x1 x2.
 Proof. by move=> x1x2; apply: val_inj; rewrite -x1x2 val_eqvar. Qed.
+
+Global Instance nomR_Sub s (y1 y2 : T) (p1 : P y1) (p2 : P y2) :
+  nomR s y1 y2 -> nomR s (Sub y1 p1 : sT) (Sub y2 p2).
+Proof. by move=> y1y2; eapply nomR_val; rewrite !SubK. Qed.
 
 Lemma subnamesE x : names x = names (val x).
 Proof. by []. Qed.
@@ -1612,8 +1615,7 @@ rewrite -(fsetID D (names x :\: l x)) fdisjointUl; apply/andP; split.
   by rewrite !(in_fsetD, negb_and, negb_or, negbK) /= n_in n_nin.
 rewrite fdisjointC /x' -[l x']namesfsnE.
 apply: (@fdisjoint_trans _ _ (names x')).
-  eapply nom_finsuppP.
-  typeclasses eauto.
+  by eapply nom_finsuppP; typeclasses eauto.
 rewrite /x' names_rename /s; exact: avoidP.
 Qed.
 
@@ -2006,8 +2008,7 @@ Qed.
 
 Global Instance mask_eqvar : eqvar (@mask T).
 Proof.
-move=> s A _ <- x _ <-; rewrite [mask]unlock.
-eapply bind_eqvar; eapply nomR_val=> /=; by typeclasses eauto.
+by move=> s A _ <- x _ <-; rewrite [mask]unlock; typeclasses eauto.
 Qed.
 
 End Basic.
