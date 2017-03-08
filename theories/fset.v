@@ -447,6 +447,9 @@ apply/fdisjointP; have [ins|nins] /= := boolP (x \in s).
 by move=> x' ins'; apply: contra nins=> /fset1P <-.
 Qed.
 
+Lemma fdisjoint1s s x : fdisjoint (fset1 x) s = (x \notin s).
+Proof. by rewrite fdisjointC fdisjoints1. Qed.
+
 Lemma in_fsetD x s1 s2 : (x \in s1 :\: s2) = (x \notin s2) && (x \in s1).
 Proof. by rewrite in_fset_filter. Qed.
 

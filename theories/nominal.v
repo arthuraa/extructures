@@ -1014,7 +1014,7 @@ Qed.
 Global Instance names_eqvar : {eqvar (@names T)}.
 Proof. by move=> s x _ <-; rewrite names_rename. Qed.
 
-Lemma finsuppJ A (f : T -> S) (s : {fperm name}) :
+Global Instance finsuppJ A (f : T -> S) (s : {fperm name}) :
   {finsupp A f} ->
   {finsupp (rename s A) (rename s \o f \o rename s^-1)}.
 Proof.
@@ -2044,45 +2044,22 @@ Qed.
 Lemma hidenD A xx : fdisjoint A (names xx) -> hiden A xx = xx.
 Proof. by move=> /eqP dis; rewrite -[RHS]hiden0 -dis hidenI. Qed.
 
-Global Instance hiden_eqvar : {eqvar hiden}.
-Proof.
-move=> s A _ <- xx _ <-; case/(restrP fset0): xx=> A' x _ sub.
-by rewrite !(restr_eqvar, hidenE); finsupp.
-Qed.
-
 Lemma names_hiden A xx : names (hiden A xx) = names xx :\: A.
 Proof.
 case/(restrP fset0): xx=> A' x _ sub.
 by rewrite hidenE !namesrE fsetDDl fsetUC.
 Qed.
 
-(* FIXME: This should probably just be a notation *)
-
-Definition hide (n : name) := hiden (fset1 n).
-
-Lemma hideE n A x : hide n (restr A x) = restr (n |: A) x.
-Proof. by rewrite /hide hidenE. Qed.
-
-Lemma names_hide n xx : names (hide n xx) = names xx :\ n.
-Proof. by rewrite /hide names_hiden. Qed.
-
-Lemma hide_eqvar s n xx :
-  rename s (hide n xx) = hide (s n) (rename s xx).
-Proof. by rewrite /hide hiden_eqvar renamefsE imfset1. Qed.
-
-Lemma hide0 n xx : names xx = fset0 -> hide n xx = xx.
-Proof. by rewrite /hide hidenI -{4}[xx]hiden0=> ->; rewrite fsetI0. Qed.
-
-Lemma hideD n xx : n \notin names xx -> hide n xx = xx.
-Proof. by move=> nin; rewrite /hide hidenD // fdisjointC fdisjoints1. Qed.
+Global Instance hiden_eqvar : {eqvar hiden}.
+Proof.
+move=> s A _ <- xx _ <-; case/(restrP fset0): xx=> A' x _ sub.
+by rewrite !(restr_eqvar, hidenE); finsupp.
+Qed.
 
 End Hide.
 
 Lemma hidenT (T : trivialNominalType) A xx : @hiden T A xx = xx.
 Proof. by rewrite hidenI namesT fsetI0 hiden0. Qed.
-
-Lemma hideT (T : trivialNominalType) n xx : @hide T n xx = xx.
-Proof. by rewrite hide0 // namesT. Qed.
 
 Section Join.
 
@@ -2453,28 +2430,6 @@ rewrite fdisjointUl subB andbT fdisjointC -(fsetID (names x) A') fdisjointUl.
 by rewrite (fsetIidPr _ _ sub1) fdisjointC disA1 /= fdisjointC.
 Qed.
 
-Lemma hide_mapr T S n f xx :
-  {eqvar f} -> hide n (@mapr T S f xx) = mapr f (hide n xx).
-Proof. exact: hiden_mapr. Qed.
-
-Lemma hide_mapr2l T S R n f xx yy :
-  {eqvar f} ->
-  n \notin names yy ->
-  hide n (@mapr2 T S R f xx yy) = mapr2 f (hide n xx) yy.
-Proof.
-move=> e pn; apply: (hiden_mapr2l _ e).
-by rewrite fdisjointC fdisjoints1.
-Qed.
-
-Lemma hide_mapr2r T S R n f xx yy :
-  {eqvar f} ->
-  n \notin names xx ->
-  hide n (@mapr2 T S R f xx yy) = mapr2 f xx (hide n yy).
-Proof.
-move=> e pn; apply: (hiden_mapr2r _ e).
-by rewrite fdisjointC fdisjoints1.
-Qed.
-
 End Hiding.
 
 Section Flip.
@@ -2552,7 +2507,7 @@ Section Basic.
 Variable T : nominalType.
 
 Definition new (ns : {fset name}) (f : name -> {restr T}) :=
-  hide (fresh ns) (f (fresh ns)).
+  hiden (fset1 (fresh ns)) (f (fresh ns)).
 
 Lemma newP ns f g :
   (forall n, n \notin ns -> f n = g n) ->
@@ -2560,19 +2515,19 @@ Lemma newP ns f g :
 Proof. by move=> efg; rewrite /new efg // freshP. Qed.
 
 Lemma newE ns f n :
-  n \notin ns -> {finsupp ns f} -> new ns f = hide n (f n).
+  n \notin ns -> {finsupp ns f} -> new ns f = hiden (fset1 n) (f n).
 Proof.
 move=> n_nin_ns fs_f; rewrite /new.
 move: (fresh _) (freshP ns)=> n' n'_nin_ns.
 pose s := fperm2 n' n.
-have dis: fdisjoint (supp s) ns.
-  rewrite (fdisjoint_trans (fsubset_supp_fperm2 _ _)) //.
+have dis: finsupp_perm ns s.
+  rewrite /finsupp_perm (fdisjoint_trans (fsubset_supp_fperm2 _ _)) //.
   by apply/fdisjointP=> n'' /fset2P [->|->] {n''} //.
-rewrite -{1 2}(fperm2R n' n : s n = n') -(fs_f s dis n (s n) erefl) -hide_eqvar.
-rewrite ?renameJ // names_hide.
+rewrite -{1 2}(fperm2R n' n : rename s n = n') -hiden_eqvar namesnE.
+rewrite ?renameJ // names_hiden.
 suff sub': fsubset (names (f n) :\ n) ns.
   by rewrite fdisjointC (fdisjoint_trans sub') // fdisjointC.
-by rewrite fsubD1set fsetUC -namesnE; eapply nom_finsuppP; typeclasses eauto.
+by rewrite fsubD1set fsetUC -namesnE; eapply nom_finsuppP; finsupp.
 Qed.
 
 Lemma newS ns ns' f :
@@ -2588,7 +2543,7 @@ Qed.
 
 Lemma new_const xx : new (names xx) (fun _ => xx) = xx.
 Proof.
-rewrite (newE (freshP (names xx))) /hide.
+rewrite (newE (freshP (names xx))).
 rewrite hidenI -[RHS]hiden0; congr hiden.
 by apply: fdisjoint_fsetI0; rewrite fdisjointC fdisjoints1 freshP.
 Qed.
@@ -2602,9 +2557,8 @@ move: (fresh _) (freshP (supp s :|: A :|: rename s A))=> n nin fs_f.
 have /and3P [/suppPn ninS ninA ninSA]:
   [&& n \notin supp s, n \notin A & n \notin rename s A].
   by move: nin; rewrite !in_fsetU !negb_or -andbA.
-move: (@finsuppJ _ _ _ _ s fs_f) => fs_f'.
-by rewrite (newE ninA) // hide_eqvar (newE ninSA) ninS /= renamenE
-   -{4}ninS fpermK.
+rewrite (newE ninA) // hiden_eqvar (newE ninSA) /= fset1_eqvar.
+by rewrite !renamenE -{4}ninS fpermK ninS.
 Qed.
 
 Lemma newC D f :
@@ -2627,7 +2581,7 @@ move/(_ _ dis _ _ Rnn' _ _ Rn'n): (fs_f)=> <-.
 have: fsubset (names (f n n')) (D :|: (fset1 n :|: fset1 n')).
   by rewrite -2!namesnE; eapply nom_finsuppP; typeclasses eauto.
 move: (f n n') {fs_f}=> xx; case: xx / (restrP D)=> [A x sub dis'].
-rewrite namesrE // restr_eqvar !hideE => sub'.
+rewrite namesrE // restr_eqvar !hidenE => sub'.
 rewrite -[LHS](renameK (fperm2 n n')) fperm2V restr_eqvar.
 rewrite !fsetU_eqvar !fset1_eqvar renameJ.
   by rewrite fsetUA [n' |: fset1 n]fsetUC -fsetUA.
@@ -2658,8 +2612,8 @@ rewrite (newE ninA) //.
 have: fsubset (names (f n)) (A :|: names n).
   eapply nom_finsuppP; typeclasses eauto.
 case: (restrP B (f n))=> [/= A' x sub dis].
-rewrite namesrE // => sub'; rewrite hideE mapr_fsE //.
-  by rewrite mapr_fsE // hideE; congr restr.
+rewrite namesrE // => sub'; rewrite hidenE mapr_fsE //.
+  by rewrite mapr_fsE // hidenE; congr restr.
 by rewrite fdisjointUr fdisjoints1 ninB.
 Qed.
 
@@ -2688,8 +2642,8 @@ have: fsubset (names (f n)) (names n :|: A).
 case: yy / (frestr2P (names n) (f n)) ninAN ninB => /= [A' x B y mf].
 rewrite fdisjointUr !(fdisjointC (fset1 n)) !fdisjoints1=> /andP [dis1 dis2].
 move=> subA' subB; rewrite !namesrE // namesnE fsetUC.
-move=> ninAB ninB; rewrite hideE mapr2E //.
-  by rewrite mapr2E // hideE -fsetUA.
+move=> ninAB ninB; rewrite hidenE mapr2E //.
+  by rewrite mapr2E // hidenE -fsetUA.
 case/andP: mf=> [mfA mfB]; rewrite /mutfresh mfB andbT.
 rewrite fdisjointUl mfA andbT fdisjointC fdisjoints1.
 by apply: contra ninB; rewrite in_fsetD dis2.
