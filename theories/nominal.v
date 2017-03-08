@@ -354,12 +354,64 @@ Proof. rewrite in_fset1; exact/eqP. Qed.
 
 End NameNominal.
 
-Section FiniteSupport.
+End NominalTheory.
 
-Implicit Types (s : {fperm name}) (D : {fset name}).
+Ltac finsupp := typeclasses eauto with typeclass_instances.
+
+Class finsupp_perm (D : {fset name}) (s : {fperm name}) :=
+  finsupp_permP : fdisjoint (supp s) D.
+
+Class fsubset_class (A B : {fset name}) :=
+  fsubset_classP : fsubset A B.
 
 Class nominalRel (T : Type) :=
   nomR : {fperm name} -> T -> T -> Prop.
+
+Existing Class nomR.
+
+Notation "{ 'finsupp' D x }" :=
+  (forall s : {fperm name}, finsupp_perm D s -> nomR s x x)
+  (at level 0, D at next level, format "{ 'finsupp'  D  x }") : type_scope.
+
+Notation "{ 'eqvar' x }" :=
+  (forall s : {fperm name}, nomR s x x)
+  (at level 0, format "{ 'eqvar'  x }") : type_scope.
+
+Section FiniteSupport.
+
+Local Open Scope fset_scope.
+Local Open Scope fperm_scope.
+
+Implicit Types (s : {fperm name}) (D : {fset name}).
+
+Global Instance fset0_fsubset_class D : fsubset_class fset0 D.
+Proof. exact: fsub0set. Qed.
+
+Global Instance id_fsubset_class D : fsubset_class D D.
+Proof. exact: fsubsetxx. Qed.
+
+Global Instance fsetUl_fsubset_class D D1 D2 :
+  fsubset_class D D1 ->
+  fsubset_class D (D1 :|: D2).
+Proof. by move=> fs; apply: (fsubset_trans fs); exact: fsubsetUl. Qed.
+
+Global Instance fsetUr_fsubset_class D D1 D2 :
+  fsubset_class D D2 ->
+  fsubset_class D (D1 :|: D2).
+Proof. by move=> fs; apply: (fsubset_trans fs); exact: fsubsetUr. Qed.
+
+Global Instance fsubset_finsupp_perm D D' s :
+  finsupp_perm D' s ->
+  fsubset_class D D' ->
+  finsupp_perm D s | 2.
+Proof.
+move=> fs sub; rewrite /finsupp_perm fdisjointC; apply: fdisjoint_trans.
+  exact: sub.
+by rewrite fdisjointC.
+Qed.
+
+Global Instance fset0_finsupp_perm s : finsupp_perm fset0 s.
+Proof. by rewrite /finsupp_perm fdisjointC fdisjoint0. Qed.
 
 Global Instance nominalType_nominalRel (T : nominalType) : nominalRel T :=
   fun s x y => rename s x = y.
@@ -371,48 +423,32 @@ Global Instance arrow_nominalRel T S (eT : nominalRel T) (eS : nominalRel S) :
   nominalRel (T -> S) :=
   fun s f g => forall x y, nomR s x y -> nomR s (f x) (g y).
 
-Existing Class nomR.
-
 Global Instance nomR_nominal (T : nominalType) s (x : T) :
   nomR s x (rename s x).
 Proof. by []. Qed.
 
-Global Instance nomR_abs T S {eT : nominalRel T} {eS : nominalRel S} s (f g : T -> S) :
-  (forall x y, nomR s x y -> nomR s (f x) (g y)) ->
-  nomR s f g | 2.
-Proof. by []. Qed.
+Global Instance nomR_nominalJ (T : nominalType) s (x : T) :
+  finsupp_perm (names x) s ->
+  nomR s x x | 2.
+Proof. by move=> fs_s; rewrite -{2}(renameJ fs_s). Qed.
 
-Global Instance nomR_app T S {eT : nominalRel T} {eS : nominalRel S} s (f g : T -> S) x y :
+Global Instance nomR_app T S
+  {eT : nominalRel T} {eS : nominalRel S} s (f g : T -> S) x y :
   nomR s f g -> nomR s x y -> nomR s (f x) (g y) | 1.
 Proof. by apply. Qed.
 
-Class eqvar T {eT : nominalRel T} (x : T) :=
-  eqvarP : forall s, nomR s x x.
-
-Global Existing Instance eqvarP | 2.
-
-Lemma nom_eqvarP (T : nominalType) (x : T) {xP : eqvar x} : names x = fset0.
-Proof. by apply/eqP/names0P/xP. Qed.
-
-Global Instance Prop_finsupp (P : Prop) : eqvar P.
+Definition Prop_finsupp (P : Prop) : {finsupp fset0 P}.
 Proof. by []. Qed.
 
-Class finsupp T {eT : nominalRel T} D (x : T) : Prop :=
-  finsuppP : forall s, fdisjoint (supp s) D -> nomR s x x.
-
-Global Instance eqvar_finsupp T {eT : nominalRel T} D (x : T) {xP : eqvar x} :
-  finsupp D x.
-Proof. by move=> s _. Qed.
-
 Lemma nom_finsuppP (T : nominalType) A (x : T) :
-  finsupp A x <-> fsubset (names x) A.
+  {finsupp A x} <-> fsubset (names x) A.
 Proof.
 split.
   move: (fresh _) (freshP (names x :|: A)) => n'.
   rewrite in_fsetU => /norP [nin_x' nin_A'].
   move=> fs; apply/fsubsetP=> n /namesP/(_ n') in_n.
   have [//|nin_A] := boolP (n \in A).
-  rewrite in_n // in nin_x'; apply: fs; apply: fdisjoint_trans.
+  rewrite in_n // in nin_x'; eapply fs; apply: fdisjoint_trans.
     exact: fsubset_supp_fperm2.
   rewrite fdisjointUl fdisjointC fdisjoints1 nin_A fdisjointUl fdisjoint0.
   by rewrite fdisjointC fdisjoints1 nin_A'.
@@ -421,57 +457,13 @@ rewrite fdisjointC; apply: fdisjoint_trans; eauto.
 by rewrite fdisjointC.
 Qed.
 
-Global Instance nominalType_finsupp (T : nominalType) (x : T) : finsupp (names x) x.
-Proof.
-by move=> s dis; rewrite /nomR /nominalType_nominalRel renameJ.
-Qed.
-
-Global Instance app_finsupp
-  T S {eT : nominalRel T} {eS : nominalRel S} D (f : T -> S) (x : T)
-      {fs_f : finsupp D f} {fs_x : finsupp D x} :
-  finsupp D (f x).
-Proof.
-move=> s dis; move: fs_f fs_x => /(_ _ dis) fs_f /(_ _ dis) fs_x.
-by typeclasses eauto.
-Qed.
-
-Global Instance id_eqvar T {eT : nominalRel T} : eqvar (@id T).
-Proof. by move=> ???. Qed.
-
-Global Instance comp_finsupp
-  T S R {eT : nominalRel T} {eS : nominalRel S} {eR : nominalRel R}
-  D (f : T -> S) (g : S -> R) :
-  finsupp D f ->
-  finsupp D g ->
-  finsupp D (g \o f).
-Proof.
-by move=> fs_f fs_g s dis ??? /=; eapply fs_g; last eapply fs_f.
-Qed.
-
-Lemma sub_finsupp
-  T {eT : nominalRel T} D D' x :
-  fsubset D D' ->
-  finsupp D x ->
-  finsupp D' x.
-Proof.
-move=> sub fs_x s dis; apply: fs_x.
-rewrite fdisjointC; apply: fdisjoint_trans; eauto.
-by rewrite fdisjointC.
-Qed.
-
-Global Instance fsetUl_finsupp
-  T {eT : nominalRel T} D1 D2 x :
-  finsupp D1 x -> finsupp (D1 :|: D2) x | 2.
-Proof. apply: sub_finsupp; exact: fsubsetUl. Qed.
-
-Global Instance fsetUr_finsupp
-  T {eT : nominalRel T} D1 D2 x :
-  finsupp D2 x -> finsupp (D1 :|: D2) x | 2.
-Proof. apply: sub_finsupp; exact: fsubsetUr. Qed.
+Lemma nom_eqvarP (T : nominalType) (x : T) : {eqvar x} -> names x = fset0.
+Proof. move=> eq_x; apply/eqP; rewrite -fsubset0; apply/nom_finsuppP. Qed.
 
 End FiniteSupport.
 
-End NominalTheory.
+Hint Extern 2 (nomR ?s (fun _ => _) (fun _ => _)) =>
+  move=> ??? : typeclass_instances.
 
 Module TrivialNominal.
 
@@ -587,6 +579,9 @@ Canonical bool_trivialNominalType := Eval hnf in [trivialNominalType for bool].
 Canonical nat_nominalType := Eval hnf in [nominalType for nat by //].
 Canonical nat_trivialNominalType := Eval hnf in [trivialNominalType for nat].
 
+Global Instance funcomp_eqvar (T S R : nominalType) : {eqvar @funcomp T S R}.
+Proof. by move=> s [] _ <- /= f1 f2 f12 g1 g2 g12 x1 x2 x12 /=; finsupp. Qed.
+
 Section TrivialNominalTheory.
 
 Variable T : trivialNominalType.
@@ -600,7 +595,7 @@ Proof. move=> x; apply/eqP/names0P=> s; exact: renameT. Qed.
 
 End TrivialNominalTheory.
 
-Global Instance eq_op_eqvar (T : nominalType) : eqvar (@eq_op T).
+Global Instance eq_op_eqvar (T : nominalType) : {eqvar (@eq_op T)}.
 Proof.
 move=> s x _ <- y _ <-; rewrite inj_eq //; apply: rename_inj.
 Qed.
@@ -610,6 +605,10 @@ Global Instance nomR_if T {eT : nominalRel T} s
   nomR s b1 b2 -> nomR s x1 x2 -> nomR s y1 y2 ->
   nomR s (if b1 then x1 else y1) (if b2 then x2 else y2).
 Proof. by move=> <-; case: b1. Qed.
+
+Global Instance finsupp_permT (T : trivialNominalType) (x : T) s :
+  finsupp_perm (names x) s.
+Proof. by rewrite namesT; finsupp. Qed.
 
 Section Instances.
 
@@ -661,13 +660,13 @@ Canonical prod_nominalType :=
 Lemma namespE p : names p = names p.1 :|: names p.2.
 Proof. by []. Qed.
 
-Global Instance pair_eqvar : eqvar (@pair T' S').
+Global Instance pair_eqvar : {eqvar (@pair T' S')}.
 Proof. by move=> s x ? <- y ? <-. Qed.
 
-Global Instance fst_eqvar : eqvar (@fst T' S').
+Global Instance fst_eqvar : {eqvar (@fst T' S')}.
 Proof. by move=> s [??] ? <-. Qed.
 
-Global Instance snd_eqvar : eqvar (@snd T' S').
+Global Instance snd_eqvar : {eqvar (@snd T' S')}.
 Proof. by move=> s [??] ? <-. Qed.
 
 End ProdNominalType.
@@ -736,7 +735,7 @@ rewrite {1}/names /= /seq_names; elim: xs=> [|x xs IH].
 by rewrite big_cons IH.
 Qed.
 
-Global Instance nth_eqvar : eqvar (@nth T').
+Global Instance nth_eqvar : {eqvar (@nth T')}.
 Proof.
 move=> s d _ <- xs _ <- n _ <-.
 rewrite !renamesE; have [in_xs|nin] := boolP (n < size xs).
@@ -744,10 +743,10 @@ rewrite !renamesE; have [in_xs|nin] := boolP (n < size xs).
 by rewrite -leqNgt in nin; rewrite 2?nth_default // size_map.
 Qed.
 
-Global Instance nil_eqvar : eqvar (@nil T').
+Global Instance nil_eqvar : {eqvar (@nil T')}.
 Proof. by []. Qed.
 
-Global Instance cons_eqvar : eqvar (@cons T').
+Global Instance cons_eqvar : {eqvar (@cons T')}.
 Proof. by move=> s x _ <- xs _ <-. Qed.
 
 Lemma namess1 x xs : names (x :: xs) = names x :|: names xs.
@@ -764,9 +763,9 @@ Qed.
 
 End SeqNominalType.
 
-Global Instance map_eqvar (T' S' : nominalType) : eqvar (@map T' S').
+Global Instance map_eqvar (T' S' : nominalType) : {eqvar (@map T' S')}.
 Proof.
-by move=> s f g fg xs _ <-; elim: xs => [|x xs IH] /=; typeclasses eauto.
+by move=> s f g fg xs _ <-; elim: xs => [|x xs IH] /=; finsupp.
 Qed.
 
 Section SumNominalType.
@@ -842,25 +841,25 @@ Canonical option_nominalType :=
 Lemma renameoE s x : rename s x = omap (rename s) x.
 Proof. by []. Qed.
 
-Global Instance Some_eqvar : eqvar (@Some S').
+Global Instance Some_eqvar : {eqvar (@Some S')}.
 Proof. by move=> s ?? <-. Qed.
 
-Global Instance None_eqvar : eqvar (@None S').
+Global Instance None_eqvar : {eqvar (@None S')}.
 Proof. by []. Qed.
 
-Global Instance isSome_eqvar : eqvar (@isSome S').
+Global Instance isSome_eqvar : {eqvar (@isSome S')}.
 Proof. by move=> s [?|] _ <-. Qed.
 
 End OptionNominalType.
 
-Global Instance obind_eqvar (T S : nominalType) : eqvar (@obind T S).
+Global Instance obind_eqvar (T S : nominalType) : {eqvar (@obind T S)}.
 Proof. by move=> s f g fg [x|] _ <- //=; apply: fg. Qed.
 
-Global Instance oapp_eqvar (T S : nominalType) : eqvar (@oapp T S).
-Proof. by move=> s f g fg ??? [x|] _ <- //=; typeclasses eauto. Qed.
+Global Instance oapp_eqvar (T S : nominalType) : {eqvar (@oapp T S)}.
+Proof. by move=> s f g fg ??? [x|] _ <- //=; finsupp. Qed.
 
-Global Instance omap_eqvar (T S : nominalType) : eqvar (@omap T S).
-Proof. by move=> s f g fg [x|] /= y <- //=; typeclasses eauto. Qed.
+Global Instance omap_eqvar (T S : nominalType) : {eqvar (@omap T S)}.
+Proof. by move=> s f g fg [x|] /= y <- //=; finsupp. Qed.
 
 Section OptionTrivial.
 
@@ -874,9 +873,9 @@ Canonical option_trivialNominalType :=
 
 End OptionTrivial.
 
-Global Instance pmap_eqvar (T' S' : nominalType) : eqvar (@pmap T' S').
+Global Instance pmap_eqvar (T' S' : nominalType) : {eqvar (@pmap T' S')}.
 Proof.
-by move=> s f g fg xs _ <-; elim: xs => [|x xs IH] //=; typeclasses eauto.
+by move=> s f g fg xs _ <-; elim: xs => [|x xs IH] //=; finsupp.
 Qed.
 
 Section SetNominalType.
@@ -961,33 +960,33 @@ Lemma namesfs_subset X Y :
   fsubset (names X) (names Y).
 Proof. by move=> /eqP <-; rewrite namesfsU /fsubset fsetUA fsetUid. Qed.
 
-Global Instance fset0_eqvar : eqvar (@fset0 T').
+Global Instance fset0_eqvar : {eqvar (@fset0 T')}.
 Proof. move=> s; exact: imfset0. Qed.
 
 Lemma namesfs0 : names fset0 = fset0.
 Proof. by rewrite namesfsE big_nil. Qed.
 
-Global Instance fset1_eqvar : eqvar (@fset1 T').
+Global Instance fset1_eqvar : {eqvar (@fset1 T')}.
 Proof. move=> s x _ <-; exact: imfset1. Qed.
 
-Global Instance fsetU_eqvar : eqvar (@fsetU T').
+Global Instance fsetU_eqvar : {eqvar (@fsetU T')}.
 Proof. move=> s X _ <- Y _ <-; exact: imfsetU. Qed.
 
-Global Instance fsetI_eqvar : eqvar (@fsetI T').
+Global Instance fsetI_eqvar : {eqvar (@fsetI T')}.
 Proof. move=> s X _ <- Y _ <-; apply: imfsetI=> ????; exact: rename_inj. Qed.
 
-Global Instance fsetD_eqvar : eqvar (@fsetD T').
+Global Instance fsetD_eqvar : {eqvar (@fsetD T')}.
 Proof.
 move=> s X _ <- Y _ <-; apply/eq_fset=> x.
 by rewrite !(mem_imfset_can _ _ (renameK s) (renameKV s), in_fsetD).
 Qed.
 
-Global Instance fdisjoint_eqvar : eqvar (@fdisjoint T').
+Global Instance fdisjoint_eqvar : {eqvar (@fdisjoint T')}.
 Proof.
-by move=> ???????; rewrite /fdisjoint; typeclasses eauto.
+by move=> ???????; rewrite /fdisjoint; finsupp.
 Qed.
 
-Global Instance fsubset_eqvar : eqvar (@fsubset T').
+Global Instance fsubset_eqvar : {eqvar (@fsubset T')}.
 Proof.
 move=> s X _ <- Y _ <-.
 apply/idP/idP; first exact: imfsetS.
@@ -1012,17 +1011,18 @@ apply/eq_fset=> n; apply/namesfsP=> /=; have [inA|ninA] := boolP (n \in A).
 by case=> [n' inA /namesnP nn']; move: ninA; rewrite nn' inA.
 Qed.
 
-Global Instance names_eqvar : eqvar (@names T).
+Global Instance names_eqvar : {eqvar (@names T)}.
 Proof. by move=> s x _ <-; rewrite names_rename. Qed.
 
 Lemma finsuppJ A (f : T -> S) (s : {fperm name}) :
-  finsupp A f ->
-  finsupp (rename s A) (rename s \o f \o rename s^-1).
+  {finsupp A f} ->
+  {finsupp (rename s A) (rename s \o f \o rename s^-1)}.
 Proof.
 move=> fs_f s' dis x _ <- /=; rewrite /nomR /= /nominalType_nominalRel.
 apply/(canRL (renameKV s)).
 rewrite -{2}(renameKV s x); move: (rename s^-1 x)=> {x} x.
-rewrite !renameD; apply: fs_f; rewrite -{2}(fperm_invK s) suppJ.
+suffices ? : finsupp_perm A (s^-1 * s' * s) by rewrite !renameD fs_f.
+rewrite -{2}(fperm_invK s) /finsupp_perm suppJ.
 apply/eqP; rewrite -(imfsetK (fpermK s) A) -imfsetI; last first.
   by move=> ?? _ _; apply: fperm_inj.
 by move/eqP: dis=> ->; rewrite imfset0.
@@ -1148,7 +1148,7 @@ rewrite (mem_imfset_can _ _ (renameK s) (renameKV s)) mem_domm.
 by case: (m (rename _ _)).
 Qed.
 
-Global Instance getm_eqvar : eqvar (@getm T S).
+Global Instance getm_eqvar : {eqvar (@getm T S)}.
 Proof. by move=> s m _ <- k _ <-; rewrite renamemE renameK. Qed.
 
 Lemma getm_nomR s m1 m2 : nomR s (getm m1) (getm m2) -> nomR s m1 m2.
@@ -1159,30 +1159,28 @@ move/(_ k (rename s k) erefl): m1m2 => <-.
 by symmetry; apply: getm_eqvar.
 Qed.
 
-Global Instance setm_eqvar : eqvar (@setm T S).
+Global Instance setm_eqvar : {eqvar (@setm T S)}.
 Proof.
 move=> ? ??? ??? ???.
-by eapply getm_nomR=> ???; rewrite !setmE; typeclasses eauto.
+by eapply getm_nomR=> ???; rewrite !setmE; finsupp.
 Qed.
 
-Global Instance remm_eqvar : eqvar (@remm T S).
+Global Instance remm_eqvar : {eqvar (@remm T S)}.
 Proof.
 move=> ? ??? ???.
-by eapply getm_nomR=> ???; rewrite !remmE; typeclasses eauto.
+by eapply getm_nomR=> ???; rewrite !remmE; finsupp.
 Qed.
 
-Global Instance filterm_eqvar : eqvar (@filterm T S).
+Global Instance filterm_eqvar : {eqvar (@filterm T S)}.
 Proof.
 move=> ? ??? ???.
-(* XXX: Running the line below, backtracking, and then running it again causes
-   Coq to enter an infinite loop. Probably a bug. *)
-by eapply getm_nomR=> ???; rewrite !filtermE; typeclasses eauto.
+by eapply getm_nomR=> ???; rewrite !filtermE; finsupp.
 Qed.
 
-Global Instance unionm_eqvar : eqvar (@unionm T S).
+Global Instance unionm_eqvar : {eqvar (@unionm T S)}.
 Proof.
 move=> ? ??? ???.
-by eapply getm_nomR=> ???; rewrite !unionmE; typeclasses eauto.
+by eapply getm_nomR=> ???; rewrite !unionmE; finsupp.
 Qed.
 
 Lemma namesm_empty : names emptym = fset0.
@@ -1190,28 +1188,25 @@ Proof.
 by rewrite namesmE domm0 codomm0 !namesfsE !big_nil fsetUid.
 Qed.
 
-Global Instance emptym_eqvar : eqvar (@emptym T S).
+Global Instance emptym_eqvar : {eqvar (@emptym T S)}.
+Proof. by apply/names0P/eqP/namesm_empty. Qed.
+
+Global Instance mkpartmap_eqvar : {eqvar (@mkpartmap T S)}.
 Proof.
-by apply/names0P/eqP/namesm_empty.
+by move=> s kvs _ <-; elim: kvs=> [|[k v] kvs IH] /=; finsupp.
 Qed.
 
-Global Instance mkpartmap_eqvar : eqvar (@mkpartmap T S).
+Global Instance mkpartmapf_eqvar : {eqvar (@mkpartmapf T S)}.
 Proof.
-move=> s kvs _ <-.
-elim: kvs=> [|[k v] kvs IH] /=; typeclasses eauto.
+by move=> s f g fg ks1 ks2 ks12; rewrite /mkpartmapf; finsupp.
 Qed.
 
-Global Instance mkpartmapf_eqvar : eqvar (@mkpartmapf T S).
+Global Instance mkpartmapfp_eqvar : {eqvar (@mkpartmapfp T S)}.
 Proof.
-by move=> s f g fg ks1 ks2 ks12; rewrite /mkpartmapf; typeclasses eauto.
+by move=> ? ??? ???; rewrite /mkpartmapfp; finsupp.
 Qed.
 
-Global Instance mkpartmapfp_eqvar : eqvar (@mkpartmapfp T S).
-Proof.
-by move=> ? ??? ???; rewrite /mkpartmapfp; typeclasses eauto.
-Qed.
-
-Global Instance domm_eqvar : eqvar (@domm T S).
+Global Instance domm_eqvar : {eqvar (@domm T S)}.
 Proof.
 move=> s m _ <-.
 apply/esym/eq_fset=> k; apply/(sameP idP)/(iffP idP).
@@ -1261,8 +1256,7 @@ Lemma namesm_union_disjoint m1 m2 :
   names (unionm m1 m2) = names m1 :|: names m2.
 Proof.
 move=> /fdisjointP dis; apply/eqP; rewrite eqEfsubset.
-(* XXX: Make this faster *)
-apply/andP; split; first by eapply nom_finsuppP; typeclasses eauto.
+apply/andP; split; first by eapply nom_finsuppP; finsupp.
 apply/fsubsetP=> n /fsetUP []; case/namesmP=> [k v|k v] get_k Pn.
 - apply/namesmP; eapply PMFreeNamesKey; eauto.
   by rewrite unionmE get_k.
@@ -1316,19 +1310,17 @@ Local Open Scope fperm_scope.
 
 Implicit Types T S R : nominalType.
 
-Global Instance partmap_of_seq_eqvar T : eqvar (@partmap_of_seq T).
+Global Instance partmap_of_seq_eqvar T : {eqvar (@partmap_of_seq T)}.
 Proof.
-move=> ????; eapply getm_nomR=> ???; rewrite !partmap_of_seqE.
-by typeclasses eauto.
+by move=> ????; eapply getm_nomR=> ???; rewrite !partmap_of_seqE; finsupp.
 Qed.
 
-Global Instance uncurrym_eqvar T S R : eqvar (@uncurrym T S R).
+Global Instance uncurrym_eqvar T S R : {eqvar (@uncurrym T S R)}.
 Proof.
-move=> s ???.
-by eapply getm_nomR=> ???; rewrite !uncurrymE; typeclasses eauto.
+by move=> s ???; eapply getm_nomR=> ???; rewrite !uncurrymE; finsupp.
 Qed.
 
-Global Instance currym_eqvar T S R : eqvar (@currym T S R).
+Global Instance currym_eqvar T S R : {eqvar (@currym T S R)}.
 Proof.
 move=> s m _ <-.
 apply/eq_partmap=> x.
@@ -1361,7 +1353,7 @@ Variable P : pred T.
 
 Structure type := Pack {
   sort : subType P;
-  _ : eqvar P
+  _ : {eqvar P}
 }.
 
 Local Coercion sort : type >-> subType.
@@ -1371,7 +1363,7 @@ Implicit Type (s : {fperm name}).
 Variable (sT : type).
 
 Let subeqvar s x : P x = P (rename s x).
-Proof. by case: sT=> ? <-. Qed.
+Proof. by case: sT => ? e; rewrite -[RHS]e. Qed.
 
 Implicit Type (x : sT).
 
@@ -1430,7 +1422,7 @@ Variables (T : nominalType) (P : pred T) (sT : subNominalType P).
 
 Implicit Types (s : {fperm name}) (x : sT).
 
-Global Instance val_eqvar : eqvar (@val _ _ sT).
+Global Instance val_eqvar : {eqvar (@val _ _ sT)}.
 Proof. move=> s x _ <-; symmetry; exact: SubK. Qed.
 
 Lemma nomR_val s x1 x2 : nomR s (val x1) (val x2) -> nomR s x1 x2.
@@ -1492,7 +1484,7 @@ Section Def.
 
 Variable T : nominalType.
 Variable l : T -> {fset name}.
-Hypothesis eq_l : eqvar l.
+Hypothesis eq_l : {eqvar l}.
 
 Implicit Types (x y : T).
 
@@ -1558,7 +1550,7 @@ Local Open Scope fperm_scope.
 
 Variable T : nominalType.
 Variable l : T -> {fset name}.
-Hypothesis eq_l : eqvar l.
+Hypothesis eq_l : {eqvar l}.
 
 CoInductive bound_type := Bound of {eq_quot BoundEq.equivRel eq_l}.
 
@@ -1608,14 +1600,15 @@ rewrite -(fsetID D (names x :\: l x)) fdisjointUl; apply/andP; split.
   suff ->: names x :\: l x = names x' :\: l x'.
     rewrite fdisjointC; apply/fdisjointP=> n n_in.
     by rewrite in_fsetD negb_and negbK n_in.
-  rewrite /x' -eq_l -names_eqvar -[RHS]fsetD_eqvar renameJ // namesfsnE.
+  symmetry.
+  rewrite /x' -eq_l -names_eqvar -[LHS]fsetD_eqvar renameJ // namesfsnE.
   move: (supp_avoid (D :\: (names x :\: l x)) (names x)).
   rewrite ![fdisjoint (supp _) _]fdisjointC; apply: fdisjoint_trans.
   apply/fsubsetP=> n /fsetDP [n_in n_nin].
   by rewrite !(in_fsetD, negb_and, negb_or, negbK) /= n_in n_nin.
 rewrite fdisjointC /x' -[l x']namesfsnE.
 apply: (@fdisjoint_trans _ _ (names x')).
-  by eapply nom_finsuppP; typeclasses eauto.
+  by eapply nom_finsuppP; finsupp.
 rewrite /x' names_rename /s; exact: avoidP.
 Qed.
 
@@ -1715,7 +1708,7 @@ Definition bound_nominalMixin :=
 Canonical bound_nominalType :=
   Eval hnf in NominalType bound_type bound_nominalMixin.
 
-Global Instance bind_eqvar : eqvar bind.
+Global Instance bind_eqvar : {eqvar bind}.
 Proof. move=> ? ? _ <-; exact: bound_rename_morph. Qed.
 
 Lemma namesbE x : names (bind x) = names x :\: l x.
@@ -1729,7 +1722,7 @@ Definition elimb D (f : T -> S) xx :=
   f (unbind D xx).
 
 Lemma elimbE D f x :
-  finsupp D f ->
+  {finsupp D f} ->
   fdisjoint D (l x) ->
   fdisjoint (names (f x)) (l x) ->
   elimb D f (bind x) = f x.
@@ -1741,7 +1734,7 @@ suffices ?: fsubset (names (f x)) (D :|: names x :\: l x).
   apply: fdisjoint_trans; first by eauto.
   by rewrite fdisjointUl fdisjointC dis''' fdisjointC.
 rewrite -(fsetDidPl _ _ dis') -(fsetDidPl _ _ dis) -fsetDUl fsetSD //.
-by eapply nom_finsuppP; typeclasses eauto.
+by eapply nom_finsuppP; finsupp.
 Qed.
 
 End Elim.
@@ -1761,7 +1754,7 @@ Local Open Scope fperm_scope.
 
 Variables (T S : nominalType).
 Variables (lT : T -> {fset name}) (lS : S -> {fset name}).
-Hypothesis (eq_T : eqvar lT) (eq_S : eqvar lS).
+Hypothesis (eq_T : {eqvar lT}) (eq_S : {eqvar lS}).
 
 Implicit Types (x : T) (y : S) (xx : {bound lT}) (yy : {bound lS}).
 
@@ -1787,7 +1780,7 @@ set xx := bind x; set yy := bind y.
 have dis: fdisjoint (D :|: names yy) (lT x).
   rewrite /yy fdisjointUl dis_x /=.
   move: disxy; rewrite fdisjointC; apply: fdisjoint_trans.
-  by eapply nom_finsuppP; typeclasses eauto.
+  by eapply nom_finsuppP; finsupp.
 case: (fbindP dis)=> s1 dis_s1; rewrite fdisjointUr.
 case/andP => dis_s1D dis_s1_yy.
 rewrite -(renameJ dis_s1_yy) /yy bind_eqvar.
@@ -1822,7 +1815,7 @@ Section TrivialNominalType.
 
 Variable T : trivialNominalType.
 Variable l : T -> {fset name}.
-Hypothesis eq_l : eqvar l.
+Hypothesis eq_l : {eqvar l}.
 
 Let bound_renameT s (xx : {bound l}) : rename s xx = xx.
 Proof.
@@ -1851,8 +1844,8 @@ Record prerestr := PreRestr {
 }.
 
 Lemma prerestr_eqvar :
-  eqvar (fun p : {fset name} * T => fsubset p.1 (names p.2)).
-Proof. by move=> /= s p1 p2 p1p2; typeclasses eauto. Qed.
+  {eqvar (fun p : {fset name} * T => fsubset p.1 (names p.2))}.
+Proof. by move=> /= s p1 p2 p1p2; finsupp. Qed.
 
 Canonical prerestr_subType := Eval hnf in [subType for prval].
 Definition prerestr_eqMixin := [eqMixin of prerestr by <:].
@@ -1870,8 +1863,8 @@ Canonical prerestr_nominalType :=
 
 Definition prerestr_op (p : prerestr) := (val p).1.
 
-Global Instance prerestr_op_eqvar : eqvar prerestr_op.
-Proof. by move=> s p1 p2 p1p2; rewrite /prerestr_op; typeclasses eauto. Qed.
+Global Instance prerestr_op_eqvar : {eqvar prerestr_op}.
+Proof. by move=> s p1 p2 p1p2; rewrite /prerestr_op; finsupp. Qed.
 
 Definition restr_type := {bound prerestr_op}.
 Definition restr_of of phant T := restr_type.
@@ -2006,10 +1999,8 @@ rewrite [mask]unlock namesbE /= /prerestr_op /= subnamesE fsetDUl /=.
 by rewrite namesfsnE fsetDv fset0U fsetIC fsetDIr fsetDv fset0U.
 Qed.
 
-Global Instance mask_eqvar : eqvar (@mask T).
-Proof.
-by move=> s A _ <- x _ <-; rewrite [mask]unlock; typeclasses eauto.
-Qed.
+Global Instance mask_eqvar : {eqvar (@mask T)}.
+Proof. by move=> s A _ <- x _ <-; rewrite [mask]unlock; finsupp. Qed.
 
 End Basic.
 
@@ -2055,10 +2046,10 @@ Qed.
 Lemma hidenD A xx : fdisjoint A (names xx) -> hiden A xx = xx.
 Proof. by move=> /eqP dis; rewrite -[RHS]hiden0 -dis hidenI. Qed.
 
-Global Instance hiden_eqvar : eqvar hiden.
+Global Instance hiden_eqvar : {eqvar hiden}.
 Proof.
 move=> s A _ <- xx _ <-; case/(restrP fset0): xx=> A' x _ sub.
-by rewrite !(mask_eqvar, hidenE); typeclasses eauto.
+by rewrite !(mask_eqvar, hidenE); finsupp.
 Qed.
 
 Lemma names_hiden A xx : names (hiden A xx) = names xx :\: A.
@@ -2135,10 +2126,10 @@ case: x subA dis sub => //= x subA dis sub.
 by rewrite -mask_eqvar renameJ // namesrE.
 Qed.
 
-Lemma rename_orestr : eqvar orestr.
+Lemma rename_orestr : {eqvar orestr}.
 Proof.
 move=> s x _ <-; case/(restrP fset0): x=> /= A x _ _.
-by rewrite orestrE mask_eqvar orestrE //=; typeclasses eauto.
+by rewrite orestrE mask_eqvar orestrE //=; finsupp.
 Qed.
 
 Lemma orestr_hiden A xx :
@@ -2166,7 +2157,7 @@ Definition mapr_fs_def xx :=
 Definition mapr_fs := locked_with mapr_fs_key mapr_fs_def.
 
 Lemma mapr_fsE :
-  finsupp D f ->
+  {finsupp D f} ->
   forall A x, fdisjoint D A ->
               mapr_fs (mask A x) = mask A (f x).
 Proof.
@@ -2175,9 +2166,11 @@ have dis': fdisjoint D (A :&: names x).
   rewrite fdisjointC; move: dis; rewrite fdisjointC.
   by apply: fdisjoint_trans; rewrite fsubsetIl.
 rewrite maskI; case: (fmaskP _ (fsubsetIr _ _))=> //= s disD dis_s dis_sD.
+have {dis_sD} dis_sD : finsupp_perm D s.
+  exact: dis_sD.
 have sub : fsubset (names (f x)) (D :|: names x).
-  by eapply nom_finsuppP; typeclasses eauto.
-rewrite -f_fs -1?mask_eqvar ?renameJ //.
+  by eapply nom_finsuppP; finsupp.
+rewrite -f_fs -mask_eqvar ?renameJ //.
   rewrite [LHS]maskI [RHS]maskI -fsetIA (fsetIC (names x)) fsetIA.
   congr mask; apply: fsetIidPl; apply: fsubset_trans (fsubsetIr A _).
   apply: (fsubset_trans (fsetIS A sub)).
@@ -2205,13 +2198,13 @@ rewrite mapr_fsE=> //.
 Qed.
 
 Lemma mapr_fs_comp Dg Df (g : S -> R) (f : T -> S) xx :
-  finsupp Dg g -> finsupp Df f ->
+  {finsupp Dg g} -> {finsupp Df f} ->
   mapr_fs (Dg :|: Df) (g \o f) xx =
   mapr_fs Dg g (mapr_fs Df f xx).
 Proof.
 case: xx / (restrP (Dg :|: Df))=> [A x dis sub] fs_g fs_f.
 move: (dis); rewrite fdisjointUl=> /andP [disg disf].
-by rewrite !mapr_fsE //.
+by rewrite !mapr_fsE.
 Qed.
 
 End Properties.
@@ -2224,13 +2217,13 @@ Variable f : T -> S.
 Definition mapr := mapr_fs fset0 f.
 
 Lemma maprE :
-  eqvar f ->
+  {eqvar f} ->
   forall A x, mapr (mask A x) = mask A (f x).
 Proof.
 by move=> fs_f A x; rewrite /mapr mapr_fsE // fdisjoint0.
 Qed.
 
-Global Instance rename_mapr : eqvar f -> eqvar mapr.
+Global Instance rename_mapr : {eqvar f} -> {eqvar mapr}.
 Proof.
 move=> equi_f s /= xx _ <-; case: xx / (restrP fset0) => [A x sub _].
 by rewrite !mask_eqvar !maprE; typeclasses eauto.
@@ -2247,12 +2240,12 @@ Implicit Types (D A : {fset name}) (x : T) (xx : {restr T}).
 Implicit Types (f : T -> S) (g : T -> S -> R).
 
 Global Instance mapr_fs_finsupp D f :
-  finsupp D f ->
-  finsupp D (mapr_fs D f).
+  {finsupp D f} ->
+  {finsupp D (mapr_fs D f)}.
 Proof.
 move=> fs_f s dis /= xx _ <-; case: xx / (restrP D)=> [A x sub fr].
 have dis': fdisjoint (supp s) (names D) by rewrite namesfsnE.
-rewrite mask_eqvar !mapr_fsE // -1?(renameJ dis') -?fdisjoint_eqvar //.
+rewrite mask_eqvar !mapr_fsE // -1?(renameJ dis') -1?fdisjoint_eqvar //.
 by eapply mask_eqvar=> //; eapply fs_f.
 Qed.
 
@@ -2275,15 +2268,16 @@ Variable f : T -> S -> R.
 Implicit Types (A B : {fset name}) (x : T) (y : S).
 Implicit Types (xx : {restr T}) (yy : {restr S}).
 
-Hypothesis eq_f : eqvar f.
+Hypothesis eq_f : {eqvar f}.
 
 Definition mutfresh A x B y :=
   [&& fdisjoint A (names y) & fdisjoint B (names x)].
 
-Global Instance mutfresh_eqvar : eqvar mutfresh.
+Global Instance mutfresh_eqvar : {eqvar mutfresh}.
 Proof.
-move=> s A _ <- x _ <- B _ <- y _ <-.
-by rewrite /mutfresh -!names_eqvar -!fdisjoint_eqvar.
+(* XXX: This resolution is not ideal, because it is applying nomR_if instead of
+   figuring out that andb is equivariant on its own *)
+by move=> s A _ <- x _ <- B _ <- y _ <-; rewrite /mutfresh; finsupp.
 Qed.
 
 Lemma mapr2E A x B y :
@@ -2356,12 +2350,12 @@ Proof.
 by case: xx yy / (frestr2P fset0)=> ???????; constructor.
 Qed.
 
-Global Instance mapr2_eqvar : eqvar (mapr2 f).
+Global Instance mapr2_eqvar : {eqvar (mapr2 f)}.
 Proof.
 move=> s xx _ <- yy _ <-.
 case: xx yy / restr2P=> [A x B y mf]; rewrite mapr2E //.
 rewrite 2!mask_eqvar mapr2E; last by rewrite -mutfresh_eqvar.
-by typeclasses eauto.
+by finsupp.
 Qed.
 
 End Functor2.
@@ -2387,7 +2381,7 @@ by rewrite fdisjointC; apply: (fdisjoint_trans sx); rewrite fdisjointC.
 Qed.
 
 Lemma mutfreshEl T S R (f : T -> R) A x B (y : S) :
-  eqvar f ->
+  {eqvar f} ->
   mutfresh A x B y -> mutfresh A (f x) B y.
 Proof.
 move=> equi_f /andP [disA disB]; apply/andP; split=> //.
@@ -2398,12 +2392,12 @@ by apply: (fdisjoint_trans sub); rewrite fdisjointC.
 Qed.
 
 Lemma mutfreshEr T S R (g : S -> R) A (x : T) B z :
-  eqvar g ->
+  {eqvar g} ->
   mutfresh A x B z -> mutfresh A x B (g z).
 Proof. by rewrite !(mutfresh_sym A); apply/mutfreshEl. Qed.
 
 Lemma mutfreshE2l T1 T2 S R (f : T1 -> T2 -> R) A1 x1 A2 x2 B (y : S) :
-  eqvar f ->
+  {eqvar f} ->
   mutfresh A1 x1 B y -> mutfresh A2 x2 B y ->
   mutfresh (A1 :|: A2) (f x1 x2) B y.
 Proof.
@@ -2416,7 +2410,7 @@ by apply/(fdisjoint_trans sub); rewrite fdisjointC fdisjointUr disB1.
 Qed.
 
 Lemma mutfreshE2r T S1 S2 R (g : S1 -> S2 -> R) A (x : T) B1 z1 B2 z2 :
-  eqvar g ->
+  {eqvar g} ->
   mutfresh A x B1 z1 -> mutfresh A x B2 z2 ->
   mutfresh A x (B1 :|: B2) (g z1 z2).
 Proof. by rewrite !(mutfresh_sym A); apply/mutfreshE2l. Qed.
@@ -2426,14 +2420,14 @@ End Independence.
 Section Hiding.
 
 Lemma hiden_mapr T S A f xx :
-  eqvar f -> hiden A (@mapr T S f xx) = mapr f (hiden A xx).
+  {eqvar f} -> hiden A (@mapr T S f xx) = mapr f (hiden A xx).
 Proof.
 move=> equi_f; case: xx / (restrP fset0)=> [/= A' x _ sub].
 by rewrite maprE // !hidenE maprE.
 Qed.
 
 Lemma hiden_mapr2l T S R A f xx yy :
-  eqvar f ->
+  {eqvar f} ->
   fdisjoint A (names yy) ->
   hiden A (@mapr2 T S R f xx yy) = mapr2 f (hiden A xx) yy.
 Proof.
@@ -2447,7 +2441,7 @@ by rewrite (fsetIidPr _ _ sub2) fdisjointC disA2 /= fdisjointC.
 Qed.
 
 Lemma hiden_mapr2r T S R A f xx yy :
-  eqvar f ->
+  {eqvar f} ->
   fdisjoint A (names xx) ->
   hiden A (@mapr2 T S R f xx yy) = mapr2 f xx (hiden A yy).
 Proof.
@@ -2462,11 +2456,11 @@ by rewrite (fsetIidPr _ _ sub1) fdisjointC disA1 /= fdisjointC.
 Qed.
 
 Lemma hide_mapr T S n f xx :
-  eqvar f -> hide n (@mapr T S f xx) = mapr f (hide n xx).
+  {eqvar f} -> hide n (@mapr T S f xx) = mapr f (hide n xx).
 Proof. exact: hiden_mapr. Qed.
 
 Lemma hide_mapr2l T S R n f xx yy :
-  eqvar f ->
+  {eqvar f} ->
   n \notin names yy ->
   hide n (@mapr2 T S R f xx yy) = mapr2 f (hide n xx) yy.
 Proof.
@@ -2475,7 +2469,7 @@ by rewrite fdisjointC fdisjoints1.
 Qed.
 
 Lemma hide_mapr2r T S R n f xx yy :
-  eqvar f ->
+  {eqvar f} ->
   n \notin names xx ->
   hide n (@mapr2 T S R f xx yy) = mapr2 f xx (hide n yy).
 Proof.
@@ -2490,14 +2484,11 @@ Section Flip.
 Variables T S R : nominalType.
 
 Lemma flip_mapr2 (op : T -> S -> R) xx yy :
-  eqvar op ->
+  {eqvar op} ->
   mapr2 (fun z x => op x z) yy xx =
   mapr2 op xx yy.
 Proof.
-move=> equi_op.
-case: xx yy / restr2P=> [A x B z mf].
-have equi_op' : eqvar (fun z x => op x z).
-  by move=> ??????? /=; typeclasses eauto.
+move=> equi_op; case: xx yy / restr2P=> [A x B z mf].
 by rewrite mapr2E // -1?mutfresh_sym // 1?mapr2E // 1?fsetUC.
 Qed.
 
@@ -2509,7 +2500,7 @@ Section BasicFacts.
 
 Variables (T : nominalType) (op : T -> T -> T) (idx : T).
 
-Hypothesis equi_op : eqvar op.
+Hypothesis equi_op : {eqvar op}.
 
 Lemma restr_left_id :
   left_id idx op -> left_id (mask fset0 idx) (mapr2 op).
@@ -2543,13 +2534,12 @@ Section RightId.
 
 Variables (T : nominalType) (op : T -> T -> T) (idx : T).
 
-Hypothesis equi_op : eqvar op.
+Hypothesis equi_op : {eqvar op}.
 
 Lemma restr_right_id :
   right_id idx op -> right_id (mask fset0 idx) (mapr2 op).
 Proof.
 move=> opx1 xx; rewrite -(flip_mapr2 _ _ equi_op).
-have ? : eqvar (fun z => op^~ z) by move=> ???????; typeclasses eauto.
 by rewrite restr_left_id // => s [xx1 xx2] /=.
 Qed.
 
@@ -2572,7 +2562,7 @@ Lemma newP ns f g :
 Proof. by move=> efg; rewrite /new efg // freshP. Qed.
 
 Lemma newE ns f n :
-  n \notin ns -> finsupp ns f -> new ns f = hide n (f n).
+  n \notin ns -> {finsupp ns f} -> new ns f = hide n (f n).
 Proof.
 move=> n_nin_ns fs_f; rewrite /new.
 move: (fresh _) (freshP ns)=> n' n'_nin_ns.
@@ -2588,26 +2578,26 @@ by rewrite fsubD1set fsetUC -namesnE; eapply nom_finsuppP; typeclasses eauto.
 Qed.
 
 Lemma newS ns ns' f :
-  finsupp ns f -> fsubset ns ns' -> new ns f = new ns' f.
+  {finsupp ns f} -> fsubset ns ns' -> new ns f = new ns' f.
 Proof.
 move=> fs_f sub; move: (fresh _) (freshP ns')=> n n_nin_ns'.
 have n_nin_ns: n \notin ns.
   by apply: contra n_nin_ns'; move/fsubsetP: sub; apply.
-rewrite (newE n_nin_ns); move/(sub_finsupp sub) in fs_f.
-rewrite (newE n_nin_ns') //.
+(* XXX: This should not be needed *)
+have ? : fsubset_class ns ns' by [].
+rewrite (newE n_nin_ns) (newE n_nin_ns') //.
 Qed.
 
 Lemma new_const xx : new (names xx) (fun _ => xx) = xx.
 Proof.
-have fs: finsupp (names xx) (fun _ : name => xx).
-  by move=> ?????; apply: nominalType_finsupp.
 rewrite (newE (freshP (names xx))) /hide.
 rewrite hidenI -[RHS]hiden0; congr hiden.
 by apply: fdisjoint_fsetI0; rewrite fdisjointC fdisjoints1 freshP.
 Qed.
 
-Lemma rename_new s A (f : name -> {restr T}) :
-  finsupp A f ->
+(* This should be stated with the eqvar typeclass. *)
+Lemma new_eqvar s A (f : name -> {restr T}) :
+  {finsupp A f} ->
   rename s (new A f) = new (rename s A) (rename s \o f \o rename s^-1).
 Proof.
 move: (fresh _) (freshP (supp s :|: A :|: rename s A))=> n nin fs_f.
@@ -2615,11 +2605,12 @@ have /and3P [/suppPn ninS ninA ninSA]:
   [&& n \notin supp s, n \notin A & n \notin rename s A].
   by move: nin; rewrite !in_fsetU !negb_or -andbA.
 move: (@finsuppJ _ _ _ _ s fs_f) => fs_f'.
-by rewrite (newE ninA) // hide_eqvar (newE ninSA) ninS /= renamenE -{4}ninS fpermK.
+by rewrite (newE ninA) // hide_eqvar (newE ninSA) ninS /= renamenE
+   -{4}ninS fpermK.
 Qed.
 
 Lemma newC D f :
-  finsupp D f ->
+  {finsupp D f} ->
   new D (fun n => new (n |: D) (fun n' => f n n')) =
   new D (fun n' => new (n' |: D) (fun n => f n n')).
 Proof.
@@ -2654,7 +2645,7 @@ Section Composition.
 Variables T S : nominalType.
 
 Lemma new_comp B A (g : T -> S) (f : name -> {restr T}) :
-  finsupp B g -> finsupp A f ->
+  {finsupp B g} -> {finsupp A f} ->
   mapr_fs B g (new A f) =
   new (A :|: B) (mapr_fs B g \o f).
 Proof.
@@ -2681,24 +2672,13 @@ Section Left.
 Variables T S R : nominalType.
 
 Lemma new_comp2l (op : T -> S -> R) A (f : name -> {restr T}) yy :
-  eqvar op ->
-  finsupp A f ->
+  {eqvar op} ->
+  {finsupp A f} ->
   mapr2 op (new A f) yy =
   new (A :|: names yy) (fun n => mapr2 op (f n) yy).
 Proof.
 move=> equi_op fs_f.
 move: (fresh _) (freshP (A :|: names yy))=> n ninAN.
-(* FIXME: It should be possible to infer this  *)
-have fs_m : finsupp (A :|: names yy) (fun yy n => mapr2 op (f n) yy).
-  eapply fsetUl_finsupp.
-  move=> s dis yy1 yy2 yy12 n1 n2 n12.
-  eapply nomR_app=> //.
-    eapply nomR_app.
-    eapply mapr2_eqvar=> //.
-  eapply nomR_app=> //.
-  by eapply fs_f.
-have fs_yy : finsupp (A :|: names yy) yy by typeclasses eauto.
-move: (@app_finsupp _ _ _ _ _ _ _ fs_m fs_yy)=> {fs_m fs_yy} fs.
 rewrite (newE ninAN) /=; last first.
 have ninA: n \notin A.
   by apply: contra ninAN; apply/fsubsetP/fsubsetUl.
@@ -2707,8 +2687,7 @@ have ninB: n \notin (names yy).
 rewrite (newE ninA) //.
 have: fsubset (names (f n)) (names n :|: A).
   by eapply nom_finsuppP; typeclasses eauto.
-case: yy / {fs} (frestr2P (names n) (f n)) ninAN ninB
-      => /= [A' x B y mf].
+case: yy / (frestr2P (names n) (f n)) ninAN ninB => /= [A' x B y mf].
 rewrite fdisjointUr !(fdisjointC (fset1 n)) !fdisjoints1=> /andP [dis1 dis2].
 move=> subA' subB; rewrite !namesrE // namesnE fsetUC.
 move=> ninAB ninB; rewrite hideE mapr2E //.
@@ -2725,14 +2704,13 @@ Section Right.
 Variables T S R : nominalType.
 
 Lemma new_comp2r (op : T -> S -> R) B (f : name -> {restr S}) xx :
-  eqvar op ->
-  finsupp B f ->
+  {eqvar op} ->
+  {finsupp B f} ->
   mapr2 op xx (new B f) =
   new (names xx :|: B) (fun n => mapr2 op xx (f n)).
 Proof.
 move=> equi_op fs_f.
 rewrite -(flip_mapr2 _ _ equi_op).
-have ? : eqvar (fun z => op^~ z) by move=> ???????; typeclasses eauto.
 rewrite new_comp2l //; last first.
 by rewrite fsetUC; apply/newP=> n ninNB; rewrite flip_mapr2.
 Qed.
@@ -2755,7 +2733,7 @@ rewrite /expose maskI namesT fsetI0; case: maskP.
 by move=> s _; rewrite renameT.
 Qed.
 
-Lemma rename_expose : eqvar expose.
+Lemma rename_expose : {eqvar expose}.
 Proof.
 move=> s x _ <-; case: x / (restrP fset0) => /= [A x sub].
 by rewrite exposeE mask_eqvar exposeE.
@@ -2781,11 +2759,10 @@ case: (A :&: names x =P fset0) dis=> // ->.
 by rewrite fsetD0 => dis; rewrite renameJ.
 Qed.
 
-Global Instance oexpose_eqvar : eqvar oexpose.
+Global Instance oexpose_eqvar : {eqvar oexpose}.
 Proof.
 move=> s xx _ <-; case: xx / (restrP fset0) => [A x _].
-rewrite mask_eqvar !oexposeE -names_eqvar -fdisjoint_eqvar.
-by typeclasses eauto.
+by rewrite mask_eqvar !oexposeE; finsupp.
 Qed.
 
 End OExpose.
