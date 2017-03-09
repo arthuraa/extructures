@@ -749,6 +749,9 @@ Proof. by []. Qed.
 Global Instance cons_eqvar : {eqvar (@cons T')}.
 Proof. by move=> s x _ <- xs _ <-. Qed.
 
+Global Instance size_eqvar : {eqvar (@size T')}.
+Proof. by move=> s xs _ <-; rewrite renamesE size_map. Qed.
+
 Lemma namess1 x xs : names (x :: xs) = names x :|: names xs.
 Proof. by rewrite 2!namessE. Qed.
 
@@ -2143,7 +2146,7 @@ Implicit Types (s : {fperm name}) (A D : {fset name}) (x : T) (xx : {restr T}).
 Definition rjoin : {restr {restr T}} -> {restr T} :=
   rbind fset0 id.
 
-Lemma join_restrE A A' x :
+Lemma joinrE A A' x :
   rjoin (restr A (restr A' x)) = restr (A :|: A') x.
 Proof. by rewrite /rjoin rbindE ?fdisjoint0 ?hidenE. Qed.
 
