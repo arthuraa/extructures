@@ -1832,7 +1832,104 @@ Canonical bound_trivialNominalType :=
 
 End TrivialNominalType.
 
-Section Restriction.
+Module Restriction.
+
+Section ClassDef.
+
+Local Open Scope fset_scope.
+Local Open Scope fperm_scope.
+
+Record law (T : nominalType) (hide : {fset name} -> T -> T) := Law {
+  _ : {eqvar hide};
+  _ : forall A x, hide A x = hide (A :&: names x) x;
+  _ : forall A1 A2 x, hide A1 (hide A2 x) = hide (A1 :|: A2) x;
+  _ : forall x, hide fset0 x = x;
+  _ : forall A x, fdisjoint A (names (hide A x))
+}.
+
+Record mixin_of (T : nominalType) := Mixin {
+  hide : {fset name} -> T -> T;
+  _ : law hide
+}.
+
+Record class_of T :=
+  Class {base : Nominal.class_of T; mixin : mixin_of (Nominal.Pack base T)}.
+Local Coercion base : class_of >-> Nominal.class_of.
+
+Structure type := Pack {sort; _ : class_of sort; _ : Type}.
+Local Coercion sort : type >-> Sortclass.
+Variables (T : Type) (cT : type).
+Definition class := let: Pack _ c _ as cT' := cT return class_of cT' in c.
+Definition clone c of phant_id class c := @Pack T c T.
+Let xT := let: Pack T _ _ := cT in T.
+Notation xclass := (class : class_of xT).
+
+Definition pack b0 (m0 : mixin_of (@Nominal.Pack T b0 T)) :=
+  fun bT b & phant_id (Nominal.class bT) b =>
+  fun    m & phant_id m0 m => Pack (@Class T b m) T.
+
+(* Inheritance *)
+Definition eqType := @Equality.Pack cT xclass xT.
+Definition choiceType := @Choice.Pack cT xclass xT.
+Definition ordType := @Ord.Total.Pack cT xclass xT.
+Definition nominalType := @Nominal.Pack cT xclass xT.
+
+End ClassDef.
+
+Module Import Exports.
+Coercion base : class_of >-> Nominal.class_of.
+Coercion mixin : class_of >-> mixin_of.
+Coercion sort : type >-> Sortclass.
+Coercion eqType : type >-> Equality.type.
+Canonical eqType.
+Coercion choiceType : type >-> Choice.type.
+Canonical choiceType.
+Coercion ordType : type >-> Ord.Total.type.
+Canonical ordType.
+Coercion nominalType : type >-> Nominal.type.
+Canonical nominalType.
+Notation restrType := type.
+Notation restrMixin := mixin_of.
+Notation RestrMixin := Mixin.
+Notation RestrType T m := (@pack T _ m _ _ id _ id).
+Notation "[ 'restrType' 'of' T 'for' cT ]" :=  (@clone T cT _ idfun)
+  (at level 0, format "[ 'restrType'  'of'  T  'for'  cT ]") : form_scope.
+Notation "[ 'restrType' 'of' T ]" := (@clone T _ _ id)
+  (at level 0, format "[ 'restrType'  'of'  T ]") : form_scope.
+End Exports.
+
+End Restriction.
+Export Restriction.Exports.
+
+Section RestrictionTheory.
+
+Variable T : restrType.
+
+Local Open Scope fset_scope.
+
+Implicit Types (A : {fset name}) (x : T).
+
+Definition hide A x : T :=
+  Restriction.hide (Restriction.class T) A x.
+
+Global Instance hide_eqvar : {eqvar hide}.
+Proof. by rewrite /hide; case: T=> [? [? [? []]] ?]. Qed.
+
+Lemma hideI A x : hide A x = hide (A :&: names x) x.
+Proof. by rewrite /hide; move: A x; case: T=> [? [? [? []]] ?]. Qed.
+
+Lemma hideU A1 A2 x : hide A1 (hide A2 x) = hide (A1 :|: A2) x.
+Proof. by rewrite /hide; move: A1 A2 x; case: T=> [? [? [? []]] ?]. Qed.
+
+Lemma hide0 x : hide fset0 x = x.
+Proof. by rewrite /hide; move: x; case: T=> [? [? [? []]] ?]. Qed.
+
+Lemma hideP A x : fdisjoint A (names (hide A x)).
+Proof. by rewrite /hide; move: A x; case: T => [? [? [? []]] ?]. Qed.
+
+End RestrictionTheory.
+
+Section FreeRestriction.
 
 Local Open Scope fset_scope.
 Local Open Scope fperm_scope.
@@ -1888,7 +1985,7 @@ Canonical restr_nominalType := [nominalType of restr_type].
 
 End Def.
 
-End Restriction.
+End FreeRestriction.
 
 Notation "{ 'restr' T }" := (@restr_of _ (Phant T))
   (at level 0, format "{ 'restr'  T }") : type_scope.
@@ -1904,7 +2001,7 @@ Canonical restr_of_nominalType := Eval hnf in [nominalType of {restr T}].
 
 End ReExports.
 
-Section RestrictionTheory.
+Section FreeRestrictionTheory.
 
 Local Open Scope fset_scope.
 Local Open Scope fperm_scope.
@@ -2033,13 +2130,13 @@ Variable (T : nominalType).
 
 Implicit Types (s : {fperm name}) (A D : {fset name}) (x : T) (xx : {restr T}).
 
-Definition hide A xx :=
+Definition restr_hide A xx :=
   let: (A', x) := val (unbind fset0 xx) in
   restr (A :|: A') x.
 
-Lemma hideE A A' x : hide A (restr A' x) = restr (A :|: A') x.
+Lemma restr_hideE A A' x : restr_hide A (restr A' x) = restr (A :|: A') x.
 Proof.
-rewrite /hide (restrI A') (restrI (_ :|: _)) fsetIUl.
+rewrite /restr_hide (restrI A') (restrI (_ :|: _)) fsetIUl.
 move: (A' :&: names x) (fsubsetIr A' (names x)) => {A'} A' subA'.
 case: (urestrP0 subA')=> s _ dis sub.
 rewrite -{1}(renameKV s A) -fsetU_eqvar -restr_eqvar renameJ; last first.
@@ -2053,42 +2150,38 @@ rewrite supp_inv fdisjointC namesfsnE; rewrite fdisjointC in dis.
 apply: fdisjoint_trans dis; exact: fsubsetIr.
 Qed.
 
-Lemma hide_hide A A' xx : hide A (hide A' xx) = hide (A :|: A') xx.
+Lemma restr_hide_law : Restriction.law restr_hide.
 Proof.
-by case/(restrP fset0): xx => A'' x _ _; rewrite !hideE fsetUA.
+constructor.
+- move=> s A _ <- xx _ <-; case/(restrP fset0): xx=> A' x _ sub.
+  by rewrite !(restr_eqvar, restr_hideE); finsupp.
+- move=> A; case/(restrP fset0)=> A' x _ sub; rewrite !restr_hideE.
+  rewrite namesrE [LHS]restrI fsetIUl (fsetIidPl _ _ sub); congr restr.
+  rewrite -{1}(fsetID (names x) A') [in A :&: _]fsetUC fsetIUr -fsetUA.
+  by rewrite fsetIA (fsetUidPr _ _ (fsubsetIr _ _)).
+- move=> A1 A2; case/(restrP fset0)=> A'' x _ _.
+  by rewrite !restr_hideE fsetUA.
+- by case/(restrP fset0)=> A x _ sub; rewrite restr_hideE fset0U.
+move=> A; case/(restrP fset0)=> A' x _ sub.
+rewrite restr_hideE namesrE fdisjointC; apply/fsetDidPl.
+by rewrite fsetDDl -fsetUA [A' :|: _]fsetUC fsetUA fsetUid.
 Qed.
 
-Lemma hideI A xx : hide A xx = hide (A :&: names xx) xx.
-Proof.
-case/(restrP fset0): xx=> A' x _ sub; rewrite !hideE.
-rewrite namesrE [LHS]restrI fsetIUl (fsetIidPl _ _ sub); congr restr.
-rewrite -{1}(fsetID (names x) A') [in A :&: _]fsetUC fsetIUr -fsetUA.
-by rewrite fsetIA (fsetUidPr _ _ (fsubsetIr _ _)).
-Qed.
+Definition restr_restrMixin := RestrMixin restr_hide_law.
+Canonical restr_restrType := Eval hnf in RestrType {restr T} restr_restrMixin.
 
-Lemma hide0 xx : hide fset0 xx = xx.
-Proof.
-by case/(restrP fset0): xx=> A x _ sub; rewrite hideE fset0U.
-Qed.
+Lemma hiderE A A' x : hide A (restr A' x) = restr (A :|: A') x.
+Proof. exact: restr_hideE. Qed.
 
-Lemma hideD A xx : fdisjoint A (names xx) -> hide A xx = xx.
-Proof. by move=> /eqP dis; rewrite -[RHS]hide0 -dis hideI. Qed.
-
-Lemma names_hide A xx : names (hide A xx) = names xx :\: A.
+Lemma names_hider A xx : names (hide A xx) = names xx :\: A.
 Proof.
 case/(restrP fset0): xx=> A' x _ sub.
-by rewrite hideE !namesrE fsetDDl fsetUC.
-Qed.
-
-Global Instance hide_eqvar : {eqvar hide}.
-Proof.
-move=> s A _ <- xx _ <-; case/(restrP fset0): xx=> A' x _ sub.
-by rewrite !(restr_eqvar, hideE); finsupp.
+by rewrite hiderE !namesrE fsetDDl fsetUC.
 Qed.
 
 End Hide.
 
-Lemma hideT (T : trivialNominalType) A xx : @hide T A xx = xx.
+Lemma hideT (T : trivialNominalType) A (xx : {restr T}) : hide A xx = xx.
 Proof. by rewrite hideI namesT fsetI0 hide0. Qed.
 
 Definition bindr (T S : nominalType) D (f : T -> {restr S}) (xx : {restr T}) :=
@@ -2121,7 +2214,7 @@ rewrite -fs_f -hide_eqvar ?renameJ //.
   apply: (fsubset_trans (fsetIS A sub)).
   rewrite -[_ :&: names x]fset0U -(fdisjoint_fsetI0 dis) (fsetIC D).
   by rewrite -fsetIUr fsetIS // fsubsetxx.
-rewrite names_hide /fdisjoint -fsubset0 fsetIDA fsubDset fsetU0.
+rewrite names_hider /fdisjoint -fsubset0 fsetIDA fsubDset fsetU0.
 move/(fsetIS (supp s)): sub; rewrite fsetIUr.
 move: dis_sD; rewrite /fdisjoint=> /eqP ->; rewrite fset0U => sub'.
 apply: (fsubset_trans sub'); rewrite fsubsetI fsubsetIr andbT.
@@ -2135,7 +2228,7 @@ Lemma hide_bindr D f A xx :
   hide A (bindr D f xx) = bindr D f (hide A xx).
 Proof.
 move=> fs_f disA; case/(restrP D): xx=> [A' x disA' sub].
-by rewrite hideE !bindrE // 1?fdisjointUr ?disA // hide_hide.
+by rewrite hiderE !bindrE // 1?fdisjointUr ?disA // hideU.
 Qed.
 
 Lemma bindr_irrel D1 D2 f xx :
@@ -2165,12 +2258,12 @@ Variable (T : nominalType).
 
 Implicit Types (s : {fperm name}) (A D : {fset name}) (x : T) (xx : {restr T}).
 
-Definition rjoin : {restr {restr T}} -> {restr T} :=
+Definition joinr : {restr {restr T}} -> {restr T} :=
   bindr fset0 id.
 
 Lemma joinrE A A' x :
-  rjoin (restr A (restr A' x)) = restr (A :|: A') x.
-Proof. by rewrite /rjoin bindrE ?fdisjoint0 ?hideE. Qed.
+  joinr (restr A (restr A' x)) = restr (A :|: A') x.
+Proof. by rewrite /joinr bindrE ?fdisjoint0 ?hiderE. Qed.
 
 End Join.
 
@@ -2203,8 +2296,8 @@ Lemma orestr_hide A xx :
   orestr (hide A xx) = omap (hide A) (orestr xx).
 Proof.
 case/(restrP fset0): xx=> A' x _ _.
-rewrite hideE !orestrE; case: x => [x|] //=.
-by rewrite hideE.
+rewrite hiderE !orestrE; case: x => [x|] //=.
+by rewrite hiderE.
 Qed.
 
 End Iso.
@@ -2221,7 +2314,7 @@ Lemma maprE :
   {finsupp D f} ->
   forall A x, fdisjoint D A ->
               mapr (restr A x) = restr A (f x).
-Proof. by move=> fs_f A x dis; rewrite /mapr bindrE ?hideE ?fsetU0. Qed.
+Proof. by move=> fs_f A x dis; rewrite /mapr bindrE ?hiderE ?fsetU0. Qed.
 
 End Mapr.
 
@@ -2279,7 +2372,7 @@ have dis: finsupp_perm D s.
   rewrite /finsupp_perm (fdisjoint_trans (fsubset_supp_fperm2 _ _)) //.
   by apply/fdisjointP=> n'' /fset2P [->|->] {n''} //.
 rewrite -{1 2}(fperm2R n' n : rename s n = n') -hide_eqvar namesnE.
-rewrite ?renameJ // names_hide.
+rewrite ?renameJ // names_hider.
 suff sub': fsubset (names (f n) :\ n) D.
   by rewrite fdisjointC (fdisjoint_trans sub') // fdisjointC.
 by rewrite fsubD1set fsetUC -namesnE; eapply nom_finsuppP; finsupp.
@@ -2350,4 +2443,4 @@ Qed.
 
 End OExpose.
 
-End RestrictionTheory.
+End FreeRestrictionTheory.
