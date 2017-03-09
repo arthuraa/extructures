@@ -2447,13 +2447,14 @@ rewrite hideI -[RHS]hide0; congr hide.
 by apply: fdisjoint_fsetI0; rewrite fdisjointC fdisjoints1 freshP.
 Qed.
 
-Lemma new_eqvar A f1 f2 s :
-  {finsupp A f1} ->
+Lemma new_eqvar s A1 A2 f1 f2 :
+  nomR s A1 A2 ->
+  {finsupp A1 f1} ->
   nomR s f1 f2 ->
-  nomR s (new A f1) (new (rename s A) f2).
+  nomR s (new A1 f1) (new A2 f2).
 Proof.
-move=> fs_f1 f1f2; move: (fresh _) (freshP A) => n nin1.
-have nin2: rename s n \notin rename s A.
+move=> <- {A2} fs_f1 f1f2; move: (fresh _) (freshP A1) => n nin1.
+have nin2: rename s n \notin rename s A1.
   rewrite renamefsE renamenE mem_imfset_inj //.
   exact: fperm_inj.
 by rewrite (newE _ nin1) (newE _ nin2); finsupp.
