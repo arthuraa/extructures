@@ -2091,22 +2091,22 @@ End Hide.
 Lemma hideT (T : trivialNominalType) A xx : @hide T A xx = xx.
 Proof. by rewrite hideI namesT fsetI0 hide0. Qed.
 
-Definition rbind (T S : nominalType) D (f : T -> {restr S}) (xx : {restr T}) :=
+Definition bindr (T S : nominalType) D (f : T -> {restr S}) (xx : {restr T}) :=
   let: (A, x) := val (unbind D xx) in
   hide A (f x).
 
-Section RBind.
+Section BindR.
 
 Variable (T S : nominalType).
 
 Implicit Types (D : {fset name}) (x : T) (xx : {restr T}) (f : T -> {restr S}).
 
-Lemma rbindE D f A x :
+Lemma bindrE D f A x :
   {finsupp D f} ->
   fdisjoint D A ->
-  rbind D f (restr A x) = hide A (f x).
+  bindr D f (restr A x) = hide A (f x).
 Proof.
-move=> fs_f dis; rewrite /rbind.
+move=> fs_f dis; rewrite /bindr.
 have dis': fdisjoint D (A :&: names x).
   rewrite fdisjointC; move: dis; rewrite fdisjointC.
   by apply: fdisjoint_trans; rewrite fsubsetIl.
@@ -2129,35 +2129,35 @@ rewrite -(fsetID (names x) (A :&: names x)) fsetIUr (fdisjoint_fsetI0 dis_s).
 by rewrite fsetU0 (fsetIC A) !fsetIA fsubsetIr.
 Qed.
 
-Lemma hide_rbind D f A xx :
+Lemma hide_bindr D f A xx :
   {finsupp D f} ->
   fdisjoint D A ->
-  hide A (rbind D f xx) = rbind D f (hide A xx).
+  hide A (bindr D f xx) = bindr D f (hide A xx).
 Proof.
 move=> fs_f disA; case/(restrP D): xx=> [A' x disA' sub].
-by rewrite hideE !rbindE // 1?fdisjointUr ?disA // hide_hide.
+by rewrite hideE !bindrE // 1?fdisjointUr ?disA // hide_hide.
 Qed.
 
-Lemma rbind_irrel D1 D2 f xx :
+Lemma bindr_irrel D1 D2 f xx :
   {finsupp D1 f} ->
   {finsupp D2 f} ->
-  rbind D1 f xx = rbind D2 f xx.
+  bindr D1 f xx = bindr D2 f xx.
 Proof.
 case/(restrP (D1 :|: D2)): xx=> A x.
 rewrite fdisjointUl=> /andP [dis1 dis2] sub fs1 fs2.
-by rewrite !rbindE //.
+by rewrite !bindrE //.
 Qed.
 
 (* FIXME: This is not exactly a lemma about equivariance. *)
 
-Global Instance rbind_eqvar D f : {finsupp D f} -> {finsupp D (rbind D f)}.
+Global Instance bindr_eqvar D f : {finsupp D f} -> {finsupp D (bindr D f)}.
 Proof.
 move=> fs_f s dis xx _ <-; case: xx /(restrP D)=> [A x dis' sub].
-rewrite restr_eqvar !rbindE //; first by finsupp.
+rewrite restr_eqvar !bindrE //; first by finsupp.
 by rewrite -[D](@renameJ _ s) ?namesfsnE // -1?fdisjoint_eqvar.
 Qed.
 
-End RBind.
+End BindR.
 
 Section Join.
 
@@ -2166,11 +2166,11 @@ Variable (T : nominalType).
 Implicit Types (s : {fperm name}) (A D : {fset name}) (x : T) (xx : {restr T}).
 
 Definition rjoin : {restr {restr T}} -> {restr T} :=
-  rbind fset0 id.
+  bindr fset0 id.
 
 Lemma joinrE A A' x :
   rjoin (restr A (restr A' x)) = restr (A :|: A') x.
-Proof. by rewrite /rjoin rbindE ?fdisjoint0 ?hideE. Qed.
+Proof. by rewrite /rjoin bindrE ?fdisjoint0 ?hideE. Qed.
 
 End Join.
 
@@ -2215,13 +2215,13 @@ Variables T S : nominalType.
 Variables (D : {fset name}) (f : T -> S).
 Implicit Types (x : T) (xx : {restr T}).
 
-Definition mapr := rbind D (fun x => restr fset0 (f x)).
+Definition mapr := bindr D (fun x => restr fset0 (f x)).
 
 Lemma maprE :
   {finsupp D f} ->
   forall A x, fdisjoint D A ->
               mapr (restr A x) = restr A (f x).
-Proof. by move=> fs_f A x dis; rewrite /mapr rbindE ?hideE ?fsetU0. Qed.
+Proof. by move=> fs_f A x dis; rewrite /mapr bindrE ?hideE ?fsetU0. Qed.
 
 End Mapr.
 
@@ -2245,14 +2245,14 @@ Lemma hide_mapr D A (f : T -> S) xx :
   {finsupp D f} ->
   fdisjoint D A ->
   hide A (mapr D f xx) = mapr D f (hide A xx).
-Proof. by move=> fs_f dis; rewrite /mapr hide_rbind. Qed.
+Proof. by move=> fs_f dis; rewrite /mapr hide_bindr. Qed.
 
 Lemma mapr_irrel D1 D2 (f : T -> S) xx :
   {finsupp D1 f} ->
   {finsupp D2 f} ->
   mapr D1 f xx = mapr D2 f xx.
 Proof.
-move=> fs1 fs2; rewrite /mapr; eapply rbind_irrel=> [{fs2}|{fs1}]; finsupp.
+move=> fs1 fs2; rewrite /mapr; eapply bindr_irrel=> [{fs2}|{fs1}]; finsupp.
 Qed.
 
 (* FIXME: This is not exactly about equivariance. *)
