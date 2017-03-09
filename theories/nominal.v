@@ -1017,18 +1017,25 @@ Qed.
 Global Instance names_eqvar : {eqvar (@names T)}.
 Proof. by move=> s x _ <-; rewrite names_rename. Qed.
 
-Global Instance finsuppJ A (f : T -> S) (s : {fperm name}) :
-  {finsupp A f} ->
-  {finsupp (rename s A) (rename s \o f \o rename s^-1)}.
+Global Instance nomRJ (f : T -> S) (s : {fperm name}) :
+  nomR s f (rename s \o f \o rename s^-1).
+Proof. by move=> x _ <- /=; rewrite renameK. Qed.
+
+Global Instance finsuppJ A (f1 f2 : T -> S) (s : {fperm name}) :
+  {finsupp A f1} ->
+  nomR s f1 f2 ->
+  {finsupp (rename s A) f2}.
 Proof.
-move=> fs_f s' dis x _ <- /=; rewrite /nomR /= /nominalType_nominalRel.
-apply/(canRL (renameKV s)).
-rewrite -{2}(renameKV s x); move: (rename s^-1 x)=> {x} x.
-suffices ? : finsupp_perm A (s^-1 * s' * s) by rewrite !renameD fs_f.
-rewrite -{2}(fperm_invK s) /finsupp_perm suppJ.
-apply/eqP; rewrite -(imfsetK (fpermK s) A) -imfsetI; last first.
-  by move=> ?? _ _; apply: fperm_inj.
-by move/eqP: dis=> ->; rewrite imfset0.
+move=> fs_f1 f1f2 s' dis x _ <- /=; rewrite /nomR /= /nominalType_nominalRel.
+have dis' : finsupp_perm A (s^-1 * s' * s).
+  rewrite -{2}(fperm_invK s) /finsupp_perm suppJ.
+  apply/eqP; rewrite -(imfsetK (fpermK s) A) -imfsetI; last first.
+    by move=> ?? _ _; apply: fperm_inj.
+  by move/eqP: dis=> ->; rewrite imfset0.
+rewrite -{1}[x](renameKV s) -(f1f2 (rename s^-1 x) _ erefl).
+rewrite -[LHS](renameKV s) 2![rename _ (rename _ (f1 _))]renameD.
+rewrite fperm_mulA fs_f1 f1f2 !renameD !fperm_mulA fperm_mulsK.
+by rewrite fperm_mulsV fperm_mul1s.
 Qed.
 
 Section SetTrivialNominalType.
@@ -1611,7 +1618,7 @@ rewrite -(fsetID D (names x :\: l x)) fdisjointUl; apply/andP; split.
   by rewrite !(in_fsetD, negb_and, negb_or, negbK) /= n_in n_nin.
 rewrite fdisjointC /x' -[l x']namesfsnE.
 apply: (@fdisjoint_trans _ _ (names x')).
-  by eapply nom_finsuppP; finsupp.
+  by move: x'=> x'; eapply nom_finsuppP; finsupp.
 rewrite /x' names_rename /s; exact: avoidP.
 Qed.
 
@@ -2438,6 +2445,18 @@ Proof.
 rewrite (newE _ (freshP (names xx))).
 rewrite hideI -[RHS]hide0; congr hide.
 by apply: fdisjoint_fsetI0; rewrite fdisjointC fdisjoints1 freshP.
+Qed.
+
+Lemma new_eqvar A f1 f2 s :
+  {finsupp A f1} ->
+  nomR s f1 f2 ->
+  nomR s (new A f1) (new (rename s A) f2).
+Proof.
+move=> fs_f1 f1f2; move: (fresh _) (freshP A) => n nin1.
+have nin2: rename s n \notin rename s A.
+  rewrite renamefsE renamenE mem_imfset_inj //.
+  exact: fperm_inj.
+by rewrite (newE _ nin1) (newE _ nin2); finsupp.
 Qed.
 
 End New.
