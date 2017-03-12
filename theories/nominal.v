@@ -2517,6 +2517,9 @@ Variable T : trivialNominalType.
 Definition expose (xx : {restr T}) : T :=
   elimr fset0 (fun _ x => x) xx.
 
+Lemma exposeE0 : cancel (@Restr0 _) expose.
+Proof. move=> x; by rewrite /expose elimrE0. Qed.
+
 Lemma exposeE A x : expose (hide A (Restr0 x)) = x.
 Proof.
 by rewrite /expose hideI namesrE namesT fsetI0 elimrE ?fdisjoints0 // fsub0set.
@@ -2536,6 +2539,9 @@ Variable T : nominalType.
 
 Definition oexpose (xx : {restr T}) : option T :=
   elimr fset0 (fun A x => if A == fset0 then Some x else None) xx.
+
+Lemma oexposeE0 : pcancel (@Restr0 _) oexpose.
+Proof. move=> x; by rewrite /oexpose elimrE0. Qed.
 
 Lemma oexposeE A x :
   oexpose (hide A (Restr0 x)) =
