@@ -437,8 +437,11 @@ Proof.
 by move=> /fsubsetP sub /fdisjointP dis; apply/fdisjointP=> x /sub; eauto.
 Qed.
 
-Lemma fdisjoint0 s : fdisjoint fset0 s.
+Lemma fdisjoint0s s : fdisjoint fset0 s.
 Proof. by rewrite /fdisjoint fset0I. Qed.
+
+Lemma fdisjoints0 s : fdisjoint s fset0.
+Proof. by rewrite fdisjointC fdisjoint0s. Qed.
 
 Lemma fdisjoints1 s x : fdisjoint s (fset1 x) = (x \notin s).
 Proof.

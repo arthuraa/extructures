@@ -47,7 +47,7 @@ Fixpoint freshk k ns :=
 
 Lemma freshkP k ns : fdisjoint (freshk k ns) ns.
 Proof.
-elim: k ns => [|k IH] ns /=; first exact: fdisjoint0.
+elim: k ns => [|k IH] ns /=; first exact: fdisjoint0s.
 apply/fdisjointP=> n /fsetU1P [->|]; first exact: freshP.
 move: n; apply/fdisjointP; rewrite fdisjointC.
 apply/(fdisjoint_trans (fsubsetUr (fset1 (fresh ns)) ns)).
@@ -265,7 +265,7 @@ Qed.
 Lemma names0P x : reflect (forall s, rename s x = x) (names x == fset0).
 Proof.
 apply/(iffP eqP).
-  by move=> eq0 s; rewrite renameJ // eq0 fdisjointC fdisjoint0.
+  by move=> eq0 s; rewrite renameJ // eq0 fdisjointC fdisjoint0s.
 move=> reE; apply/eqP; rewrite eqEfsubset fsub0set andbT.
 apply/fsubsetP=> n inN; move: (reE (fperm2 n (fresh (names x)))).
 by move/(namesTeq inN); apply/contraTT; rewrite freshP.
@@ -411,7 +411,7 @@ by rewrite fdisjointC.
 Qed.
 
 Global Instance fset0_finsupp_perm s : finsupp_perm fset0 s.
-Proof. by rewrite /finsupp_perm fdisjointC fdisjoint0. Qed.
+Proof. by rewrite /finsupp_perm fdisjoints0. Qed.
 
 Global Instance nominalType_nominalRel (T : nominalType) : nominalRel T :=
   fun s x y => rename s x = y.
@@ -429,12 +429,12 @@ Proof. by []. Qed.
 
 Global Instance nomR_nominalJ (T : nominalType) s (x : T) :
   finsupp_perm (names x) s ->
-  nomR s x x | 2.
+  nomR s x x | 11.
 Proof. by move=> fs_s; rewrite -{2}(renameJ fs_s). Qed.
 
 Global Instance nomR_app T S
   {eT : nominalRel T} {eS : nominalRel S} s (f g : T -> S) x y :
-  nomR s f g -> nomR s x y -> nomR s (f x) (g y) | 1.
+  nomR s f g -> nomR s x y -> nomR s (f x) (g y) | 10.
 Proof. by apply. Qed.
 
 Definition Prop_finsupp (P : Prop) : {finsupp fset0 P}.
@@ -450,7 +450,7 @@ split.
   have [//|nin_A] := boolP (n \in A).
   rewrite in_n // in nin_x'; eapply fs; apply: fdisjoint_trans.
     exact: fsubset_supp_fperm2.
-  rewrite fdisjointUl fdisjointC fdisjoints1 nin_A fdisjointUl fdisjoint0.
+  rewrite fdisjointUl fdisjointC fdisjoints1 nin_A fdisjointUl fdisjoint0s.
   by rewrite fdisjointC fdisjoints1 nin_A'.
 move=> sub s dis; apply: renameJ.
 rewrite fdisjointC; apply: fdisjoint_trans; eauto.
@@ -1058,7 +1058,7 @@ Proof. by move=> x _ <- /=; rewrite renameK. Qed.
 Global Instance finsuppJ A (f1 f2 : T -> S) (s : {fperm name}) :
   {finsupp A f1} ->
   nomR s f1 f2 ->
-  {finsupp (rename s A) f2}.
+  {finsupp (rename s A) f2} | 12.
 Proof.
 move=> fs_f1 f1f2 s' dis x _ <- /=; rewrite /nomR /= /nominalType_nominalRel.
 have dis' : finsupp_perm A (s^-1 * s' * s).
@@ -1693,7 +1693,7 @@ by rewrite fdisjointUl fdisjointC dis'' /= -renamefsE eq_l fdisjointC.
 Qed.
 
 Lemma ubindP0 x : ubind_spec fset0 x (unbind fset0 (bind x)).
-Proof. exact: ubindP (fdisjoint0 _). Qed.
+Proof. exact: ubindP (fdisjoint0s _). Qed.
 
 Definition bound_rename s xx := bind (rename s (unbind fset0 xx)).
 
@@ -1743,8 +1743,7 @@ Proof.
 rewrite -[xx](unbindK fset0) bound_names_morph; move: (unbind _ _)=> {xx} x.
 rewrite bound_rename_morph=> n_nin n'_nin; apply/esym/bind_eqP; eexists=> //.
 apply: (fdisjoint_trans (fsubset_supp_fperm2 n n')).
-rewrite fdisjointC !fdisjointUr !fdisjoints1 n'_nin n_nin fdisjointC.
-exact: fdisjoint0.
+by rewrite fdisjointC !fdisjointUr !fdisjoints1 n'_nin n_nin fdisjoints0.
 Qed.
 
 Definition bound_nominalMixin :=
@@ -1764,6 +1763,16 @@ Variable S : nominalType.
 
 Definition elimb D (f : T -> S) xx :=
   f (unbind D xx).
+
+Lemma elimbE0 D f x :
+  l x = fset0 ->
+  elimb D f (bind x) = f x.
+Proof.
+move=> lx_0; rewrite /elimb.
+move: (fdisjoints0 D); rewrite -lx_0 => dis.
+case: (ubindP dis)=> s; rewrite lx_0 fsetD0 => dis'.
+by rewrite renameJ.
+Qed.
 
 Lemma elimbE D f x :
   {finsupp D f} ->
@@ -1851,7 +1860,7 @@ Lemma ubind2P0 x y :
   fdisjoint (lT x) (names y) ->
   fdisjoint (lS y) (names x) ->
   ubind2_spec fset0 x y (unbind2 fset0 (bind x) (bind y)).
-Proof. exact: ubind2P (fdisjoint0 _). Qed.
+Proof. exact: ubind2P (fdisjoint0s _). Qed.
 
 End Bound2.
 
@@ -1863,8 +1872,7 @@ Hypothesis eq_l : {eqvar l}.
 
 Let bound_renameT s (xx : {bound l}) : rename s xx = xx.
 Proof.
-rewrite -(unbindK fset0 xx) bind_eqvar renameJ // namesT.
-by rewrite fdisjointC fdisjoint0.
+by rewrite -(unbindK fset0 xx) bind_eqvar renameJ // namesT fdisjoints0.
 Qed.
 
 Canonical bound_trivialNominalType :=
@@ -1983,7 +1991,7 @@ rewrite /option_hide; constructor=> /=.
 - by move=> A [x|] //=; rewrite hideI.
 - by move=> A1 A2 [x|] //=; rewrite hideU.
 - by move=> [x|] //=; rewrite hide0.
-- move=> A [x|] //=; rewrite ?hideP 1?fdisjointC //; exact: fdisjoint0.
+- by move=> A [x|] //=; rewrite ?hideP ?fdisjoints0.
 Qed.
 
 Definition option_restrMixin := RestrMixin option_hide_law.
@@ -2028,6 +2036,10 @@ Parameter restrP : forall T A (xx : {restr T}), restr_spec A xx.
 Parameter elimr :
   forall (T S : nominalType),
     {fset name} -> ({fset name} -> T -> S) -> {restr T} -> S.
+
+Parameter elimrE0 :
+  forall (T S : nominalType) A (f : {fset name} -> T -> S) x,
+    elimr A f (Restr0 x) = f fset0 x.
 
 Parameter elimrE :
   forall (T S : nominalType) A (f : {fset name} -> T -> S) A' x,
@@ -2139,7 +2151,7 @@ Qed.
 Lemma urestrP0 A x :
   fsubset A (names x) ->
   urestr_spec fset0 A x (val (unbind fset0 (restr A x))).
-Proof. exact: urestrP (fdisjoint0 _). Qed.
+Proof. exact: urestrP (fdisjoint0s _). Qed.
 
 CoInductive restr_spec_int D : restr_type -> Prop :=
 | RestrSpecInt A x of fdisjoint D A & fsubset A (names x)
@@ -2245,6 +2257,12 @@ Definition elimr (S : nominalType) A (f : {fset name} -> T -> S)
   (xx : {restr T}) :=
   elimb A (fun p => f (val p).1 (val p).2) xx.
 
+Lemma elimrE0 (S : nominalType) A (f : {fset name} -> T -> S) x :
+  elimr A f (Restr0 x) = f fset0 x.
+Proof.
+by rewrite /elimr /Restr0 /restr elimbE0 /prerestr_op /= fset0I.
+Qed.
+
 Lemma elimrE (S : nominalType) A (f : {fset name} -> T -> S) A' x :
   {finsupp A f} ->
   fdisjoint A A' ->
@@ -2300,15 +2318,8 @@ Implicit Types (A : {fset name}) (x : T) (xx : {restr T}) (f : T -> S).
 Definition bindr A (f : T -> S) (xx : {restr T}) :=
   elimr A (fun A' x => hide A' (f x)) xx.
 
-(* FIXME: The hypothesis on f should not be needed *)
-Lemma bindr_Restr0 A f x :
-  {finsupp A f} ->
-  bindr A f (Restr0 x) = f x.
-Proof.
-move=> fs_f.
-by rewrite /bindr -[Restr0 x]hide0 elimrE ?hide0 ?fsub0set
-           1?fdisjointC ?fdisjoint0.
-Qed.
+Lemma bindrE0 A f x : bindr A f (Restr0 x) = f x.
+Proof. by rewrite /bindr elimrE0 hide0. Qed.
 
 Lemma bindrE A f A' x :
   {finsupp A f} ->
@@ -2365,7 +2376,7 @@ Proof.
 rewrite -[names x]namesrE -names_hider.
 rewrite (_ : hide A x = bindr fset0 id (hide A (Restr0 x))).
   by eapply nom_finsuppP; move: (hide _ _) => xx; finsupp.
-by rewrite bindrE // fdisjoint0.
+by rewrite bindrE // fdisjoint0s.
 Qed.
 
 Section Iso.
@@ -2376,10 +2387,10 @@ Definition orestr (xx : {restr option T}) : option {restr T} :=
   bindr fset0 (omap (@Restr0 T)) xx.
 
 Lemma orestr_hide A xx : orestr (hide A xx) = hide A (orestr xx).
-Proof. by rewrite /orestr hide_bindr ?fdisjoint0. Qed.
+Proof. by rewrite /orestr hide_bindr ?fdisjoint0s. Qed.
 
 Lemma orestrE A x : orestr (hide A (Restr0 x)) = hide A (omap (@Restr0 T) x).
-Proof. by rewrite /orestr bindrE ?fdisjoint0. Qed.
+Proof. by rewrite /orestr bindrE ?fdisjoint0s. Qed.
 
 Lemma rename_orestr : {eqvar orestr}.
 Proof. move=> s x _ <-; rewrite /orestr; finsupp. Qed.
@@ -2393,6 +2404,9 @@ Variables (A : {fset name}) (f : T -> S).
 Implicit Types (x : T) (xx : {restr T}).
 
 Definition mapr := bindr A (fun x => Restr0 (f x)).
+
+Lemma maprE0 x : mapr (Restr0 x) = Restr0 (f x).
+Proof. by rewrite /mapr bindrE0. Qed.
 
 Lemma maprE :
   {finsupp A f} ->
@@ -2481,7 +2495,7 @@ rewrite hideI -[RHS]hide0; congr hide.
 by apply: fdisjoint_fsetI0; rewrite fdisjointC fdisjoints1 freshP.
 Qed.
 
-Lemma new_eqvar s A1 A2 f1 f2 :
+Global Instance new_eqvar s A1 A2 f1 f2 :
   nomR s A1 A2 ->
   {finsupp A1 f1} ->
   nomR s f1 f2 ->
@@ -2505,8 +2519,7 @@ Definition expose (xx : {restr T}) : T :=
 
 Lemma exposeE A x : expose (hide A (Restr0 x)) = x.
 Proof.
-rewrite /expose hideI namesrE namesT fsetI0 elimrE 1?fdisjointC ?fdisjoint0 //.
-exact: fsub0set.
+by rewrite /expose hideI namesrE namesT fsetI0 elimrE ?fdisjoints0 // fsub0set.
 Qed.
 
 Lemma rename_expose : {eqvar expose}.
@@ -2529,9 +2542,9 @@ Lemma oexposeE A x :
   if fdisjoint A (names x) then Some x else None.
 Proof.
 rewrite hideI namesrE /oexpose /fdisjoint; move: (fsubsetIr A (names x))=> sub.
-rewrite elimrE ?fdisjoint0 //.
-case: (fsetI _ _ =P fset0) => /= [->|]; last by rewrite fdisjoint0.
-by rewrite fdisjointC fdisjoint0.
+rewrite elimrE ?fdisjoint0s //.
+case: (fsetI _ _ =P fset0) => /= [->|]; last by rewrite fdisjoint0s.
+by rewrite fdisjoints0.
 Qed.
 
 Global Instance oexpose_eqvar : {eqvar oexpose}.
