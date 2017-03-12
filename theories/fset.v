@@ -86,7 +86,7 @@ Section Basics.
 Variable T : ordType.
 Local Open Scope ord_scope.
 
-Definition pred_of_fset (s : FSet.fset_type T) :=
+Definition pred_of_fset (s : {fset T}) :=
   [pred x : T | x \in val s].
 Canonical fset_predType := mkPredType pred_of_fset.
 

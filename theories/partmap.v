@@ -94,6 +94,10 @@ Fixpoint getm_def s k : option S :=
     else getm_def s k
   else None.
 
+(* It seems that we need to declare getm with partmap_type as opposed to
+   partmap_of, in order to make the coercion into Funclass below to work. The
+   finfun module in mathcomp seems to suffer from a similar issue. *)
+
 Definition getm (m : PartMap.partmap_type T S) k := getm_def m k.
 
 Fixpoint setm_def s k v : seq (T * S) :=

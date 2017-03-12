@@ -582,6 +582,12 @@ Canonical nat_trivialNominalType := Eval hnf in [trivialNominalType for nat].
 Global Instance funcomp_eqvar (T S R : nominalType) : {eqvar @funcomp T S R}.
 Proof. by move=> s [] _ <- /= f1 f2 f12 g1 g2 g12 x1 x2 x12 /=; finsupp. Qed.
 
+Global Instance mem_pred_nominalRel T {eT : nominalRel T} : nominalRel (mem_pred T) :=
+  fun s P Q => forall x y : T, nomR s x y -> nomR s (x \in P) (y \in Q).
+
+Global Instance in_mem_eqvar T {eT : nominalRel T} : {eqvar (@in_mem T)}.
+Proof. by move=> s x y xy P Q PQ; eapply PQ. Qed.
+
 Section TrivialNominalTheory.
 
 Variable T : trivialNominalType.
@@ -755,6 +761,12 @@ Proof. by move=> s xs _ <-; rewrite renamesE size_map. Qed.
 Lemma namess1 x xs : names (x :: xs) = names x :|: names xs.
 Proof. by rewrite 2!namessE. Qed.
 
+Global Instance nseq_eqvar: {eqvar @nseq T'}.
+Proof.
+move=> s k _ <- v _ <-; rewrite renameT; apply/esym.
+by rewrite renamesE map_nseq.
+Qed.
+
 Lemma names_nseq k x : names (nseq k x) = if 0 < k then names x else fset0.
 Proof.
 apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP=> n.
@@ -852,6 +864,22 @@ Proof. by []. Qed.
 
 Global Instance isSome_eqvar : {eqvar (@isSome S')}.
 Proof. by move=> s [?|] _ <-. Qed.
+
+Global Instance match_option_eqvar
+  π (x1 x2 : option S') b11 b12 b21 b22 :
+  nomR π x1 x2 ->
+  nomR π b11 b12 ->
+  nomR π b21 b22 ->
+  nomR π
+       match x1 with
+       | Some x => b11 x : S
+       | None => b21
+       end
+       match x2 with
+       | Some x => b12 x
+       | None => b22
+       end | 2.
+Proof. move=> <- ??; case: x1=> * /=; finsupp. Qed.
 
 End OptionNominalType.
 
@@ -994,6 +1022,12 @@ Proof.
 move=> s X _ <- Y _ <-.
 apply/idP/idP; first exact: imfsetS.
 rewrite -{2}(renameK s X) -{2}(renameK s Y); exact: imfsetS.
+Qed.
+
+Global Instance mem_fset_eqvar : {eqvar @mem _ (fset_predType T')}.
+Proof.
+move=> s X _ <- x _ <-; rewrite renamefsE mem_imfset_inj //.
+exact: rename_inj.
 Qed.
 
 Lemma names_fset (xs : seq T') : names (fset xs) = names xs.
