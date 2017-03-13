@@ -1665,6 +1665,40 @@ rewrite [bind]unlock /=; split.
 by move=> [] /eqmodP/BoundEq.eqP.
 Qed.
 
+(* FIXME: Find better name for this *)
+Lemma bind_eqPs x y : (exists s,
+                          [/\ fdisjoint (supp s) (names x :\: l x),
+                           fsubset (supp s) (l x :|: l y) &
+                           rename s x = y]) <->
+                      bind x = bind y.
+Proof.
+rewrite [bind]unlock /=; split.
+  move=> [s [dis sub e]]; congr Bound; apply/eqmodP.
+  by apply/BoundEq.eqP; eauto.
+move=> [] /eqmodP/BoundEq.eqP [s dis <- {y}].
+(* FIXME: This might be useful somewhere else *)
+have sub : fsubset (supp (fperm s (names x))) (supp s).
+  apply/fsubsetP=> /= n n_in.
+  case/fsubsetP/(_ _ n_in)/fsetUP: (supp_fperm s (names x))=> [n_in_x|].
+    by move: n_in; rewrite !mem_supp fpermE // => ????; apply: fperm_inj.
+  case/imfsetP => n' n'_in e_n'; move: n_in; rewrite e_n'.
+  rewrite fperm_supp (_ : s n' = fperm s (names x) n').
+    rewrite fperm_supp mem_supp fpermE ?mem_supp // => ????.
+    exact: fperm_inj.
+  by rewrite fpermE // => ????; apply: fperm_inj.
+exists (fperm s (names x)); split; last by rewrite -renameP.
+  by apply: fdisjoint_trans; eauto.
+apply/fsubsetP=> n n_in.
+case/fsubsetP/(_ _ n_in)/fsetUP: (supp_fperm s (names x)) => n_in_x.
+  move/fsubsetP/(_ _ n_in) in sub; move/fdisjointP/(_ _ sub): dis.
+  by rewrite in_fsetD negb_and negbK n_in_x orbF in_fsetU => ->.
+case/imfsetP: n_in_x n_in => {n} n n_in -> sn_in.
+move/fsubsetP/(_ _ sn_in): sub; rewrite fperm_supp => n_in_s.
+apply/fsetUP; right; rewrite -eq_l -renamenE -in_mem_eqvar renameT.
+move/fdisjointP/(_ _ n_in_s): dis.
+by rewrite in_fsetD negb_and negbK n_in orbF.
+Qed.
+
 CoInductive ubind_spec D x : T -> Prop :=
 | UBindSpec s of fdisjoint (supp s) (names x :\: l x)
   & fdisjoint (supp s) D : ubind_spec D x (rename s x).
@@ -2027,6 +2061,14 @@ Parameter restr_eqP :
               (A2 :&: names x2, x2))
   <-> hide A1 (Restr0 x1) = hide A2 (Restr0 x2).
 
+Parameter restr_eqPs :
+  forall T A1 (x1 : T) A2 (x2 : T),
+  (exists s, [/\ fdisjoint (supp s) (names x1 :\: A1),
+                 fsubset (supp s) (A1 :|: A2) &
+                 (rename s (A1 :&: names x1), rename s x1) =
+                 (A2 :&: names x2, x2)])
+  <-> hide A1 (Restr0 x1) = hide A2 (Restr0 x2).
+
 CoInductive restr_spec T A : {restr T} -> Prop :=
 | RestrSpec A' x of fdisjoint A A' & fsubset A' (names x)
   : restr_spec A (hide A' (Restr0 x)).
@@ -2128,6 +2170,25 @@ rewrite /restr -bind_eqP /= /prerestr_op /=; split.
 rewrite !subnamesE /= namespE /= fsetDUl /= namesfsnE fsetDv fset0U.
 rewrite fsetDIr fsetDv fsetU0=> - [s dis /(congr1 val) /= <-].
 by exists s.
+Qed.
+
+Lemma restr_eqPs_int A1 x1 A2 x2 :
+  (exists s, [/\ fdisjoint (supp s) (names x1 :\: A1),
+                 fsubset (supp s) (A1 :|: A2) &
+                 (rename s (A1 :&: names x1), rename s x1) =
+                 (A2 :&: names x2, x2)])
+  <-> restr A1 x1 = restr A2 x2.
+Proof.
+rewrite /restr /= /prerestr_op /=; split.
+  rewrite -bind_eqP.
+  case=> s [dis sub [e1 e2]]; exists s.
+    rewrite subnamesE /= fsetDUl /= namesfsnE fsetDv fset0U.
+    by rewrite fsetDIr fsetDv fsetU0.
+  by apply/val_inj=> /=; rewrite pair_eqvar /= e1 e2.
+rewrite -bind_eqPs !subnamesE /= namespE /= fsetDUl /= namesfsnE fsetDv fset0U.
+rewrite fsetDIr fsetDv fsetU0=> - [s [dis sub /(congr1 val) /= <-]].
+exists s; split=> //; apply: fsubset_trans; first exact: sub.
+by rewrite fsetUSS // fsubsetIl.
 Qed.
 
 CoInductive urestr_spec D A x : {fset name} * T -> Prop :=
@@ -2233,14 +2294,23 @@ case/(restrP_int fset0): xx=> A' x _ sub.
 by rewrite /hide /= restr_hideE !namesrE_int fsetDDl fsetUC.
 Qed.
 
-Lemma restr_eqP :
-  forall A1 x1 A2 x2,
+Lemma restr_eqP A1 x1 A2 x2 :
   (exists2 s, fdisjoint (supp s) (names x1 :\: A1) &
               (rename s (A1 :&: names x1), rename s x1) =
               (A2 :&: names x2, x2))
   <-> hide A1 (Restr0 x1) = hide A2 (Restr0 x2).
 Proof.
-by move=> ????; rewrite restr_eqP_int /Restr0 /hide /= !restr_hideE !fsetU0.
+by rewrite restr_eqP_int /Restr0 /hide /= !restr_hideE !fsetU0.
+Qed.
+
+Lemma restr_eqPs A1 x1 A2 x2 :
+  (exists s, [/\ fdisjoint (supp s) (names x1 :\: A1),
+                 fsubset (supp s) (A1 :|: A2) &
+                 (rename s (A1 :&: names x1), rename s x1) =
+                 (A2 :&: names x2, x2)])
+  <-> hide A1 (Restr0 x1) = hide A2 (Restr0 x2).
+Proof.
+by rewrite restr_eqPs_int /Restr0 /hide /= !restr_hideE !fsetU0.
 Qed.
 
 CoInductive restr_spec A : {restr T} -> Prop :=
