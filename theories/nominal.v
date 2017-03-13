@@ -465,6 +465,11 @@ End FiniteSupport.
 Hint Extern 2 (nomR ?s (fun _ => _) (fun _ => _)) =>
   move=> ??? : typeclass_instances.
 
+Global Instance eq_eqvar (T : nominalType) : {eqvar @eq T}.
+Proof.
+by move=> s x x' <- y y' <-; split => [-> //|/rename_inj].
+Qed.
+
 Module TrivialNominal.
 
 Section ClassDef.
@@ -2630,3 +2635,57 @@ by rewrite hide_eqvar Restr0_eqvar !oexposeE; finsupp.
 Qed.
 
 End OExpose.
+
+(** Predicate lifting to name restriction. *)
+
+Section Lift.
+
+Variable T : nominalType.
+
+Implicit Types (A : {fset name}) (P : T -> Prop) (x : T) (rx : {restr T}).
+
+Definition lift_restr A P rx : Prop :=
+  forall A' (x : T), rx = hide A' (Restr0 x) -> fdisjoint A A' -> P x.
+
+Lemma lift_restrE A A' P x :
+  {finsupp A P} ->
+  fdisjoint A A' ->
+  lift_restr A P (hide A' (Restr0 x)) <-> P x.
+Proof.
+move=> fs_P dis; split; first by apply; eauto.
+move=> Px A'' x'' /restr_eqPs [s [dis' sub [eA ex]]] dis''; rewrite -ex.
+suffices dis''': finsupp_perm A s by exact/(fs_P _ dis''' x _ erefl).
+apply: fdisjoint_trans; first exact: sub.
+by rewrite fdisjointUl fdisjointC dis fdisjointC dis''.
+Qed.
+
+Lemma hide_lift_restr A A' P rx :
+  {finsupp A P} ->
+  fdisjoint A A' ->
+  lift_restr A P (hide A' rx) <-> lift_restr A P rx.
+Proof.
+move=> fs_P dis; case/(restrP A): rx=> [A'' x dis' sub].
+by rewrite hideU !lift_restrE // fdisjointUr dis.
+Qed.
+
+Lemma lift_restrE0 A P x :
+  lift_restr A P (Restr0 x) <-> P x.
+Proof.
+split.
+  by rewrite -[Restr0 _]hide0; apply; eauto; rewrite fdisjoints0.
+move=> Px A' x'; rewrite -[Restr0 _]hide0.
+case/restr_eqP=> /= s; rewrite fsetD0 => dis [_ <-].
+by rewrite renameJ.
+Qed.
+
+Lemma lift_restr_irrel A1 A2 P rx :
+  {finsupp A1 P} ->
+  {finsupp A2 P} ->
+  lift_restr A1 P rx -> lift_restr A2 P rx.
+Proof.
+move=> fs1 fs2; case/(restrP (A1 :|: A2)%fset): rx => A x.
+rewrite fdisjointUl => /andP [dis1 dis2] sub.
+by rewrite !lift_restrE.
+Qed.
+
+End Lift.
