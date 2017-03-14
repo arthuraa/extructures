@@ -2015,6 +2015,9 @@ Proof. by rewrite /hide; move: x; case: T=> [? [? [? []]] ?]. Qed.
 Lemma hideP A x : fdisjoint A (names (hide A x)).
 Proof. by rewrite /hide; move: A x; case: T => [? [? [? []]] ?]. Qed.
 
+Lemma hideD A x : fdisjoint A (names x) -> hide A x = x.
+Proof. by rewrite hideI=> /eqP ->; rewrite hide0. Qed.
+
 End RestrictionTheory.
 
 Section OptionRestriction.
