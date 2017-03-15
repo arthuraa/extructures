@@ -781,6 +781,16 @@ move=> n_x; apply/namessP; exists x=> //.
 by apply/nseqP; split.
 Qed.
 
+Global Instance take_eqvar : {eqvar @take T'}.
+Proof.
+by move=> s k _ <- xs _ <-; rewrite renameT renamesE -map_take.
+Qed.
+
+Global Instance drop_eqvar : {eqvar @drop T'}.
+Proof.
+by move=> s k _ <- xs _ <-; rewrite renameT renamesE -map_drop.
+Qed.
+
 End SeqNominalType.
 
 Global Instance map_eqvar (T' S' : nominalType) : {eqvar (@map T' S')}.
@@ -2650,6 +2660,7 @@ Implicit Types (A : {fset name}) (P : T -> Prop) (x : T) (rx : {restr T}).
 Definition lift_restr A P rx : Prop :=
   forall A' (x : T), rx = hide A' (Restr0 x) -> fdisjoint A A' -> P x.
 
+(* FIXME: The finsupp hypothesis is not needed for one of the directions *)
 Lemma lift_restrE A A' P x :
   {finsupp A P} ->
   fdisjoint A A' ->

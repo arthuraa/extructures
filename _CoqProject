@@ -1,3 +1,4 @@
+-arg "-w -parsing"
 -R theories CoqUtils
 
 theories/fperm.v
