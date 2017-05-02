@@ -760,6 +760,9 @@ Proof. by []. Qed.
 Global Instance cons_eqvar : {eqvar (@cons T')}.
 Proof. by move=> s x _ <- xs _ <-. Qed.
 
+Global Instance cat_eqvar : {eqvar @cat T'}.
+Proof. by move=> s xs _ <- ys _ <-; rewrite 2!renamesE -map_cat. Qed.
+
 Global Instance size_eqvar : {eqvar (@size T')}.
 Proof. by move=> s xs _ <-; rewrite renamesE size_map. Qed.
 
