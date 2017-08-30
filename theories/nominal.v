@@ -2066,11 +2066,11 @@ Parameter restr_of : forall T, phant T -> restrType.
 Notation "{ 'restr' T }" := (@restr_of _ (Phant T))
   (at level 0, format "{ 'restr'  T }") : type_scope.
 
-Parameter Restr0 : forall T, T -> {restr T}.
+Parameter Restr : forall T, T -> {restr T}.
 
-Parameter Restr0_eqvar : forall T, {eqvar (@Restr0 T)}.
+Parameter Restr_eqvar : forall T, {eqvar (@Restr T)}.
 
-Parameter namesrE : forall T (x : T), names (Restr0 x) = names x.
+Parameter namesrE : forall T (x : T), names (Restr x) = names x.
 
 Parameter names_hider :
   forall T A (xx : {restr T}), names (hide A xx) = names xx :\: A.
@@ -2080,7 +2080,7 @@ Parameter restr_eqP :
   (exists2 s, fdisjoint (supp s) (names x1 :\: A1) &
               (rename s (A1 :&: names x1), rename s x1) =
               (A2 :&: names x2, x2))
-  <-> hide A1 (Restr0 x1) = hide A2 (Restr0 x2).
+  <-> hide A1 (Restr x1) = hide A2 (Restr x2).
 
 Parameter restr_eqPs :
   forall T A1 (x1 : T) A2 (x2 : T),
@@ -2088,11 +2088,11 @@ Parameter restr_eqPs :
                  fsubset (supp s) (A1 :|: A2) &
                  (rename s (A1 :&: names x1), rename s x1) =
                  (A2 :&: names x2, x2)])
-  <-> hide A1 (Restr0 x1) = hide A2 (Restr0 x2).
+  <-> hide A1 (Restr x1) = hide A2 (Restr x2).
 
 CoInductive restr_spec T A : {restr T} -> Prop :=
 | RestrSpec A' x of fdisjoint A A' & fsubset A' (names x)
-  : restr_spec A (hide A' (Restr0 x)).
+  : restr_spec A (hide A' (Restr x)).
 
 Parameter restrP : forall T A (xx : {restr T}), restr_spec A xx.
 
@@ -2102,7 +2102,7 @@ Parameter elimr :
 
 Parameter elimrE0 :
   forall (T S : nominalType) A (f : {fset name} -> T -> S) x,
-    elimr A f (Restr0 x) = f fset0 x.
+    elimr A f (Restr x) = f fset0 x.
 
 Parameter elimrE :
   forall (T S : nominalType) A (f : {fset name} -> T -> S) A' x,
@@ -2110,7 +2110,7 @@ Parameter elimrE :
     fdisjoint A A' ->
     fdisjoint (names (f A' x)) A' ->
     fsubset A' (names x) ->
-    elimr A f (hide A' (Restr0 x)) = f A' x.
+    elimr A f (hide A' (Restr x)) = f A' x.
 
 End FreeRestrictionSig.
 
@@ -2301,13 +2301,13 @@ Definition restr_of of phant T := RestrType restr_type restr_restrMixin.
 Notation "{ 'restr' T }" := (restr_of (Phant T))
   (at level 0, format "{ 'restr'  T }") : type_scope.
 
-Definition Restr0 x : {restr T} := restr fset0 x.
+Definition Restr x : {restr T} := restr fset0 x.
 
-Lemma Restr0_eqvar : {eqvar Restr0}.
-Proof. by rewrite /Restr0; finsupp. Qed.
+Lemma Restr_eqvar : {eqvar Restr}.
+Proof. by rewrite /Restr; finsupp. Qed.
 
-Lemma namesrE x : names (Restr0 x) = names x.
-Proof. by rewrite /Restr0 namesrE_int fsetD0. Qed.
+Lemma namesrE x : names (Restr x) = names x.
+Proof. by rewrite /Restr namesrE_int fsetD0. Qed.
 
 Lemma names_hider A (xx : {restr T}) : names (hide A xx) = names xx :\: A.
 Proof.
@@ -2319,9 +2319,9 @@ Lemma restr_eqP A1 x1 A2 x2 :
   (exists2 s, fdisjoint (supp s) (names x1 :\: A1) &
               (rename s (A1 :&: names x1), rename s x1) =
               (A2 :&: names x2, x2))
-  <-> hide A1 (Restr0 x1) = hide A2 (Restr0 x2).
+  <-> hide A1 (Restr x1) = hide A2 (Restr x2).
 Proof.
-by rewrite restr_eqP_int /Restr0 /hide /= !restr_hideE !fsetU0.
+by rewrite restr_eqP_int /Restr /hide /= !restr_hideE !fsetU0.
 Qed.
 
 Lemma restr_eqPs A1 x1 A2 x2 :
@@ -2329,14 +2329,14 @@ Lemma restr_eqPs A1 x1 A2 x2 :
                  fsubset (supp s) (A1 :|: A2) &
                  (rename s (A1 :&: names x1), rename s x1) =
                  (A2 :&: names x2, x2)])
-  <-> hide A1 (Restr0 x1) = hide A2 (Restr0 x2).
+  <-> hide A1 (Restr x1) = hide A2 (Restr x2).
 Proof.
-by rewrite restr_eqPs_int /Restr0 /hide /= !restr_hideE !fsetU0.
+by rewrite restr_eqPs_int /Restr /hide /= !restr_hideE !fsetU0.
 Qed.
 
 CoInductive restr_spec A : {restr T} -> Prop :=
 | RestrSpec A' x of fdisjoint A A' & fsubset A' (names x)
-  : restr_spec A (hide A' (Restr0 x)).
+  : restr_spec A (hide A' (Restr x)).
 
 Lemma restrP A (xx : {restr T}) : restr_spec A xx.
 Proof.
@@ -2349,9 +2349,9 @@ Definition elimr (S : nominalType) A (f : {fset name} -> T -> S)
   elimb A (fun p => f (val p).1 (val p).2) xx.
 
 Lemma elimrE0 (S : nominalType) A (f : {fset name} -> T -> S) x :
-  elimr A f (Restr0 x) = f fset0 x.
+  elimr A f (Restr x) = f fset0 x.
 Proof.
-by rewrite /elimr /Restr0 /restr elimbE0 /prerestr_op /= fset0I.
+by rewrite /elimr /Restr /restr elimbE0 /prerestr_op /= fset0I.
 Qed.
 
 Lemma elimrE (S : nominalType) A (f : {fset name} -> T -> S) A' x :
@@ -2359,10 +2359,10 @@ Lemma elimrE (S : nominalType) A (f : {fset name} -> T -> S) A' x :
   fdisjoint A A' ->
   fdisjoint (names (f A' x)) A' ->
   fsubset A' (names x) ->
-  elimr A f (hide A' (Restr0 x)) = f A' x.
+  elimr A f (hide A' (Restr x)) = f A' x.
 Proof.
 move=> fs_f dis1 dis2 sub.
-rewrite /elimr /restr /Restr0 /hide /= restr_hideE fsetU0.
+rewrite /elimr /restr /Restr /hide /= restr_hideE fsetU0.
 by rewrite elimbE /prerestr_op /= ?(fsetIidPl _ _ sub).
 Qed.
 
@@ -2383,7 +2383,7 @@ Lemma restr_renameT s xx : rename s xx = xx.
 Proof.
 case/(restrP fset0): xx => A x _.
 rewrite namesT fsubset0 => /eqP ->.
-by rewrite hide0 Restr0_eqvar renameT.
+by rewrite hide0 Restr_eqvar renameT.
 Qed.
 
 Definition restr_trivialNominalMixin :=
@@ -2409,13 +2409,13 @@ Implicit Types (A : {fset name}) (x : T) (xx : {restr T}) (f : T -> S).
 Definition bindr A (f : T -> S) (xx : {restr T}) :=
   elimr A (fun A' x => hide A' (f x)) xx.
 
-Lemma bindrE0 A f x : bindr A f (Restr0 x) = f x.
+Lemma bindrE0 A f x : bindr A f (Restr x) = f x.
 Proof. by rewrite /bindr elimrE0 hide0. Qed.
 
 Lemma bindrE A f A' x :
   {finsupp A f} ->
   fdisjoint A A' ->
-  bindr A f (hide A' (Restr0 x)) = hide A' (f x).
+  bindr A f (hide A' (Restr x)) = hide A' (f x).
 Proof.
 move=> fs_f dis; rewrite /bindr.
 have dis': fdisjoint A (A' :&: names x).
@@ -2455,7 +2455,7 @@ Qed.
 Global Instance bindr_eqvar A f : {finsupp A f} -> {finsupp A (bindr A f)}.
 Proof.
 move=> fs_f s dis xx _ <-; case: xx /(restrP A)=> [A' x dis' sub].
-rewrite hide_eqvar Restr0_eqvar !bindrE //; first by finsupp.
+rewrite hide_eqvar Restr_eqvar !bindrE //; first by finsupp.
 by rewrite -[A](@renameJ _ s) ?namesfsnE // -1?fdisjoint_eqvar.
 Qed.
 
@@ -2465,7 +2465,7 @@ Lemma names_hide (T : restrType) A (x : T) :
   fsubset (names (hide A x)) (names x :\: A)%fset.
 Proof.
 rewrite -[names x]namesrE -names_hider.
-rewrite (_ : hide A x = bindr fset0 id (hide A (Restr0 x))).
+rewrite (_ : hide A x = bindr fset0 id (hide A (Restr x))).
   by eapply nom_finsuppP; move: (hide _ _) => xx; finsupp.
 by rewrite bindrE // fdisjoint0s.
 Qed.
@@ -2475,12 +2475,12 @@ Section Iso.
 Variable T : nominalType.
 
 Definition orestr (xx : {restr option T}) : option {restr T} :=
-  bindr fset0 (omap (@Restr0 T)) xx.
+  bindr fset0 (omap (@Restr T)) xx.
 
 Lemma orestr_hide A xx : orestr (hide A xx) = hide A (orestr xx).
 Proof. by rewrite /orestr hide_bindr ?fdisjoint0s. Qed.
 
-Lemma orestrE A x : orestr (hide A (Restr0 x)) = hide A (omap (@Restr0 T) x).
+Lemma orestrE A x : orestr (hide A (Restr x)) = hide A (omap (@Restr T) x).
 Proof. by rewrite /orestr bindrE ?fdisjoint0s. Qed.
 
 Lemma rename_orestr : {eqvar orestr}.
@@ -2494,15 +2494,15 @@ Variables T S : nominalType.
 Variables (A : {fset name}) (f : T -> S).
 Implicit Types (x : T) (xx : {restr T}).
 
-Definition mapr := bindr A (fun x => Restr0 (f x)).
+Definition mapr := bindr A (fun x => Restr (f x)).
 
-Lemma maprE0 x : mapr (Restr0 x) = Restr0 (f x).
+Lemma maprE0 x : mapr (Restr x) = Restr (f x).
 Proof. by rewrite /mapr bindrE0. Qed.
 
 Lemma maprE :
   {finsupp A f} ->
   forall A' x, fdisjoint A A' ->
-              mapr (hide A' (Restr0 x)) = hide A' (Restr0 (f x)).
+              mapr (hide A' (Restr x)) = hide A' (Restr (f x)).
 Proof. by move=> fs_f A' x dis; rewrite /mapr bindrE ?hiderE ?fsetU0. Qed.
 
 End Mapr.
@@ -2608,10 +2608,10 @@ Variable T : trivialNominalType.
 Definition expose (xx : {restr T}) : T :=
   elimr fset0 (fun _ x => x) xx.
 
-Lemma exposeE0 : cancel (@Restr0 _) expose.
+Lemma exposeE0 : cancel (@Restr _) expose.
 Proof. move=> x; by rewrite /expose elimrE0. Qed.
 
-Lemma exposeE A x : expose (hide A (Restr0 x)) = x.
+Lemma exposeE A x : expose (hide A (Restr x)) = x.
 Proof.
 by rewrite /expose hideI namesrE namesT fsetI0 elimrE ?fdisjoints0 // fsub0set.
 Qed.
@@ -2619,7 +2619,7 @@ Qed.
 Lemma rename_expose : {eqvar expose}.
 Proof.
 move=> s x _ <-; case: x / (restrP fset0) => /= [A x _ _].
-by rewrite !exposeE hide_eqvar Restr0_eqvar exposeE.
+by rewrite !exposeE hide_eqvar Restr_eqvar exposeE.
 Qed.
 
 End Trivial.
@@ -2631,11 +2631,11 @@ Variable T : nominalType.
 Definition oexpose (xx : {restr T}) : option T :=
   elimr fset0 (fun A x => if A == fset0 then Some x else None) xx.
 
-Lemma oexposeE0 : pcancel (@Restr0 _) oexpose.
+Lemma oexposeE0 : pcancel (@Restr _) oexpose.
 Proof. move=> x; by rewrite /oexpose elimrE0. Qed.
 
 Lemma oexposeE A x :
-  oexpose (hide A (Restr0 x)) =
+  oexpose (hide A (Restr x)) =
   if fdisjoint A (names x) then Some x else None.
 Proof.
 rewrite hideI namesrE /oexpose /fdisjoint; move: (fsubsetIr A (names x))=> sub.
@@ -2647,7 +2647,7 @@ Qed.
 Global Instance oexpose_eqvar : {eqvar oexpose}.
 Proof.
 move=> s xx _ <-; case: xx / (restrP fset0) => [A x _].
-by rewrite hide_eqvar Restr0_eqvar !oexposeE; finsupp.
+by rewrite hide_eqvar Restr_eqvar !oexposeE; finsupp.
 Qed.
 
 End OExpose.
@@ -2661,13 +2661,13 @@ Variable T : nominalType.
 Implicit Types (A : {fset name}) (P : T -> Prop) (x : T) (rx : {restr T}).
 
 Definition lift_restr A P rx : Prop :=
-  forall A' (x : T), rx = hide A' (Restr0 x) -> fdisjoint A A' -> P x.
+  forall A' (x : T), rx = hide A' (Restr x) -> fdisjoint A A' -> P x.
 
 (* FIXME: The finsupp hypothesis is not needed for one of the directions *)
 Lemma lift_restrE A A' P x :
   {finsupp A P} ->
   fdisjoint A A' ->
-  lift_restr A P (hide A' (Restr0 x)) <-> P x.
+  lift_restr A P (hide A' (Restr x)) <-> P x.
 Proof.
 move=> fs_P dis; split; first by apply; eauto.
 move=> Px A'' x'' /restr_eqPs [s [dis' sub [eA ex]]] dis''; rewrite -ex.
@@ -2686,11 +2686,11 @@ by rewrite hideU !lift_restrE // fdisjointUr dis.
 Qed.
 
 Lemma lift_restrE0 A P x :
-  lift_restr A P (Restr0 x) <-> P x.
+  lift_restr A P (Restr x) <-> P x.
 Proof.
 split.
-  by rewrite -[Restr0 _]hide0; apply; eauto; rewrite fdisjoints0.
-move=> Px A' x'; rewrite -[Restr0 _]hide0.
+  by rewrite -[Restr _]hide0; apply; eauto; rewrite fdisjoints0.
+move=> Px A' x'; rewrite -[Restr _]hide0.
 case/restr_eqP=> /= s; rewrite fsetD0 => dis [_ <-].
 by rewrite renameJ.
 Qed.
