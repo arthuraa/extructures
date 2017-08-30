@@ -2031,6 +2031,15 @@ Proof. by rewrite /hide; move: A x; case: T => [? [? [? []]] ?]. Qed.
 Lemma hideD A x : fdisjoint A (names x) -> hide A x = x.
 Proof. by rewrite hideI=> /eqP ->; rewrite hide0. Qed.
 
+Lemma names_hide A x : fsubset (names (hide A x)) (names x :\: A).
+Proof.
+apply/fsubsetP=> n n_in.
+have n_nin: n \notin A by move: n_in; apply/contraTN/fdisjointP/hideP.
+have/fsubsetP/(_ _ n_in): fsubset (names (hide A x)) (names A :|: names x).
+  by apply nom_finsuppP; finsupp.
+by rewrite in_fsetU in_fsetD namesfsnE (negbTE n_nin).
+Qed.
+
 End RestrictionTheory.
 
 Section OptionRestriction.
@@ -2460,15 +2469,6 @@ by rewrite -[A](@renameJ _ s) ?namesfsnE // -1?fdisjoint_eqvar.
 Qed.
 
 End BindR.
-
-Lemma names_hide (T : restrType) A (x : T) :
-  fsubset (names (hide A x)) (names x :\: A)%fset.
-Proof.
-rewrite -[names x]namesrE -names_hider.
-rewrite (_ : hide A x = bindr fset0 id (hide A (Restr x))).
-  by eapply nom_finsuppP; move: (hide _ _) => xx; finsupp.
-by rewrite bindrE // fdisjoint0s.
-Qed.
 
 Section Iso.
 
