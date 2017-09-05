@@ -606,6 +606,9 @@ Proof. move=> x; apply/eqP/names0P=> s; exact: renameT. Qed.
 
 End TrivialNominalTheory.
 
+Global Instance is_true_eqvar : {eqvar is_true}.
+Proof. by move=> pm b _ <-; rewrite renameT. Qed.
+
 Global Instance eq_op_eqvar (T : nominalType) : {eqvar (@eq_op T)}.
 Proof.
 move=> s x _ <- y _ <-; rewrite inj_eq //; apply: rename_inj.
@@ -2066,7 +2069,7 @@ End OptionRestriction.
 
 Module Type FreeRestrictionSig.
 
-Implicit Types (A : {fset name}) (T S : nominalType).
+Implicit Types (A : {fset name}) (T S : nominalType) (s : {fperm name}).
 
 Local Open Scope fset_scope.
 
@@ -2086,17 +2089,19 @@ Parameter names_hider :
 
 Parameter restr_eqP :
   forall T A1 (x1 : T) A2 (x2 : T),
-  (exists2 s, fdisjoint (supp s) (names x1 :\: A1) &
-              (rename s (A1 :&: names x1), rename s x1) =
-              (A2 :&: names x2, x2))
+  (exists2 s : {fperm name},
+     fdisjoint (supp s) (names x1 :\: A1) &
+     (rename s (A1 :&: names x1), rename s x1) =
+     (A2 :&: names x2, x2))
   <-> hide A1 (Restr x1) = hide A2 (Restr x2).
 
 Parameter restr_eqPs :
   forall T A1 (x1 : T) A2 (x2 : T),
-  (exists s, [/\ fdisjoint (supp s) (names x1 :\: A1),
-                 fsubset (supp s) (A1 :|: A2) &
-                 (rename s (A1 :&: names x1), rename s x1) =
-                 (A2 :&: names x2, x2)])
+  (exists s : {fperm name},
+     [/\ fdisjoint (supp s) (names x1 :\: A1),
+         fsubset (supp s) (A1 :|: A2) &
+         (rename s (A1 :&: names x1), rename s x1) =
+         (A2 :&: names x2, x2)])
   <-> hide A1 (Restr x1) = hide A2 (Restr x2).
 
 CoInductive restr_spec T A : {restr T} -> Prop :=
@@ -2382,6 +2387,25 @@ End FreeRestriction.
 Notation "{ 'restr' T }" := (restr_of (Phant T))
   (at level 0, format "{ 'restr'  T }") : type_scope.
 
+Section FreeRestrictionTheory.
+
+Local Open Scope fset_scope.
+
+Variable (T : nominalType).
+
+Implicit Types (x : T).
+
+Lemma restr_eq0 A x1 x2 : Restr x1 = hide A (Restr x2) -> x1 = x2.
+Proof.
+rewrite -[LHS]hide0; case/restr_eqP=> s.
+by rewrite fsetD0 fset0I => dis [_ <-]; rewrite renameJ.
+Qed.
+
+Lemma Restr_inj : injective (@Restr T).
+Proof. by move=> x1 x2; rewrite -[RHS]hide0=> /restr_eq0. Qed.
+
+End FreeRestrictionTheory.
+
 Section TrivialFreeRestriction.
 
 Variable (T : trivialNominalType).
@@ -2654,20 +2678,22 @@ End OExpose.
 
 (** Predicate lifting to name restriction. *)
 
-Section Lift.
+Section PBindR.
+
+Local Open Scope fset_scope.
 
 Variable T : nominalType.
 
 Implicit Types (A : {fset name}) (P : T -> Prop) (x : T) (rx : {restr T}).
 
-Definition lift_restr A P rx : Prop :=
+Definition pbindr A P rx : Prop :=
   forall A' (x : T), rx = hide A' (Restr x) -> fdisjoint A A' -> P x.
 
 (* FIXME: The finsupp hypothesis is not needed for one of the directions *)
-Lemma lift_restrE A A' P x :
+Lemma pbindrE A A' P x :
   {finsupp A P} ->
   fdisjoint A A' ->
-  lift_restr A P (hide A' (Restr x)) <-> P x.
+  pbindr A P (hide A' (Restr x)) <-> P x.
 Proof.
 move=> fs_P dis; split; first by apply; eauto.
 move=> Px A'' x'' /restr_eqPs [s [dis' sub [eA ex]]] dis''; rewrite -ex.
@@ -2676,17 +2702,17 @@ apply: fdisjoint_trans; first exact: sub.
 by rewrite fdisjointUl fdisjointC dis fdisjointC dis''.
 Qed.
 
-Lemma hide_lift_restr A A' P rx :
+Lemma hide_pbindr A A' P rx :
   {finsupp A P} ->
   fdisjoint A A' ->
-  lift_restr A P (hide A' rx) <-> lift_restr A P rx.
+  pbindr A P (hide A' rx) <-> pbindr A P rx.
 Proof.
 move=> fs_P dis; case/(restrP A): rx=> [A'' x dis' sub].
-by rewrite hideU !lift_restrE // fdisjointUr dis.
+by rewrite hideU !pbindrE // fdisjointUr dis.
 Qed.
 
-Lemma lift_restrE0 A P x :
-  lift_restr A P (Restr x) <-> P x.
+Lemma pbindrE0 A P x :
+  pbindr A P (Restr x) <-> P x.
 Proof.
 split.
   by rewrite -[Restr _]hide0; apply; eauto; rewrite fdisjoints0.
@@ -2695,14 +2721,41 @@ case/restr_eqP=> /= s; rewrite fsetD0 => dis [_ <-].
 by rewrite renameJ.
 Qed.
 
-Lemma lift_restr_irrel A1 A2 P rx :
-  {finsupp A1 P} ->
-  {finsupp A2 P} ->
-  lift_restr A1 P rx -> lift_restr A2 P rx.
+(* XXX: This could be strengthened by assuming some freshness hypothesis
+   relating x, A1 and A2 below. *)
+Lemma pbindr_impl A1 A2 P1 P2 rx :
+  {finsupp A1 P1} ->
+  {finsupp A2 P2} ->
+  (forall x, P1 x -> P2 x) ->
+  pbindr A1 P1 rx -> pbindr A2 P2 rx.
 Proof.
-move=> fs1 fs2; case/(restrP (A1 :|: A2)%fset): rx => A x.
-rewrite fdisjointUl => /andP [dis1 dis2] sub.
-by rewrite !lift_restrE.
+case/(restrP (A1 :|: A2)): rx => /= A3 x.
+rewrite fdisjointUl => /andP [dis1 dis2] sub fs1 fs2.
+by rewrite pbindrE // pbindrE //=; apply.
 Qed.
 
-End Lift.
+Lemma pbindr_irrel A1 A2 P rx :
+  {finsupp A1 P} ->
+  {finsupp A2 P} ->
+  pbindr A1 P rx -> pbindr A2 P rx.
+Proof. by move=> fs1 fs2; apply: pbindr_impl. Qed.
+
+Lemma pbindr_new A1 A2 P (f : name -> {restr T}) :
+  {finsupp A1 P} ->
+  {finsupp A2 f} ->
+  (forall n : name,
+      n \notin A1 -> n \notin A2 ->
+      pbindr A1 P (f n)) ->
+  pbindr A1 P (new A2 f).
+Proof.
+move=> fs1 fs2 H.
+move: (fresh _) (freshP (A1 :|: A2))=> n.
+rewrite in_fsetU negb_or => /andP [nin_n1 nin_n2].
+rewrite (newE _ nin_n2) hide_pbindr ?fdisjoints1 //.
+exact: H.
+Qed.
+
+End PBindR.
+
+Definition restrE0 :=
+  (elimrE0, oexposeE0, exposeE0, maprE0, bindrE0, pbindrE0).
