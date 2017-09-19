@@ -6,6 +6,6 @@ theories/fset.v
 theories/hseq.v
 theories/word.v
 theories/nominal.v
-theories/partmap.v
+theories/fmap.v
 theories/ord.v
 theories/string.v

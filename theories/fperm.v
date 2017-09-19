@@ -1,7 +1,7 @@
 From mathcomp Require Import
   ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype path bigop.
 
-Require Import ord partmap fset.
+Require Import ord fset fmap.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -15,13 +15,13 @@ Variables (T : ordType).
 
 Local Open Scope ord_scope.
 
-Definition axiom (f : {partmap T -> T}) :=
+Definition axiom (f : {fmap T -> T}) :=
   let xs := domm f in
   injectivem f &&
   all (fun x => let y := odflt x (f x) in (y \in xs) && (y != x)) xs.
 
 Record fperm_type := FPerm {
-  fpval : {partmap T -> T};
+  fpval : {fmap T -> T};
   _ : axiom fpval
 }.
 Definition fperm_of of phant T := fperm_type.
@@ -72,7 +72,7 @@ have Pval: forall s x, val s x != Some x.
   move=> {s1 s2} s x; apply/eqP=> Px.
   have Px': x \in domm (val s) by rewrite mem_domm Px.
   by move: (allP (andP (valP s)).2 x Px') => {Px'} /=; rewrite Px /= eqxx andbF.
-move=> Ps1s2; apply/val_inj/eq_partmap => x.
+move=> Ps1s2; apply/val_inj/eq_fmap => x.
 move: (Ps1s2 x); rewrite /fun_of_fperm.
 case Ps1: (val s1 x)=> [y1|] //; case Ps2: (val s2 x)=> [y2|] //.
 - by move=> ->.
@@ -176,7 +176,7 @@ Let fperm_def x :=
 
 Lemma fperm_subproof :
   FPerm.axiom (if size (f @: X) == size X then
-                 filterm predC1 (mkpartmapf fperm_def (X :|: f @: X))
+                 filterm predC1 (mkfmapf fperm_def (X :|: f @: X))
                else emptym).
 Proof.
 have [f_inj|_] := imfset_injP; last by rewrite /FPerm.axiom domm0.
@@ -256,16 +256,16 @@ have inj: {in X :|: f @: X &, injective fperm_def}
   by apply/imfset_injP/eqP; rewrite st.
 apply/andP; split.
   apply/injectivemP=> x1.
-  rewrite mem_domm !filtermE !mkpartmapfE (lock mkpartmapf).
+  rewrite mem_domm !filtermE !mkfmapfE (lock mkfmapf).
   have [hx1|] //= := boolP (x1 \in X :|: _).
   have [efx1|efx1 _ x2] //= := altP (fperm_def x1 =P x1).
-  rewrite -lock filtermE mkpartmapfE.
+  rewrite -lock filtermE mkfmapfE.
   have [hx2|] //= := boolP (x2 \in X :|: _).
   by have [efx2|efx2 []] //= := altP (fperm_def x2 =P x2); eauto.
-apply/allP=> x /=; rewrite !mem_domm filtermE mkpartmapfE /=.
+apply/allP=> x /=; rewrite !mem_domm filtermE mkfmapfE /=.
 have [x_in_X|] //= := boolP (x \in X :|: _).
 have [??|nfx _] //= := altP (fperm_def x =P x).
-rewrite filtermE mkpartmapfE /= -st (mem_imfset fperm_def x_in_X) /=.
+rewrite filtermE mkfmapfE /= -st (mem_imfset fperm_def x_in_X) /=.
 rewrite nfx andbT; have [efx|] //= := altP (_ =P fperm_def x).
 rewrite -(negbTE nfx) {nfx}; apply/eqP.
 suff fx_in_X: fperm_def x \in X :|: f @: X by apply: inj fx_in_X x_in_X efx.
@@ -277,7 +277,7 @@ Definition fperm : {fperm T} := FPerm.FPerm fperm_subproof.
 Lemma fpermE : {in X &, injective f} -> {in X, fperm =1 f}.
 Proof.
 move=> /imfset_injP inj x x_in_X.
-rewrite /fun_of_fperm /fperm /= inj filtermE mkpartmapfE /fperm_def.
+rewrite /fun_of_fperm /fperm /= inj filtermE mkfmapfE /fperm_def.
 by rewrite in_fsetU x_in_X /=; have [e|] //= := altP (f x =P x).
 Qed.
 
@@ -285,7 +285,7 @@ Lemma supp_fperm : fsubset (supp fperm) (X :|: f @: X).
 Proof.
 apply/fsubsetP=> x; rewrite mem_supp /fun_of_fperm /fperm /=.
 case: ifP=> [/imfset_injP inj|?]; last by rewrite emptymE eqxx.
-by rewrite filtermE mkpartmapfE; case: ifP=> //=; rewrite eqxx.
+by rewrite filtermE mkfmapfE; case: ifP=> //=; rewrite eqxx.
 Qed.
 
 Lemma fpermEst x : f @: X = X -> fperm x = if x \in X then f x else x.
@@ -582,17 +582,17 @@ by rewrite -mem_supp e in_fsetU1 (negbTE e2).
 Qed.
 
 Definition enum_fperm X : {fset {fperm T}} :=
-  fset (pmap insub (enum_partmap X X)).
+  fset (pmap insub (enum_fmap X X)).
 
 Lemma enum_fpermE X s : fsubset (supp s) X = (s \in enum_fperm X).
 Proof.
 rewrite /enum_fperm in_fset mem_pmap; apply/idP/mapP.
   move=> supp_s; exists (val s); last by rewrite valK.
-  apply/enum_partmapP; split; first by move/fsubsetP: supp_s.
+  apply/enum_fmapP; split; first by move/fsubsetP: supp_s.
   move=> x /codommP [x' Px']; move/fsubsetP: supp_s; apply.
   case/andP: (valP s)=> [_ /allP /(_ x')].
   by rewrite mem_domm /= Px'=> /(_ erefl) /= /andP [-> _].
-move=> [s' Ps' Pss']; case/enum_partmapP: Ps' => /fsubsetP.
+move=> [s' Ps' Pss']; case/enum_fmapP: Ps' => /fsubsetP.
 by rewrite -(insubK [subType of {fperm T}] s') -Pss' /=.
 Qed.
 

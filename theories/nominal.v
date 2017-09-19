@@ -2,7 +2,7 @@ From mathcomp Require Import
   ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype tuple bigop
   generic_quotient.
 
-Require Import ord fset partmap fperm.
+Require Import ord fset fmap fperm.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -1108,44 +1108,44 @@ Canonical fset_trivialNominalType :=
 
 End SetTrivialNominalType.
 
-Section PartMapNominalType.
+Section FMapNominalType.
 
-Implicit Type (m : {partmap T -> S}).
+Implicit Type (m : {fmap T -> S}).
 
-Definition partmap_rename s m :=
-  mkpartmapfp (fun x => rename s (m (rename s^-1 x)))
+Definition fmap_rename s m :=
+  mkfmapfp (fun x => rename s (m (rename s^-1 x)))
               (rename s @: domm m).
 
-Definition partmap_names m :=
+Definition fmap_names m :=
   names (domm m) :|: names (codomm m).
 
-Lemma partmap_renameD s1 s2 m :
-  partmap_rename s1 (partmap_rename s2 m) = partmap_rename (s1 * s2) m.
+Lemma fmap_renameD s1 s2 m :
+  fmap_rename s1 (fmap_rename s2 m) = fmap_rename (s1 * s2) m.
 Proof.
-apply/eq_partmap=> x; rewrite /partmap_rename.
-set m1 := mkpartmapfp _ (rename s2 @: domm m).
+apply/eq_fmap=> x; rewrite /fmap_rename.
+set m1 := mkfmapfp _ (rename s2 @: domm m).
 have domm_m1: domm m1 = rename s2 @: domm m.
   apply/eq_fset=> y; apply/(sameP idP)/(iffP idP).
     case/imfsetP=> [{y} y Py ->]; apply/dommP.
     case/dommP: (Py)=> [v m_y].
-    exists (rename s2 v); rewrite /m1 mkpartmapfpE (mem_imfset (rename s2) Py).
+    exists (rename s2 v); rewrite /m1 mkfmapfpE (mem_imfset (rename s2) Py).
     by rewrite renameK m_y.
-  by move/dommP=> [v]; rewrite mkpartmapfpE; case: ifP.
+  by move/dommP=> [v]; rewrite mkfmapfpE; case: ifP.
 rewrite domm_m1 -imfset_comp (eq_imfset (renameD _ _)).
-congr getm; apply/eq_mkpartmapfp=> y; rewrite mkpartmapfpE.
+congr getm; apply/eq_mkfmapfp=> y; rewrite mkfmapfpE.
 rewrite (mem_imfset_can _ _ (renameK s2) (renameKV s2)) renameD.
 rewrite -fperm_inv_mul mem_domm; case e: (m (rename _ y)) => [z|] //=.
 by rewrite renameD.
 Qed.
 
-Lemma partmap_namesNNE n n' m :
-  n \notin partmap_names m -> n' \notin partmap_names m ->
-  partmap_rename (fperm2 n n') m = m.
+Lemma fmap_namesNNE n n' m :
+  n \notin fmap_names m -> n' \notin fmap_names m ->
+  fmap_rename (fperm2 n n') m = m.
 Proof.
-rewrite /partmap_names 2!in_fsetU 2!negb_or
+rewrite /fmap_names 2!in_fsetU 2!negb_or
   => /andP[/namesfsPn hn1 /namesfsPn hn2]
      /andP[/namesfsPn hn1' /namesfsPn hn2'].
-apply/eq_partmap=> x; rewrite mkpartmapfpE.
+apply/eq_fmap=> x; rewrite mkfmapfpE.
 rewrite (mem_imfset_can _ _ (renameK _) (renameKV _)) fperm2V mem_domm.
 case e: (m x)=> [y|].
   have x_def: x \in domm m by rewrite mem_domm e.
@@ -1158,57 +1158,57 @@ rewrite -(renameK (fperm2 n n') x) fperm2V namesNNE in e; eauto.
 by rewrite e in e'.
 Qed.
 
-Let partmap_names_dom s m :
-  domm (partmap_rename s m) = rename s @: domm m.
+Let fmap_names_dom s m :
+  domm (fmap_rename s m) = rename s @: domm m.
 Proof.
 apply/eq_fset=> x; rewrite (mem_imfset_can _ _ (renameK _) (renameKV _)).
 apply/(sameP (dommP _ _))/(iffP (dommP _ _)).
-  move=> [y Py]; exists (rename s y); rewrite mkpartmapfpE.
+  move=> [y Py]; exists (rename s y); rewrite mkfmapfpE.
   by rewrite (mem_imfset_can _ _ (renameK _) (renameKV _)) mem_domm Py /=.
-case=> [y]; rewrite mkpartmapfpE (mem_imfset_can _ _ (renameK _) (renameKV _)).
+case=> [y]; rewrite mkfmapfpE (mem_imfset_can _ _ (renameK _) (renameKV _)).
 rewrite mem_domm renameoE; case e: (m (rename s^-1 x))=> [y'|] //=.
 by move=> [e']; exists (rename s^-1 y); rewrite -e' renameK.
 Qed.
 
-Let partmap_names_codom s m :
-  codomm (partmap_rename s m) = rename s @: codomm m.
+Let fmap_names_codom s m :
+  codomm (fmap_rename s m) = rename s @: codomm m.
 Proof.
 apply/eq_fset=> y; rewrite (mem_imfset_can _ _ (renameK _) (renameKV _)).
 apply/(sameP (codommP _ _))/(iffP (codommP _ _)).
-  move=> [x Px]; exists (rename s x); rewrite mkpartmapfpE.
+  move=> [x Px]; exists (rename s x); rewrite mkfmapfpE.
   rewrite (mem_imfset_inj _ _ (@rename_inj _ _)) mem_domm Px /= renameK Px.
   by rewrite renameoE /= renameKV.
-case=> [x]; rewrite mkpartmapfpE (mem_imfset_can _ _ (renameK _) (renameKV _)).
+case=> [x]; rewrite mkfmapfpE (mem_imfset_can _ _ (renameK _) (renameKV _)).
 rewrite mem_domm renameoE; case e: (m (rename s^-1 x))=> [x'|] //=.
 by move=> [e']; exists (rename s^-1 x); rewrite -e' renameK.
 Qed.
 
-Lemma partmap_namesTeq n n' m :
-  n \in partmap_names m ->
-  partmap_rename (fperm2 n n') m = m ->
-  n' \in partmap_names m.
+Lemma fmap_namesTeq n n' m :
+  n \in fmap_names m ->
+  fmap_rename (fperm2 n n') m = m ->
+  n' \in fmap_names m.
 Proof.
 move=> Pn e.
-rewrite -{}e (_ : partmap_names _ = rename (fperm2 n n') (partmap_names m)).
+rewrite -{}e (_ : fmap_names _ = rename (fperm2 n n') (fmap_names m)).
   rewrite -{1}(fperm2L n n') -renamenE renamefsE.
   by rewrite (mem_imfset_inj _ _ (@rename_inj _ _)).
-rewrite /partmap_names renamefsE imfsetU partmap_names_dom names_rename.
-by rewrite partmap_names_codom names_rename.
+rewrite /fmap_names renamefsE imfsetU fmap_names_dom names_rename.
+by rewrite fmap_names_codom names_rename.
 Qed.
 
-Definition partmap_nominalMixin :=
-  NominalMixin partmap_renameD partmap_namesNNE partmap_namesTeq.
-Canonical partmap_nominalType :=
-  Eval hnf in NominalType (PartMap.partmap_type T S) partmap_nominalMixin.
-Canonical partmap_of_nominalType :=
-  Eval hnf in [nominalType of {partmap T -> S}].
+Definition fmap_nominalMixin :=
+  NominalMixin fmap_renameD fmap_namesNNE fmap_namesTeq.
+Canonical fmap_nominalType :=
+  Eval hnf in NominalType (FMap.fmap_type T S) fmap_nominalMixin.
+Canonical fmap_of_nominalType :=
+  Eval hnf in [nominalType of {fmap T -> S}].
 
 Lemma namesmE m : names m = names (domm m) :|: names (codomm m).
 Proof. by []. Qed.
 
 Lemma renamemE s m k : rename s m k = rename s (m (rename s^-1 k)).
 Proof.
-rewrite {1}/rename /= /partmap_rename mkpartmapfpE.
+rewrite {1}/rename /= /fmap_rename mkfmapfpE.
 rewrite (mem_imfset_can _ _ (renameK s) (renameKV s)) mem_domm.
 by case: (m (rename _ _)).
 Qed.
@@ -1218,7 +1218,7 @@ Proof. by move=> s m _ <- k _ <-; rewrite renamemE renameK. Qed.
 
 Lemma getm_nomR s m1 m2 : nomR s (getm m1) (getm m2) -> nomR s m1 m2.
 Proof.
-move=> m1m2; apply/eq_partmap=> k.
+move=> m1m2; apply/eq_fmap=> k.
 rewrite -[k](renameKV s); move: (rename s^-1 k) => {k} k.
 move/(_ k (rename s k) erefl): m1m2 => <-.
 by symmetry; apply: getm_eqvar.
@@ -1256,19 +1256,19 @@ Qed.
 Global Instance emptym_eqvar : {eqvar (@emptym T S)}.
 Proof. by apply/names0P/eqP/namesm_empty. Qed.
 
-Global Instance mkpartmap_eqvar : {eqvar (@mkpartmap T S)}.
+Global Instance mkfmap_eqvar : {eqvar (@mkfmap T S)}.
 Proof.
 by move=> s kvs _ <-; elim: kvs=> [|[k v] kvs IH] /=; finsupp.
 Qed.
 
-Global Instance mkpartmapf_eqvar : {eqvar (@mkpartmapf T S)}.
+Global Instance mkfmapf_eqvar : {eqvar (@mkfmapf T S)}.
 Proof.
-by move=> s f g fg ks1 ks2 ks12; rewrite /mkpartmapf; finsupp.
+by move=> s f g fg ks1 ks2 ks12; rewrite /mkfmapf; finsupp.
 Qed.
 
-Global Instance mkpartmapfp_eqvar : {eqvar (@mkpartmapfp T S)}.
+Global Instance mkfmapfp_eqvar : {eqvar (@mkfmapfp T S)}.
 Proof.
-by move=> ? ??? ???; rewrite /mkpartmapfp; finsupp.
+by move=> ? ??? ???; rewrite /mkfmapfp; finsupp.
 Qed.
 
 Global Instance domm_eqvar : {eqvar (@domm T S)}.
@@ -1284,14 +1284,14 @@ apply/dommP; exists (rename s^-1 v).
 by move: Pv; case: (m _)=> // v' [<-]; rewrite renameK.
 Qed.
 
-CoInductive partmap_names_spec n m : Prop :=
+CoInductive fmap_names_spec n m : Prop :=
 | PMFreeNamesKey k v of m k = Some v & n \in names k
 | PMFreeNamesVal k v of m k = Some v & n \in names v.
 
 Lemma namesmP n m :
-  reflect (partmap_names_spec n m) (n \in names m).
+  reflect (fmap_names_spec n m) (n \in names m).
 Proof.
-rewrite /names/=/partmap_names; apply/(iffP idP).
+rewrite /names/=/fmap_names; apply/(iffP idP).
   case/fsetUP; rewrite !namesfsE big_tnth=> /bigcup_finP [i _].
     move: (mem_tnth i (in_tuple (domm m)))=> /dommP [v Pv].
     by apply: PMFreeNamesKey Pv.
@@ -1349,35 +1349,35 @@ case: p=> //= - [?] Pn; subst v'; apply/namesmP.
 by eapply PMFreeNamesVal; eauto.
 Qed.
 
-Lemma namesm_mkpartmapf f ks :
-  names (mkpartmapf f ks) = names ks :|: names [seq f k | k <- ks].
+Lemma namesm_mkfmapf f ks :
+  names (mkfmapf f ks) = names ks :|: names [seq f k | k <- ks].
 Proof.
 apply/eq_fset=> n; apply/namesmP/fsetUP.
-  case=> [k v|k v]; rewrite mkpartmapfE; case: ifP=> // in_ks [].
+  case=> [k v|k v]; rewrite mkfmapfE; case: ifP=> // in_ks [].
     by move=> _ {v} in_k; left; apply/namessP; eauto.
   move=> <- {v} in_fk; right; apply/namessP; exists (f k)=> //.
   by apply/mapP; eauto.
 case=> [] /namessP => [[k in_ks in_k]|[v /mapP [k in_ks -> {v} in_fk]]].
   apply: (@PMFreeNamesKey n _ k (f k))=> //.
-  by rewrite mkpartmapfE in_ks.
+  by rewrite mkfmapfE in_ks.
 apply: (@PMFreeNamesVal n _ k (f k))=> //.
-by rewrite mkpartmapfE in_ks.
+by rewrite mkfmapfE in_ks.
 Qed.
 
-End PartMapNominalType.
+End FMapNominalType.
 
 End Instances.
 
-Section MorePartMap.
+Section MoreFmap.
 
 Local Open Scope fset_scope.
 Local Open Scope fperm_scope.
 
 Implicit Types T S R : nominalType.
 
-Global Instance partmap_of_seq_eqvar T : {eqvar (@partmap_of_seq T)}.
+Global Instance fmap_of_seq_eqvar T : {eqvar (@fmap_of_seq T)}.
 Proof.
-by move=> ????; eapply getm_nomR=> ???; rewrite !partmap_of_seqE; finsupp.
+by move=> ????; eapply getm_nomR=> ???; rewrite !fmap_of_seqE; finsupp.
 Qed.
 
 Global Instance uncurrym_eqvar T S R : {eqvar (@uncurrym T S R)}.
@@ -1388,7 +1388,7 @@ Qed.
 Global Instance currym_eqvar T S R : {eqvar (@currym T S R)}.
 Proof.
 move=> s m _ <-.
-apply/eq_partmap=> x.
+apply/eq_fmap=> x.
 move: (erefl (x \in domm (currym (rename s m)))).
 rewrite {1}domm_curry -domm_eqvar.
 rewrite (_ : (x \in @fst _ _ @: rename s (domm m)) =
@@ -1396,7 +1396,7 @@ rewrite (_ : (x \in @fst _ _ @: rename s (domm m)) =
   rewrite -domm_curry !mem_domm renamemE.
   case get_x: (currym m _)=> [n|];
   case get_x': (currym _ _)=> [n'|] //= _.
-  congr Some; apply/eq_partmap=> y; rewrite renamemE.
+  congr Some; apply/eq_fmap=> y; rewrite renamemE.
   move: (currymE (rename s m) x y).
   rewrite get_x' /= renamemE pair_eqvar /= => <-.
   by rewrite currymE /= get_x /=.
@@ -1404,7 +1404,7 @@ rewrite -(mem_imfset_can _ _ (renameK s) (renameKV s)).
 by rewrite !renamefsE -2!imfset_comp //.
 Qed.
 
-End MorePartMap.
+End MoreFmap.
 
 Module SubNominal.
 
@@ -2395,14 +2395,16 @@ Variable (T : nominalType).
 
 Implicit Types (x : T).
 
-Lemma restr_eq0 A x1 x2 : Restr x1 = hide A (Restr x2) -> x1 = x2.
+Lemma restr_eq0 A x1 x2 :
+  Restr x1 = hide A (Restr x2) -> x1 = x2 /\ fdisjoint A (names x1).
 Proof.
 rewrite -[LHS]hide0; case/restr_eqP=> s.
-by rewrite fsetD0 fset0I => dis [_ <-]; rewrite renameJ.
+rewrite fsetD0 fset0I renameJ ?namesfs0 ?fdisjoints0 // => dis.
+by rewrite renameJ // /fdisjoint; case=> [-> ->]; split.
 Qed.
 
 Lemma Restr_inj : injective (@Restr T).
-Proof. by move=> x1 x2; rewrite -[RHS]hide0=> /restr_eq0. Qed.
+Proof. by move=> x1 x2; rewrite -[RHS]hide0=> /restr_eq0 [? _]. Qed.
 
 End FreeRestrictionTheory.
 
@@ -2756,6 +2758,167 @@ exact: H.
 Qed.
 
 End PBindR.
+
+Section PBindR2.
+
+Local Open Scope fset_scope.
+
+Variable T : nominalType.
+
+Implicit Types (A : {fset name}) (P : T -> Prop) (x : T) (rx : {restr T}).
+Implicit Types (R : T -> T -> Prop).
+
+Definition pbindr2 A R rx1 rx2 : Prop :=
+  exists rx1x2,
+    [/\ rx1 = mapr fset0 (@fst _ _) rx1x2,
+        rx2 = mapr fset0 (@snd _ _) rx1x2 &
+        pbindr A (fun p => R p.1 p.2) rx1x2].
+
+Lemma pbindr2E0 A R x1 x2 : pbindr2 A R (Restr x1) (Restr x2) <-> R x1 x2.
+Proof.
+split.
+  case; case/(restrP A)=> /= A' [x1' x2'] dis sub.
+  rewrite 2?maprE 2?fdisjoint0s //= => H.
+  case: H sub => /restr_eq0 [<- dis1] /restr_eq0 [<- dis2] H sub {x1' x2'}.
+  move: H; rewrite (_ : A' = fset0) ?hide0 ?pbindrE0 //.
+  move/fsetIidPl: sub => <-; apply: fdisjoint_fsetI0.
+  by rewrite namespE fdisjointUr dis1.
+move=> x1x2; exists (Restr (x1, x2)); rewrite !maprE0; split=> //.
+by rewrite pbindrE0.
+Qed.
+
+Lemma pbindr2_hide A A' R rx1 rx2 :
+  {finsupp A R} ->
+  fdisjoint A A' ->
+  pbindr2 A R rx1 rx2 ->
+  pbindr2 A R (hide A' rx1) (hide A' rx2).
+Proof.
+move=> fs dis [] /=.
+case/(restrP (A :|: A'))=> /= A'' [x1 x2].
+rewrite fdisjointUl => /andP [dis1 dis2] sub [].
+rewrite 2?maprE ?fdisjoint0s //= pbindrE //= => -> -> x1x2.
+exists (hide (A' :|: A'') (Restr (x1, x2))).
+rewrite 2?maprE ?fdisjoint0s //= !hideU; split=> //.
+by rewrite pbindrE // fdisjointUr dis.
+Qed.
+
+Lemma pbindr2_intro A A' R x1 x2 :
+  {finsupp A R} ->
+  fdisjoint A A' ->
+  R x1 x2 ->
+  pbindr2 A R (hide A' (Restr x1)) (hide A' (Restr x2)).
+Proof. by move=> ???; apply: pbindr2_hide=> //; apply/pbindr2E0. Qed.
+
+Lemma pbindr2_eqvar A R :
+  {finsupp A R} ->
+  {finsupp A (pbindr2 A R)}.
+Proof.
+move=> fs.
+have {fs} fs: forall pm rx1 rx2,
+    finsupp_perm A pm ->
+    pbindr2 A R rx1 rx2 ->
+    pbindr2 A R (rename pm rx1) (rename pm rx2).
+  move=> pm rx1 rx2 pmP.
+  case; case/(restrP A)=> /= A' [x1 x2] dis sub.
+  rewrite 2?maprE ?fdisjoint0s //=.
+  case=> -> -> {rx1 rx2}; rewrite pbindrE //= => x1x2.
+  rewrite 2!hide_eqvar 2!Restr_eqvar.
+  (* FIXME: Add equivariance instances for more connectives, like existentials. *)
+  exists (hide (rename pm A') (Restr (rename pm x1, rename pm x2))).
+  rewrite 2?maprE ?fdisjoint0s //=; split=> //.
+  rewrite pbindrE //=.
+    by case: (fs pm pmP x1 _ erefl x2 _ erefl); eauto.
+  rewrite -[A]namesfsnE in pmP.
+  by rewrite -(renameJ pmP) -fdisjoint_eqvar.
+move=> pm pmP rx1 _ <- rx2 _ <-; split.
+  apply: fs.
+rewrite -{2}(renameK pm rx1) -{2}(renameK pm rx2); apply fs.
+by rewrite /finsupp_perm supp_inv.
+Qed.
+
+Lemma pbindr2_bindr A1 A2 A3 R1 R2 f rx1 rx2 :
+  {finsupp A1 R1} ->
+  {finsupp A2 R2} ->
+  {finsupp A3 f} ->
+  (forall x1 x2, R1 x1 x2 -> pbindr2 A2 R2 (f x1) (f x2)) ->
+  pbindr2 A1 R1 rx1 rx2 ->
+  pbindr2 A2 R2 (bindr A3 f rx1) (bindr A3 f rx2).
+Proof.
+move=> fs1 fs2 fs3 H.
+case; case/(restrP (A1 :|: (A2 :|: A3)))=> /= A4 [x1 x2].
+rewrite 2!fdisjointUl; case/and3P=> dis1 dis2 dis3 sub.
+rewrite 2?maprE ?fdisjoint0s //=; case=> -> -> {rx1 rx2}.
+rewrite pbindrE //= ?bindrE // => x1x2.
+by apply: pbindr2_hide; eauto.
+Qed.
+
+Lemma pbindr2_bindrL A1 A2 A3 A4 P R1 R2 f rx1 rx2 :
+  {finsupp A1 R1} ->
+  {finsupp A2 R2} ->
+  {finsupp A3 P} ->
+  {finsupp A4 f} ->
+  (forall x1 x2, P x1 -> R1 x1 x2 -> pbindr2 A2 R2 (f x1) (f x2)) ->
+  pbindr A3 P rx1 ->
+  pbindr2 A1 R1 rx1 rx2 ->
+  pbindr2 A2 R2 (bindr A4 f rx1) (bindr A4 f rx2).
+Proof.
+move=> fs1 fs2 fs3 fs4 H H1.
+case; case/(restrP (A1 :|: (A2 :|: (A3 :|: A4)))) => /= A5 [x1 x2].
+rewrite !fdisjointUl => /and4P [d1 d2 d3 d4] sub H2.
+case: H2 H1 => -> -> {rx1 rx2}.
+rewrite 2?maprE ?fdisjoint0s // ?pbindrE //=.
+rewrite ?bindrE // => H2 H1.
+by apply: pbindr2_hide; eauto.
+Qed.
+
+Lemma pbindr2_new A1 A2 A3 R f1 f2 :
+  {finsupp A1 R} ->
+  {finsupp A2 f1} ->
+  {finsupp A3 f2} ->
+  (forall n,
+     n \notin A1 ->
+     n \notin A2 ->
+     n \notin A3 ->
+     pbindr2 A1 R (f1 n) (f2 n)) ->
+  pbindr2 A1 R (new A2 f1) (new A3 f2).
+Proof.
+move=> fs1 fs2 fs3 H.
+move: (fresh _) (freshP (A1 :|: (A2 :|: A3))) => n.
+rewrite !in_fsetU !negb_or => /and3P [nin1 nin2 nin3].
+rewrite (newE _ nin2) (newE _ nin3).
+apply: pbindr2_hide; first by rewrite fdisjoints1.
+by eauto.
+Qed.
+
+(* FIXME: Too complicated *)
+Lemma pbindr_pbindr2L A P rx1 rx2 :
+  {finsupp A P} ->
+  pbindr A P rx1 ->
+  pbindr2 A (fun x1 _ => P x1) rx1 rx2.
+Proof.
+case/(restrP (A :|: names rx2)): rx1=> /= A1 x1.
+rewrite fdisjointUl => /andP [dis11 dis21] sub1 fs.
+rewrite pbindrE // => Px1.
+case/(restrP (A :|: names x1)): rx2 dis21=> /= A2 x2.
+rewrite fdisjointUl => /andP [dis2 dis12] sub2.
+rewrite names_hider namesrE => dis21.
+exists (hide (A1 :|: A2) (Restr (x1, x2))).
+have {dis21} dis21: fdisjoint (names x2) A1.
+  rewrite -[names x2](fsetID _ A2) fdisjointUl dis21 andbT.
+  apply: (fdisjoint_trans (fsubsetIr (names x2) A2)).
+  rewrite fdisjointC.
+  by apply: fdisjoint_trans dis12.
+rewrite 2?maprE ?fdisjoint0s //=; split.
+- rewrite [RHS]hideI fsetIUl {2}namesrE.
+  rewrite fdisjointC in dis12.
+  by rewrite (fdisjoint_fsetI0 dis12) fsetU0 [LHS]hideI.
+- rewrite [RHS]hideI fsetIUl {1}namesrE.
+  rewrite fdisjointC in dis21.
+  by rewrite (fdisjoint_fsetI0 dis21) fset0U [LHS]hideI.
+by rewrite pbindrE // fdisjointUr dis11.
+Qed.
+
+End PBindR2.
 
 Definition restrE0 :=
   (elimrE0, oexposeE0, exposeE0, maprE0, bindrE0, pbindrE0).
