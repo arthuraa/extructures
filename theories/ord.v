@@ -16,12 +16,16 @@ Module Total.
 
 Section ClassDef.
 
-Record mixin_of T := Mixin {
-  leq : rel T;
+Record axioms T (leq : rel T) := Ax {
   _ : reflexive leq;
   _ : transitive leq;
   _ : antisymmetric leq;
   _ : total leq
+}.
+
+Record mixin_of T := Mixin {
+  leq : rel T;
+  _   : axioms leq
 }.
 
 Record class_of T := Class {base : Choice.class_of T; mixin : mixin_of T}.
@@ -85,13 +89,16 @@ Variable T : ordType.
 Implicit Types x y : T.
 
 Lemma leqxx : reflexive (@leq T).
-Proof. by case: T => ? [? []]. Qed.
+Proof. by case: T => ? [? [? []]]. Qed.
 
 Lemma leq_trans : transitive (@leq T).
-Proof. by case: T => ? [? []]. Qed.
+Proof. by case: T => ? [? [? []]]. Qed.
 
 Lemma anti_leq : antisymmetric (@leq T).
-Proof. by case: T => ? [? []]. Qed.
+Proof. by case: T => ? [? [? []]]. Qed.
+
+Lemma leq_total : total (@leq T).
+Proof. by case: T => [? [? [? []]]]. Qed.
 
 Lemma eq_leq x y : x = y -> x <= y.
 Proof. by move=> ->; rewrite leqxx. Qed.
@@ -124,9 +131,6 @@ Qed.
 
 Lemma lt_neqAle (x y : T) : (x < y) = (x != y) && (x <= y).
 Proof. by rewrite /lt andbC. Qed.
-
-Lemma leq_total : total (@leq T).
-Proof. by case: T => [? [? []]]. Qed.
 
 Lemma leqNgt x y : (x <= y) = ~~ (y < x).
 Proof.
@@ -171,7 +175,8 @@ Notation "x <= y <  z" := (Ord.leq x y && Ord.lt  y z) : ord_scope.
 Notation "x <  y <= z" := (Ord.lt  x y && Ord.leq y z) : ord_scope.
 Notation "x <  y <  z" := (Ord.lt  x y && Ord.lt  y z) : ord_scope.
 
-Definition nat_ordMixin := OrdMixin leqnn leq_trans anti_leq leq_total.
+Definition nat_ordMixin :=
+  OrdMixin (Ord.Total.Ax leqnn leq_trans anti_leq leq_total).
 Canonical nat_ordType := Eval hnf in OrdType nat nat_ordMixin.
 
 Section ProdOrd.
@@ -186,38 +191,28 @@ Definition prod_leq : rel (T * S) :=
    if p1.1 == p2.1 then p1.2 <= p2.2
    else p1.1 <= p2.1].
 
-Lemma prod_leq_refl : reflexive prod_leq.
-Proof. by move=> ?; rewrite /prod_leq /= eqxx Ord.leqxx. Qed.
-
-Lemma prod_leq_trans : transitive prod_leq.
+Lemma prod_leqP : Ord.Total.axioms prod_leq.
 Proof.
-move=> p1 p2 p3; rewrite /prod_leq /=.
-have [->|H21] := altP (p2.1 =P _).
-  have [_|//] := altP (_ =P _).
+rewrite /prod_leq; split.
+- by move=> ?; rewrite /= eqxx Ord.leqxx.
+- move=> p1 p2 p3; rewrite /=.
+  have [->|H21] := altP (p2.1 =P _).
+    have [_|//] := altP (_ =P _).
+    by apply Ord.leq_trans.
+  have [<-|H13] := altP (p1.1 =P _).
+    by rewrite (negbTE H21).
+  have [<-|H23] := altP (_ =P _).
+    move=> {H13} l21 l12; rewrite (@Ord.anti_leq _ p1.1 p2.1) ?eqxx // in H21.
+    by rewrite l12 l21.
   by apply Ord.leq_trans.
-have [<-|H13] := altP (p1.1 =P _).
-  by rewrite (negbTE H21).
-have [<-|H23] := altP (_ =P _).
-  move=> {H13} l21 l12; rewrite (@Ord.anti_leq _ p1.1 p2.1) ?eqxx // in H21.
-  by rewrite l12 l21.
-by apply Ord.leq_trans.
-Qed.
-
-Lemma anti_prod_leq : antisymmetric prod_leq.
-Proof.
-move=> [x1 y1] [x2 y2]; rewrite /prod_leq /= eq_sym.
-have [/eqP -> /Ord.anti_leq -> //|Hne /Ord.anti_leq E] := ifP.
-by rewrite E eqxx in Hne.
-Qed.
-
-Lemma prod_leq_total : total prod_leq.
-Proof.
-move=> p1 p2; rewrite /Ord.leq /= /prod_leq /= eq_sym.
+- move=> [x1 y1] [x2 y2]; rewrite /= eq_sym.
+  have [/eqP -> /Ord.anti_leq -> //|Hne /Ord.anti_leq E] := ifP.
+  by rewrite E eqxx in Hne.
+move=> p1 p2; rewrite /Ord.leq /= eq_sym.
 by case: ifP=> ?; apply: Ord.leq_total.
 Qed.
 
-Definition prod_ordMixin :=
-  OrdMixin prod_leq_refl prod_leq_trans anti_prod_leq prod_leq_total.
+Definition prod_ordMixin := OrdMixin prod_leqP.
 Canonical prod_ordType :=
   Eval hnf in OrdType (T * S) prod_ordMixin.
 
@@ -236,40 +231,30 @@ Fixpoint seq_leq (s1 s2 : seq T) :=
   | _ :: _, _ => false
   end.
 
-Lemma seq_leq_refl : reflexive seq_leq.
-Proof. by elim=> [|x s IH] //=; rewrite eqxx. Qed.
-
-Lemma seq_leq_trans : transitive seq_leq.
+Lemma seq_leqP : Ord.Total.axioms seq_leq.
 Proof.
-elim=> [|x1 s1 IH] [|x2 s2] [|x3 s3] //=.
-have [->|H21] := altP (_ =P _).
-  have [_|//] := altP (_ =P _).
-  by apply IH.
-have [<-|H13] := altP (_ =P _).
-  by rewrite (negbTE H21).
-have [<-|H23] := altP (_ =P _).
-  move=> l21 l12 {H13}; rewrite (@Ord.anti_leq _ x1 x2) ?eqxx // in H21.
-  by rewrite l21 l12.
-by apply Ord.leq_trans.
-Qed.
-
-Lemma anti_seq_leq : antisymmetric seq_leq.
-Proof.
-elim=> [|x1 s1 IH] [|x2 s2] //=.
-rewrite /= eq_sym.
-have [-> /IH -> //|Hne /Ord.anti_leq E] := altP (_ =P _).
-by rewrite E eqxx in Hne.
-Qed.
-
-Lemma seq_leq_total : total seq_leq.
-Proof.
+split.
+- by elim=> [|x s IH] //=; rewrite eqxx.
+- elim=> [|x1 s1 IH] [|x2 s2] [|x3 s3] //=.
+  have [->|H21] := altP (_ =P _).
+    have [_|//] := altP (_ =P _).
+    by apply IH.
+  have [<-|H13] := altP (_ =P _).
+    by rewrite (negbTE H21).
+  have [<-|H23] := altP (_ =P _).
+    move=> l21 l12 {H13}; rewrite (@Ord.anti_leq _ x1 x2) ?eqxx // in H21.
+    by rewrite l21 l12.
+  by apply Ord.leq_trans.
+- elim=> [|x1 s1 IH] [|x2 s2] //=.
+  rewrite /= eq_sym.
+  have [-> /IH -> //|Hne /Ord.anti_leq E] := altP (_ =P _).
+  by rewrite E eqxx in Hne.
 elim=> [|x1 s1 IH] [|x2 s2] //=.
 rewrite /= eq_sym.
 by have [_|Hne] := altP (_ =P _); auto; apply Ord.leq_total.
 Qed.
 
-Definition seq_ordMixin :=
-  OrdMixin seq_leq_refl seq_leq_trans anti_seq_leq seq_leq_total.
+Definition seq_ordMixin := OrdMixin seq_leqP.
 Canonical seq_ordType :=
   Eval hnf in OrdType (seq T) seq_ordMixin.
 
@@ -288,20 +273,16 @@ Definition sum_leq (x y : T + S) :=
   | inr _, inl _ => false
   end.
 
-Lemma sum_leq_refl : reflexive sum_leq.
-Proof. by case=> [x|y] /=; rewrite Ord.leqxx. Qed.
+Lemma sum_leqP : Ord.Total.axioms sum_leq.
+Proof.
+split.
+- by case=> [x|y] /=; rewrite Ord.leqxx.
+- by case=> [x1|y1] [x2|y2] [x3|y3] //=; apply: Ord.leq_trans.
+- by case=> [x1|y1] [x2|y2] //= => /Ord.anti_leq ->.
+by case=> [x1|y1] [x2|y2] //=; apply: Ord.leq_total.
+Qed.
 
-Lemma sum_leq_trans : transitive sum_leq.
-Proof. by case=> [x1|y1] [x2|y2] [x3|y3] //=; apply: Ord.leq_trans. Qed.
-
-Lemma anti_sum_leq : antisymmetric sum_leq.
-Proof. by case=> [x1|y1] [x2|y2] //= => /Ord.anti_leq ->. Qed.
-
-Lemma sum_leq_total : total sum_leq.
-Proof. by case=> [x1|y1] [x2|y2] //=; apply: Ord.leq_total. Qed.
-
-Definition sum_ordMixin :=
-  OrdMixin sum_leq_refl sum_leq_trans anti_sum_leq sum_leq_total.
+Definition sum_ordMixin := OrdMixin sum_leqP.
 Canonical sum_ordType :=
   Eval hnf in OrdType (T + S) sum_ordMixin.
 
@@ -319,20 +300,16 @@ Definition option_leq (x y : option T) :=
   | Some _, None => false
   end.
 
-Lemma option_leq_refl : reflexive option_leq.
-Proof. by case=> [x|] //=; rewrite Ord.leqxx. Qed.
+Lemma option_leqP : Ord.Total.axioms option_leq.
+Proof.
+split.
+- by case=> [x|] //=; rewrite Ord.leqxx.
+- by case=> [x1|] [x2|] [x3|] //=; apply: Ord.leq_trans.
+- by case=> [x1|] [x2|] //= => /Ord.anti_leq ->.
+by case=> [x1|] [x2|] //=; apply: Ord.leq_total.
+Qed.
 
-Lemma option_leq_trans : transitive option_leq.
-Proof. by case=> [x1|] [x2|] [x3|] //=; apply: Ord.leq_trans. Qed.
-
-Lemma anti_option_leq : antisymmetric option_leq.
-Proof. by case=> [x1|] [x2|] //= => /Ord.anti_leq ->. Qed.
-
-Lemma option_leq_total : total option_leq.
-Proof. by case=> [x1|] [x2|] //=; apply: Ord.leq_total. Qed.
-
-Definition option_ordMixin :=
-  OrdMixin option_leq_refl option_leq_trans anti_option_leq option_leq_total.
+Definition option_ordMixin := OrdMixin option_leqP.
 Canonical option_ordType :=
   Eval hnf in OrdType (option T) option_ordMixin.
 
@@ -345,20 +322,16 @@ Local Open Scope ord_scope.
 
 Local Notation le := (fun x y => f x <= f y).
 
-Lemma inj_ord_refl : reflexive le.
-Proof. by move=> x; rewrite /= Ord.leqxx. Qed.
+Lemma inj_ordP : injective f -> Ord.Total.axioms le.
+Proof.
+move=> f_inj; split.
+- by move=> x; rewrite /= Ord.leqxx.
+- by move=> x y z /=; exact: Ord.leq_trans.
+- by move=> x y /= /Ord.anti_leq /f_inj.
+by move=> x y; exact: Ord.leq_total.
+Qed.
 
-Lemma inj_ord_trans : transitive le.
-Proof. by move=> x y z /=; exact: Ord.leq_trans. Qed.
-
-Lemma inj_ord_anti : injective f -> antisymmetric le.
-Proof. by move=> f_inj x y /= /Ord.anti_leq /f_inj. Qed.
-
-Lemma inj_ord_total : total le.
-Proof. by move=> x y; exact: Ord.leq_total. Qed.
-
-Definition InjOrdMixin f_inj :=
-  OrdMixin inj_ord_refl inj_ord_trans (inj_ord_anti f_inj) inj_ord_total.
+Definition InjOrdMixin f_inj := OrdMixin (inj_ordP f_inj).
 
 Definition PcanOrdMixin g (fK : pcancel f g) :=
   InjOrdMixin (pcan_inj fK).
@@ -389,39 +362,51 @@ Definition ordinal_ordMixin n := [ordMixin of 'I_n by <:].
 Canonical ordinal_ordType n :=
   Eval hnf in OrdType 'I_n (ordinal_ordMixin n).
 
-Lemma implb_refl : reflexive implb.
-Proof. by case. Qed.
+Lemma bool_leqP : Ord.Total.axioms implb.
+Proof. split; by do ![case]. Qed.
 
-Lemma implb_trans : transitive implb.
-Proof. by case=> [] [] []. Qed.
-
-Lemma implb_anti : antisymmetric implb.
-Proof. by case=> [] []. Qed.
-
-Lemma implb_total : total implb.
-Proof. by case=> [] []. Qed.
-
-Definition bool_ordMixin :=
-  OrdMixin implb_refl implb_trans implb_anti implb_total.
+Definition bool_ordMixin := OrdMixin bool_leqP.
 Canonical bool_ordType := Eval hnf in OrdType bool bool_ordMixin.
 
 Definition unit_leq (x y : unit) := true.
 
-Lemma unit_leq_refl : reflexive unit_leq.
-Proof. by case. Qed.
+Lemma unit_leqP : Ord.Total.axioms unit_leq.
+Proof. split; by do ![case]. Qed.
 
-Lemma unit_leq_trans : transitive unit_leq.
-Proof. by case=> [] [] []. Qed.
-
-Lemma unit_leq_anti : antisymmetric unit_leq.
-Proof. by case=> [] []. Qed.
-
-Lemma unit_leq_total : total unit_leq.
-Proof. by case=> [] []. Qed.
-
-Definition unit_ordMixin :=
-  OrdMixin unit_leq_refl unit_leq_trans unit_leq_anti unit_leq_total.
+Definition unit_ordMixin := OrdMixin unit_leqP.
 Canonical unit_ordType := Eval hnf in OrdType unit unit_ordMixin.
+
+Section Tagged.
+
+Variables (I : ordType) (T_ : I -> ordType).
+Implicit Types u v : {x : I & T_ x}.
+
+Local Open Scope ord_scope.
+
+Definition tag_leq u v :=
+  (tag u < tag v) || (tag u == tag v) && (tagged u <= tagged_as u v).
+
+Definition tag_leqP : Ord.Total.axioms tag_leq.
+Proof.
+rewrite /tag_leq; split.
+- by move=> [i x] /=; rewrite Ord.ltxx eqxx tagged_asE Ord.leqxx.
+- move=> [i2 x2] [i1 x1] [i3 x3] /=.
+  case: Ord.ltgtP x2=> [i1i2 x2 _|?|<- {i2} x2] //=.
+    case: Ord.ltgtP x3=> [i2i3 x3 _|?|<- {i3} x3] //=; last by rewrite i1i2.
+    by rewrite (Ord.lt_trans i1i2 i2i3).
+  case: Ord.ltgtP x3=> //= <- {i3} x3; rewrite !tagged_asE.
+  exact: Ord.leq_trans.
+- move=> [i1 x1] [i2 x2] /=; rewrite [i2 == i1]eq_sym.
+  case: Ord.ltgtP x2=> //= i1i2; rewrite -{}i1i2 {i2} => x2.
+  by rewrite !tagged_asE => /Ord.anti_leq ->.
+move=> [i1 x1] [i2 x2] /=; rewrite [i2 == i1]eq_sym.
+by case: Ord.ltgtP x2 => //= <- {i2} x2; rewrite !tagged_asE Ord.leq_total.
+Qed.
+
+Definition tag_ordMixin := OrdMixin tag_leqP.
+Canonical tag_ordType := Eval hnf in OrdType {i : I & T_ i} tag_ordMixin.
+
+End Tagged.
 
 Section EquivQuotOrd.
 
