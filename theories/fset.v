@@ -611,6 +611,13 @@ case: s / fsetP=> [|x s Px] //; rewrite sizesU1 Px /= add1n eqE /=.
 by apply/esym/negbTE/eqP=> h; move: (in_fset0 x); rewrite -h in_fsetU1 eqxx.
 Qed.
 
+Lemma fset0Pn s : reflect (exists x, x \in s) (s != fset0).
+Proof.
+rewrite -val_eqE; case: s => [[|x xs] Pxs] /=; constructor.
+  by case=> x; rewrite inE /=.
+by exists x; rewrite inE eqxx.
+Qed.
+
 Lemma fsubset_sizeP s1 s2 :
   size s1 = size s2 -> reflect (s1 = s2) (fsubset s1 s2).
 Proof.
@@ -650,6 +657,12 @@ Proof. by rewrite /fsubset fset0U. Qed.
 
 Lemma fsubset0 s : (fsubset s fset0) = (s == fset0).
 Proof. by rewrite eqEfsize sizes0 andbT. Qed.
+
+Lemma fsubset1 x s : fsubset s (fset1 x) = (s == fset1 x) || (s == fset0).
+Proof.
+rewrite eqEfsize /= -sizes_eq0 orbC andbC.
+by case: posnP => // /eqP; rewrite sizes_eq0 => /eqP ->; rewrite fsub0set.
+Qed.
 
 Lemma fsetU_eq0 s1 s2 : (s1 :|: s2 == fset0) = (s1 == fset0) && (s2 == fset0).
 Proof. by rewrite -!fsubset0 fsubUset. Qed.
@@ -946,6 +959,8 @@ End ImageProps.
 
 Section Powerset.
 
+Local Open Scope fset_scope.
+
 Variable T : ordType.
 Implicit Types (x : T) (s : {fset T}).
 
@@ -962,6 +977,23 @@ rewrite /powerset in_fset; apply/(sameP mapP)/(iffP idP).
   apply/eq_fset => x; rewrite in_fset -filter_mask mem_filter /=.
   by have [/s12|] := boolP (x \in s1).
 case=> m _ -> {s1}; apply/fsubsetP => x; rewrite in_fset; exact: mem_mask.
+Qed.
+
+Lemma powersetS s1 s2 : fsubset (powerset s1) (powerset s2) = fsubset s1 s2.
+Proof.
+apply/(sameP (fsubsetP _ _))/(iffP idP).
+  move=> sub s3; rewrite !powersetE => sub'; exact: fsubset_trans sub.
+move/(_ s1); rewrite !powersetE; apply; exact: fsubsetxx.
+Qed.
+
+Lemma powerset0 : powerset fset0 = fset1 fset0.
+Proof.
+by apply/eq_fset=> s; rewrite powersetE fsubset0 in_fset1.
+Qed.
+
+Lemma powerset1 x : powerset (fset1 x) = [fset fset1 x; fset0].
+Proof.
+by apply/eq_fset=> s; rewrite in_fset2 powersetE fsubset1.
 Qed.
 
 End Powerset.
