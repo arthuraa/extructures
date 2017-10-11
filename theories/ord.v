@@ -2,6 +2,8 @@ From mathcomp Require Import
   ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype
   generic_quotient.
 
+Require Import void.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -375,6 +377,9 @@ Proof. split; by do ![case]. Qed.
 
 Definition unit_ordMixin := OrdMixin unit_leqP.
 Canonical unit_ordType := Eval hnf in OrdType unit unit_ordMixin.
+
+Definition void_ordMixin := PcanOrdMixin unit_of_voidK.
+Canonical void_ordType := Eval hnf in OrdType void void_ordMixin.
 
 Section Tagged.
 

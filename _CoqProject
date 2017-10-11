@@ -1,6 +1,7 @@
 -arg "-w -parsing"
 -R theories CoqUtils
 
+theories/void.v
 theories/fperm.v
 theories/fset.v
 theories/hseq.v
