@@ -378,7 +378,7 @@ Proof. split; by do ![case]. Qed.
 Definition unit_ordMixin := OrdMixin unit_leqP.
 Canonical unit_ordType := Eval hnf in OrdType unit unit_ordMixin.
 
-Definition void_ordMixin := PcanOrdMixin unit_of_voidK.
+Definition void_ordMixin := PcanOrdMixin (of_voidK unit).
 Canonical void_ordType := Eval hnf in OrdType void void_ordMixin.
 
 Section Tagged.
