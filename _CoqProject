@@ -1,4 +1,4 @@
--arg "-w -parsing"
+-arg "-w -parsing,-redundant-canonical-projection,-notation-overridden,-projection-no-head-constant"
 -R theories CoqUtils
 
 theories/void.v
