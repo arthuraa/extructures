@@ -158,6 +158,15 @@ Proof. by rewrite /fsetU in_fset mem_cat. Qed.
 Lemma in_fsetU1 x y s : x \in y |: s = (x == y) || (x \in s).
 Proof. by rewrite in_fsetU in_fset1. Qed.
 
+Lemma fset_cat xs ys : fset (xs ++ ys) = fset xs :|: fset ys.
+Proof. by apply/eq_fset=> x; rewrite in_fsetU !in_fset mem_cat. Qed.
+
+Lemma all_fsetU P s1 s2 : all P (s1 :|: s2) = all P s1 && all P s2.
+Proof.
+rewrite (@eq_all_r _ _ (s1 ++ s2)) ?all_cat // => x.
+by rewrite in_fsetU mem_cat.
+Qed.
+
 Lemma in_fset2 x y z : x \in [fset y; z] = (x == y) || (x == z).
 Proof. by rewrite !in_fsetU1 in_fset0 orbF. Qed.
 
