@@ -1,8 +1,39 @@
 From mathcomp Require Import
-  ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype
-  generic_quotient.
+  ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype generic_quotient.
 
 Require Import void.
+
+(******************************************************************************)
+(*   Class of types with a decidable total order relation.  Its main purpose  *)
+(* is to supply an interface for aggregate structures (sets, maps) that       *)
+(* support extensional equality and executable operations; accordingly, it    *)
+(* sticks to basic constructions and results.                                 *)
+(*                                                                            *)
+(*        ordType == a type with a total order relation.                      *)
+(*   Ord.axioms r == the relation r is a total order.                         *)
+(*    OrdMixin ax == the mixin of the ordered class, where ax is a proof that *)
+(*                   a relation is a total order.                             *)
+(*         x <= y == order relation of an ordType (Ord.leq in prefix form).   *)
+(*          x < y == strict ordering.                                         *)
+(*                                                                            *)
+(*   These notations are delimited by the %ord key, and are not open by       *)
+(* default, to avoid conflicts with the standard ordering of nat.  Ternary    *)
+(* variants such as x <= y <= z are also available.                           *)
+(*                                                                            *)
+(*  In addition to instances for basic types such as bool, nat, seq, and      *)
+(* quotients, this file provides infrastructure for defining some derived     *)
+(* instances.                                                                 *)
+(*                                                                            *)
+(*                                                                            *)
+(*       PcanOrdMixin fK == the mixin for T, given f : T -> S and g with S    *)
+(*                          an ordType and fK : pcancel f g.                  *)
+(*        CanOrdMixin fK == the mixin for T, given f : T -> S and g with S    *)
+(*                          an ordType and fK : cancel f g.                   *)
+(*        InjOrdMixin fI == the mixin for T, given f : T -> S with S          *)
+(*                          an ordType and fI : injective f.                  *)
+(* [ordMixin of T by <:] == the mixin for T, assuming that it was             *)
+(*                          declared as the subtype of some ordType S.        *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
