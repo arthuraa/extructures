@@ -2400,7 +2400,7 @@ Lemma restr_eq0 A x1 x2 :
 Proof.
 rewrite -[LHS]hide0; case/restr_eqP=> s.
 rewrite fsetD0 fset0I renameJ ?namesfs0 ?fdisjoints0 // => dis.
-by rewrite renameJ // /fdisjoint; case=> [-> ->]; split.
+by rewrite renameJ // /fdisjoint => - [-> ->]; split.
 Qed.
 
 Lemma Restr_inj : injective (@Restr T).
