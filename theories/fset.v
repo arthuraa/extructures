@@ -1,5 +1,5 @@
 From mathcomp Require Import
-  ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype path bigop.
+  ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype path bigop tuple.
 
 Require Import ord.
 
@@ -943,6 +943,28 @@ by apply: hinj _ _ hfx'; apply/fsetU1P; auto.
 Qed.
 
 End ImageProps.
+
+Section Powerset.
+
+Variable T : ordType.
+Implicit Types (x : T) (s : {fset T}).
+
+Definition powerset s :=
+  fset [seq fset (mask (val m) s) |
+        m : (size s).-tuple bool <- enum predT].
+
+Lemma powersetE s1 s2 : (s1 \in powerset s2) = fsubset s1 s2.
+Proof.
+rewrite /powerset in_fset; apply/(sameP mapP)/(iffP idP).
+  move=> /fsubsetP s12.
+  exists [tuple of [seq x \in s1 | x <- in_tuple s2]].
+    by rewrite mem_enum.
+  apply/eq_fset => x; rewrite in_fset -filter_mask mem_filter /=.
+  by have [/s12|] := boolP (x \in s1).
+case=> m _ -> {s1}; apply/fsubsetP => x; rewrite in_fset; exact: mem_mask.
+Qed.
+
+End Powerset.
 
 Section BigOpIdempotent.
 
