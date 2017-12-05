@@ -12,6 +12,8 @@ This package contains miscellaneous useful Coq libraries:
 
 - `word`: theory of finite bit vectors.
 
+- `hseq`: heterogeneous lists.
+
 - `void`, `string`: basic infrastructure for some types in the Coq standard
   library.
 
