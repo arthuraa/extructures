@@ -3,6 +3,42 @@ From mathcomp Require Import
 
 Require Import ord.
 
+(******************************************************************************)
+(*   This file defines a type {fset T} of finite sets over an ordType T.      *)
+(* This is a subtype of seq T: we represent a set as a sorted list of set     *)
+(* elements, allowing us to show extensional equality: two sets are equal if  *)
+(* they have the same elements (cf. eq_fset).                                 *)
+(*                                                                            *)
+(*   These definitions and notations are largely similar to the finset        *)
+(* library of the Mathematical Components distribution.                       *)
+(*                                                                            *)
+(*          fset s == the set of elements contained in the sequence s.        *)
+(*         x \in s == {fset T} coerces into a collective predicate.           *)
+(*                    Membership is computed like for sequences.              *)
+(*          size s == the cardinality of s, defined by converting it to a     *)
+(*                    sequence.                                               *)
+(*           fset0 == the empty set.                                          *)
+(*         fset1 x == the singleton set that contains x.                      *)
+(* fset_filter p s == remove the elements of s that do not satisfy the        *)
+(*                    predicate p : T -> bool.                                *)
+(*       s1 :|: s2 == the union of s1 and s2.                                 *)
+(*          x |: s == notation for fset1 x :|: s.                             *)
+(*       s1 :&: s2 == the intersection of s1 and s2.                          *)
+(*       s1 :\: s2 == remove all elements of s2 from s1.                      *)
+(*          s :\ x == notation for s :\: fset1 x.                             *)
+(* fdisjoint s1 s2 == the sets s1 and s2 are disjoint.                        *)
+(*   fsubset s1 s2 == s1 is a subset of s2.                                   *)
+(*          f @: s == the image of s by f: the set containing all elements of *)
+(*                    the form f x, where x \in s.                            *)
+(*      powerset s == set of all subsets of s.                                *)
+(*                                                                            *)
+(*   We provide lemmas and notations for big versions of idempotent           *)
+(* operations (in the sense of the bigop library) indexed by sets, as well as *)
+(* a \bigcup form for taking the union of a family of sets.  We do not        *)
+(* a \bigcap operation for computing intersections because it does not have a *)
+(* neutral element: most types are infinite, but ours sets are merely finite. *)
+(******************************************************************************)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
