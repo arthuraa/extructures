@@ -20,29 +20,30 @@ Definition axiom (f : {fmap T -> T}) :=
   injectivem f &&
   all (fun x => let y := odflt x (f x) in (y \in xs) && (y != x)) xs.
 
-Record fperm_type := FPerm {
+Record fperm_type (p : phant T) := FPerm {
   fpval : {fmap T -> T};
   _ : axiom fpval
 }.
-Definition fperm_of of phant T := fperm_type.
-Identity Coercion type_of_fperm_of : fperm_of >-> fperm_type.
 
 End Def.
 
 Module Exports.
 
-Notation "{ 'fperm' T }" := (@fperm_of _ (Phant T))
+Notation "{ 'fperm' T }" := (@fperm_type _ (Phant T))
   (at level 0, format "{ 'fperm'  T }") : type_scope.
-Canonical fperm_subType T := [subType for @fpval T].
-Definition fperm_eqMixin T := [eqMixin of fperm_type T by <:].
-Canonical fperm_eqType T :=
-  Eval hnf in EqType (fperm_type T) (fperm_eqMixin T).
-Definition fperm_choiceMixin T := [choiceMixin of fperm_type T by <:].
-Canonical fperm_choiceType T :=
-  Eval hnf in ChoiceType (fperm_type T) (fperm_choiceMixin T).
-Definition fperm_ordMixin T := [ordMixin of fperm_type T by <:].
-Canonical fperm_ordType T :=
-  Eval hnf in OrdType (fperm_type T) (fperm_ordMixin T).
+Canonical fperm_subType T p := [subType for @fpval T p].
+Definition fperm_eqMixin T p :=
+   [eqMixin of @fperm_type T p by <:].
+Canonical fperm_eqType T p :=
+  Eval hnf in EqType (fperm_type p) (@fperm_eqMixin T p).
+Definition fperm_choiceMixin T p :=
+  [choiceMixin of @fperm_type T p by <:].
+Canonical fperm_choiceType T p :=
+  Eval hnf in ChoiceType (fperm_type p) (@fperm_choiceMixin T p).
+Definition fperm_ordMixin T p :=
+  [ordMixin of @fperm_type T p by <:].
+Canonical fperm_ordType T p :=
+  Eval hnf in OrdType (fperm_type p) (@fperm_ordMixin T p).
 
 End Exports.
 
@@ -52,7 +53,7 @@ Export FPerm.Exports.
 
 Delimit Scope fperm_scope with fperm.
 
-Definition fun_of_fperm T (s : FPerm.fperm_type T) x :=
+Definition fun_of_fperm T p (s : @FPerm.fperm_type T p) x :=
   if val s x is Some y then y else x.
 
 Coercion fun_of_fperm : FPerm.fperm_type >-> Funclass.
@@ -96,7 +97,7 @@ Lemma fperm_one_subproof : FPerm.axiom (@emptym T T).
 Proof. by rewrite /FPerm.axiom /domm [fset]unlock. Qed.
 
 Definition fperm_one : {fperm T} :=
-  @FPerm.FPerm T emptym fperm_one_subproof.
+  @FPerm.FPerm T _ emptym fperm_one_subproof.
 Notation "1" := fperm_one.
 
 Lemma fperm1 x : 1 x = x.
@@ -272,7 +273,7 @@ suff fx_in_X: fperm_def x \in X :|: f @: X by apply: inj fx_in_X x_in_X efx.
 by rewrite -st (mem_imfset _ x_in_X).
 Qed.
 
-Definition fperm : {fperm T} := FPerm.FPerm fperm_subproof.
+Definition fperm : {fperm T} := FPerm.FPerm _ fperm_subproof.
 
 Lemma fpermE : {in X &, injective f} -> {in X, fperm =1 f}.
 Proof.
