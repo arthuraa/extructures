@@ -1199,9 +1199,7 @@ Qed.
 Definition fmap_nominalMixin :=
   NominalMixin fmap_renameD fmap_namesNNE fmap_namesTeq.
 Canonical fmap_nominalType :=
-  Eval hnf in NominalType (FMap.fmap_type T S) fmap_nominalMixin.
-Canonical fmap_of_nominalType :=
-  Eval hnf in [nominalType of {fmap T -> S}].
+  Eval hnf in NominalType {fmap T -> S} fmap_nominalMixin.
 
 Lemma namesmE m : names m = names (domm m) :|: names (codomm m).
 Proof. by []. Qed.
@@ -1213,7 +1211,7 @@ rewrite (mem_imfset_can _ _ (renameK s) (renameKV s)) mem_domm.
 by case: (m (rename _ _)).
 Qed.
 
-Global Instance getm_eqvar : {eqvar (@getm T S)}.
+Global Instance getm_eqvar : {eqvar (@getm T S (Phant _))}.
 Proof. by move=> s m _ <- k _ <-; rewrite renamemE renameK. Qed.
 
 Lemma getm_nomR s m1 m2 : nomR s (getm m1) (getm m2) -> nomR s m1 m2.
