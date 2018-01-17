@@ -173,11 +173,13 @@ Definition updm (m : {fmap T -> S}) k v :=
 Definition unionm (m1 m2 : {fmap T -> S}) :=
   foldr (fun p m => setm m p.1 p.2) m2 m1.
 
-Lemma mapm_subproof S' (f : S -> S') m :
-  sorted (@Ord.lt T) (unzip1 (map (fun p => (p.1, f p.2)) m)).
+Lemma mapim_subproof S' (f : T -> S -> S') m :
+  sorted (@Ord.lt T) (unzip1 (map (fun p => (p.1, f p.1 p.2)) m)).
 Proof. by rewrite /unzip1 -!map_comp; apply: (valP m). Qed.
 
-Definition mapm S' (f : S -> S') m := fmap (mapm_subproof f m).
+Definition mapim S' (f : T -> S -> S') m := fmap (mapim_subproof f m).
+
+Definition mapm S' (f : S -> S') := mapim (fun _ x => f x).
 
 Lemma filterm_subproof (a : T -> S -> bool) m :
   sorted (@Ord.lt T) (unzip1 [seq p | p <- m & a p.1 p.2]).
@@ -369,11 +371,15 @@ Proof.
 by apply/eq_fset=> k; rewrite mem_domm.
 Qed.
 
-Lemma mapmE S' (f : S -> S') m : mapm f m =1 omap f \o m.
+Lemma mapimE S' (f : T -> S -> S') m k : mapim f m k = omap (f k) (m k).
 Proof.
-case: m=> [s Ps] k; rewrite /mapm /getm /=.
-by elim: s {Ps}=> [|[k' v] s IH] //=; rewrite {}IH ![in RHS]fun_if /=.
+case: m=> [s Ps]; rewrite /mapim /getm /=.
+elim: s {Ps}=> [|[k' v] s IH] //=; rewrite {}IH ![in RHS]fun_if /=.
+by case: (k =P k') => [<-|].
 Qed.
+
+Lemma mapmE S' (f : S -> S') m k : mapm f m k = omap f (m k).
+Proof. exact: mapimE. Qed.
 
 Lemma filtermE a m k :
   filterm a m k = obind (fun x => if a k x then Some x else None) (m k).
