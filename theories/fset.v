@@ -160,6 +160,18 @@ Local Open Scope fset_scope.
 
 Implicit Types (s : {fset T}) (x y : T) (xs : seq T).
 
+Lemma all_fset P xs : all P (fset xs) = all P xs.
+Proof.
+apply/(sameP allP)/(iffP allP)=> h x; first by rewrite in_fset; eauto.
+by move/(_ x): h; rewrite in_fset.
+Qed.
+
+Lemma has_fset P xs : has P (fset xs) = has P xs.
+Proof.
+apply/(sameP hasP)/(iffP hasP)=> - [x x_in Px]; exists x=> //;
+by rewrite ?in_fset // -in_fset.
+Qed.
+
 Lemma eq_fset s1 s2 : s1 =i s2 <-> s1 = s2.
 Proof.
 split; last congruence.
