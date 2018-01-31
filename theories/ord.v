@@ -392,6 +392,11 @@ Notation "[ 'ordMixin' 'of' T 'by' <: ]" :=
     (sub_ordMixin _ : Ord.Total.mixin_of T)
   (at level 0, format "[ 'ordMixin'  'of'  T  'by'  <: ]") : form_scope.
 
+Definition sig_ordMixin (T : ordType) (P : pred T) : ordMixin {x | P x} :=
+  sub_ordMixin _.
+Canonical sig_ordType (T : ordType) (P : pred T) :=
+  Eval hnf in OrdType {x | P x} (sig_ordMixin P).
+
 Definition ordinal_ordMixin n := [ordMixin of 'I_n by <:].
 Canonical ordinal_ordType n :=
   Eval hnf in OrdType 'I_n (ordinal_ordMixin n).
