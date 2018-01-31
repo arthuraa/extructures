@@ -397,7 +397,7 @@ Canonical ordinal_ordType n :=
   Eval hnf in OrdType 'I_n (ordinal_ordMixin n).
 
 Lemma bool_leqP : Ord.Total.axioms implb.
-Proof. split; by do ![case]. Qed.
+Proof. split; by do ![case=> //]. Qed.
 
 Definition bool_ordMixin := OrdMixin bool_leqP.
 Canonical bool_ordType := Eval hnf in OrdType bool bool_ordMixin.
