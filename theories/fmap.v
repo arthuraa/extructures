@@ -544,6 +544,22 @@ Qed.
 
 End Properties.
 
+Section Map.
+
+Variables (T : ordType) (S S' : Type).
+
+Implicit Types (m : {fmap T -> S}) (k : T).
+
+Lemma domm_mapi (f : T -> S -> S') m : domm (mapim f m) = domm m.
+Proof.
+by apply/eq_fset=> k; rewrite !mem_domm mapimE; case: (m k).
+Qed.
+
+Lemma domm_map (f : S -> S') m : domm (mapm f m) = domm m.
+Proof. exact: domm_mapi. Qed.
+
+End Map.
+
 Section EqType.
 
 Variables (T : ordType) (S : eqType).
