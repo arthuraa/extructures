@@ -5,3 +5,4 @@
 .coq-native/
 Makefile
 Makefile.bak
+Makefile.conf
