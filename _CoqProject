@@ -1,12 +1,7 @@
 -arg "-w -parsing,-redundant-canonical-projection,-notation-overridden,-projection-no-head-constant"
--R theories CoqUtils
+-R theories extructures
 
-theories/void.v
+theories/ord.v
 theories/fperm.v
 theories/fset.v
-theories/hseq.v
-theories/word.v
-theories/nominal.v
 theories/fmap.v
-theories/ord.v
-theories/string.v

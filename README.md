@@ -1,40 +1,71 @@
-# Coq Utils: a handful of useful Coq libraries
+# Extensional Structures
 
-This package contains miscellaneous useful Coq libraries:
+This package provides Coq data structures that support extensional reasoning,
+for which the notion of equality coincides with exhibiting the same _observable
+behavior_: sets are equal when they contain the same elements; functions are
+equal when that produce the same outputs; etc.
 
-- `ord`: class of types with a total order relation.
+## Features
 
-- `fset`, `fmap`, `fperm`: theories of finite sets, finite maps, and finite
-  permutations over a totally ordered type supporting extensional equality.
+*Axiom independent* ─ Unlike the case of built-in functions and predicates,
+these extensionality principles do not rely on any axioms beyond Coq's theory.
 
-- `nominal`: a simple theory of [nominal sets][1] with computable support,
-  including the formalization of name restriction and [binding operators][2].
+*Executable* ─ Data structures are implemented as ordered lists and behave
+reasonably when extracted (as long as you do not have high expectations for
+performance).
 
-- `word`: theory of finite bit vectors.
+*Compatible with Mathematical Components* ─ The design is inspired by
+[SSReflect][1] and the [Mathematical Components libraries][2], and attempts to
+follow their style and philosophy.
 
-- `hseq`: heterogeneous lists.
+## Usage
 
-- `void`, `string`: basic infrastructure for some types in the Coq standard
-  library.
+Currently, three data structures are supported:
 
+- `{fset T}`, the type of finite sets of elements of `T` (defined in `fset`);
 
-The development is based on the [SSReflect][3] proof language and on the
-[Mathematical Components libraries][4], and tries to follow their conventions
-and philosophy (for example, the use of canonical structures to define types
-with structure).
+- `{fmap T -> S}`, the type of maps, or partial functions from `T` to `S` with
+  finite domain (defined in `fmap`); and
+
+- `{fperm T}`, the type of finitely supported permutations on `T`; that is,
+  functions `f` from `T` to `T` that have a right and left inverse and such that
+  `f x != x` only for finitely many values of `x` (defined in `fperm`).
+
+Here, `T` ranges over instances of `ordType` (defined in `ord`), which are types
+endowed with a decidable total order relation.  Basic data types such as `nat`,
+`bool`, `option`, products, and sums are all pre-declared as instances of
+`ordType`, and instances for other types can be derived from old ones (following
+the design patterns of Mathematical Components).
+
+The function-like structures coerce into Coq functions, allowing us to write
+`f x` to retrieve the value of the map `f` at `x`.  Similarly, sets coerce to
+SSReflect collective predicates, allowing us to write `x \in A` to express that
+`x` belongs to the set `A`.
+
+Extensional reasoning is provided by the following lemmas:
+
+    eq_fset  : forall T   (A B : {fset T}),      A =i B <-> A = B
+    eq_fmap  : forall T S (f g : {fmap T -> S}), f =1 g <-> f = g
+    eq_fperm : forall T   (f g : {fperm T}),     f =1 g <-> f = g
+
+Documentation for the libraries is currently scarce, but will be progressively
+added as comments in the headers of the files.  Once the package is installed,
+it can be required using the `extructures` qualifier.
+
+    From extructures Require Import ord fset.
 
 ## Installation
 
 The package currently needs to be compiled by hand.  It requires:
 
-- Coq v8.6
-- Some [Mathematical Components libraries][4], at least version 1.6:
+- Coq v8.7
+- Some [Mathematical Components libraries][2], at least version 1.6:
 
   * `coq-mathcomp-ssreflect`
   * `coq-mathcomp-fingroup`
   * `coq-mathcomp-algebra`
 
-  All of those can be installed using [OPAM][5].
+  All of those can be installed using [OPAM][3].
 
 To compile the package, simply run
 
@@ -45,17 +76,22 @@ After compilation, you can install the package by running
 
     make install
 
-## Usage
+## Alternatives
 
-Documentation for the libraries is currently scarce, but will be progressively
-added as comments in the headers of the files.  Once the package is installed,
-it can be required using the `CoqUtils` qualifier.  For example:
+Other packages with similar goals are available out there.
 
-    From CoqUtils Require Import ord fset.
+- Mathematical Components also includes implementations of sets and functions
+  with extensional equality, but they only work for finite types.  In contrast,
+  the above definitions work with infinite types as well.
 
+- Cyril Cohen's `finmap` library, [available here][3].
 
-  [1]: https://link.springer.com/article/10.1007/s001650200016
-  [2]: http://www.sciencedirect.com/science/article/pii/S1571066116300743
-  [3]: https://coq.inria.fr/distrib/current/refman/ssreflect.html
-  [4]: https://github.com/math-comp/math-comp
-  [5]: https://coq.inria.fr/opam/www/using.html
+- Pierre-Yves Strub's library, [available here][4].
+
+- Christian Doczkal's library, [available here][5].
+
+  [1]: https://coq.inria.fr/distrib/current/refman/ssreflect.html
+  [2]: https://github.com/math-comp/math-comp
+  [3]: https://github.com/math-comp/finmap
+  [4]: https://github.com/strub/ssrmisc/blob/master/fset.v
+  [5]: https://www.ps.uni-saarland.de/formalizations/fset/html/libs.fset.html

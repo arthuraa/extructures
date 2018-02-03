@@ -1,8 +1,6 @@
 From mathcomp Require Import
   ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype generic_quotient.
 
-Require Import void.
-
 (******************************************************************************)
 (*   Class of types with a decidable total order relation.  Its main purpose  *)
 (* is to supply an interface for aggregate structures (sets, maps) that       *)
@@ -414,9 +412,6 @@ Proof. split; by do ![case]. Qed.
 
 Definition unit_ordMixin := OrdMixin unit_leqP.
 Canonical unit_ordType := Eval hnf in OrdType unit unit_ordMixin.
-
-Definition void_ordMixin := PcanOrdMixin (of_voidK unit).
-Canonical void_ordType := Eval hnf in OrdType void void_ordMixin.
 
 Section Tagged.
 
