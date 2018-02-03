@@ -12,7 +12,7 @@ From mathcomp Require Import
 (*    OrdMixin ax == the mixin of the ordered class, where ax is a proof that *)
 (*                   a relation is a total order.                             *)
 (*         x <= y == order relation of an ordType (Ord.leq in prefix form).   *)
-(*          x < y == strict ordering.                                         *)
+(*         x <  y == strict ordering.                                         *)
 (*                                                                            *)
 (*   These notations are delimited by the %ord key, and are not open by       *)
 (* default, to avoid conflicts with the standard ordering of nat.  Ternary    *)
@@ -44,20 +44,18 @@ Delimit Scope ord_scope with ord.
 
 Module Ord.
 
-Module Total.
-
 Section ClassDef.
 
-Record axioms T (leq : rel T) := Ax {
-  _ : reflexive leq;
-  _ : transitive leq;
-  _ : antisymmetric leq;
-  _ : total leq
+Record axioms T (r : rel T) := Ax {
+  _ : reflexive r;
+  _ : transitive r;
+  _ : antisymmetric r;
+  _ : total r
 }.
 
 Record mixin_of T := Mixin {
-  leq : rel T;
-  _   : axioms leq
+  op : rel T;
+  _  : axioms op
 }.
 
 Record class_of T := Class {base : Choice.class_of T; mixin : mixin_of T}.
@@ -99,11 +97,7 @@ Notation "[ 'ordType' 'of' T ]" := (@clone T _ _ id)
   (at level 0, format "[ 'ordType'  'of'  T ]") : form_scope.
 End Exports.
 
-End Total.
-
-Export Total.Exports.
-
-Definition leq T := Total.leq (Total.class T).
+Definition leq T := op (class T).
 Definition lt (T : ordType) (x y : T) := leq x y && (x != y).
 
 Notation "x <= y" := (leq x y) : ord_scope.
@@ -198,7 +192,7 @@ End Theory.
 
 End Ord.
 
-Export Ord.Total.Exports.
+Export Ord.Exports.
 
 Notation "x <= y" := (Ord.leq x y) : ord_scope.
 Notation "x < y" := (Ord.lt x y) : ord_scope.
@@ -208,7 +202,7 @@ Notation "x <  y <= z" := (Ord.lt  x y && Ord.leq y z) : ord_scope.
 Notation "x <  y <  z" := (Ord.lt  x y && Ord.lt  y z) : ord_scope.
 
 Definition nat_ordMixin :=
-  OrdMixin (Ord.Total.Ax leqnn leq_trans anti_leq leq_total).
+  OrdMixin (Ord.Ax leqnn leq_trans anti_leq leq_total).
 Canonical nat_ordType := Eval hnf in OrdType nat nat_ordMixin.
 
 Section ProdOrd.
@@ -223,7 +217,7 @@ Definition prod_leq : rel (T * S) :=
    if p1.1 == p2.1 then p1.2 <= p2.2
    else p1.1 <= p2.1].
 
-Lemma prod_leqP : Ord.Total.axioms prod_leq.
+Lemma prod_leqP : Ord.axioms prod_leq.
 Proof.
 rewrite /prod_leq; split.
 - by move=> ?; rewrite /= eqxx Ord.leqxx.
@@ -263,7 +257,7 @@ Fixpoint seq_leq (s1 s2 : seq T) :=
   | _ :: _, _ => false
   end.
 
-Lemma seq_leqP : Ord.Total.axioms seq_leq.
+Lemma seq_leqP : Ord.axioms seq_leq.
 Proof.
 split.
 - by elim=> [|x s IH] //=; rewrite eqxx.
@@ -305,7 +299,7 @@ Definition sum_leq (x y : T + S) :=
   | inr _, inl _ => false
   end.
 
-Lemma sum_leqP : Ord.Total.axioms sum_leq.
+Lemma sum_leqP : Ord.axioms sum_leq.
 Proof.
 split.
 - by case=> [x|y] /=; rewrite Ord.leqxx.
@@ -332,7 +326,7 @@ Definition option_leq (x y : option T) :=
   | Some _, None => false
   end.
 
-Lemma option_leqP : Ord.Total.axioms option_leq.
+Lemma option_leqP : Ord.axioms option_leq.
 Proof.
 split.
 - by case=> [x|] //=; rewrite Ord.leqxx.
@@ -354,7 +348,7 @@ Local Open Scope ord_scope.
 
 Local Notation le := (fun x y => f x <= f y).
 
-Lemma inj_ordP : injective f -> Ord.Total.axioms le.
+Lemma inj_ordP : injective f -> Ord.axioms le.
 Proof.
 move=> f_inj; split.
 - by move=> x; rewrite /= Ord.leqxx.
@@ -387,7 +381,7 @@ Proof. by []. Qed.
 End SubOrdType.
 
 Notation "[ 'ordMixin' 'of' T 'by' <: ]" :=
-    (sub_ordMixin _ : Ord.Total.mixin_of T)
+    (sub_ordMixin _ : Ord.mixin_of T)
   (at level 0, format "[ 'ordMixin'  'of'  T  'by'  <: ]") : form_scope.
 
 Definition sig_ordMixin (T : ordType) (P : pred T) : ordMixin {x | P x} :=
@@ -399,7 +393,7 @@ Definition ordinal_ordMixin n := [ordMixin of 'I_n by <:].
 Canonical ordinal_ordType n :=
   Eval hnf in OrdType 'I_n (ordinal_ordMixin n).
 
-Lemma bool_leqP : Ord.Total.axioms implb.
+Lemma bool_leqP : Ord.axioms implb.
 Proof. split; by do ![case=> //]. Qed.
 
 Definition bool_ordMixin := OrdMixin bool_leqP.
@@ -407,7 +401,7 @@ Canonical bool_ordType := Eval hnf in OrdType bool bool_ordMixin.
 
 Definition unit_leq (x y : unit) := true.
 
-Lemma unit_leqP : Ord.Total.axioms unit_leq.
+Lemma unit_leqP : Ord.axioms unit_leq.
 Proof. split; by do ![case]. Qed.
 
 Definition unit_ordMixin := OrdMixin unit_leqP.
@@ -423,7 +417,7 @@ Local Open Scope ord_scope.
 Definition tag_leq u v :=
   (tag u < tag v) || (tag u == tag v) && (tagged u <= tagged_as u v).
 
-Definition tag_leqP : Ord.Total.axioms tag_leq.
+Definition tag_leqP : Ord.axioms tag_leq.
 Proof.
 rewrite /tag_leq; split.
 - by move=> [i x] /=; rewrite Ord.ltxx eqxx tagged_asE Ord.leqxx.
