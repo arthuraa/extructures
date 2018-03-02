@@ -372,6 +372,13 @@ Proof.
 by apply/eq_fset=> k; rewrite mem_domm.
 Qed.
 
+Lemma emptymP m : reflect (m = emptym) (domm m == fset0).
+Proof.
+apply/(iffP eqP); last by move=> ->; rewrite domm0.
+move=> e; apply/eq_fmap => x; rewrite emptymE.
+by case: (altP (dommPn m x))=> //; rewrite e.
+Qed.
+
 Lemma mapimE S' (f : T -> S -> S') m k : mapim f m k = omap (f k) (m k).
 Proof.
 case: m=> [s Ps]; rewrite /mapim /getm /=.
