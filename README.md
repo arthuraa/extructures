@@ -57,7 +57,9 @@ it can be required using the `extructures` qualifier.
 ## Installation
 
 The easiest way to install the package is through the [OPAM Coq archive][3].
-Simply look for `coq-extructures`.
+After installing OPAM and adding the Coq archive, run:
+
+    opam install coq-extructures
 
 Alternatively, you can compile the package by hand.  You'll need the following
 dependencies:
