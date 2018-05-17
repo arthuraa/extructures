@@ -56,16 +56,14 @@ it can be required using the `extructures` qualifier.
 
 ## Installation
 
-The package currently needs to be compiled by hand.  It requires:
+The easiest way to install the package is through the [OPAM Coq archive][3].
+Simply look for `coq-extructures`.
 
-- Coq v8.7
-- Some [Mathematical Components libraries][2], at least version 1.6:
+Alternatively, you can compile the package by hand.  You'll need the following
+dependencies:
 
-  * `coq-mathcomp-ssreflect`
-  * `coq-mathcomp-fingroup`
-  * `coq-mathcomp-algebra`
-
-  All of those can be installed using [OPAM][3].
+- Coq v8.7 or v8.8
+- [Ssreflect][2] v1.6 or v1.7 (`coq-mathcomp-ssreflect` on OPAM).
 
 To compile the package, simply run
 
@@ -82,16 +80,17 @@ Other packages with similar goals are available out there.
 
 - Mathematical Components also includes implementations of sets and functions
   with extensional equality, but they only work for finite types.  In contrast,
-  the above definitions work with infinite types as well.
+      the above definitions work with infinite types as well.
 
-- Cyril Cohen's `finmap` library, [available here][3].
+- Cyril Cohen's `finmap` library, [available here][4].
 
-- Pierre-Yves Strub's library, [available here][4].
+- Pierre-Yves Strub's library, [available here][5].
 
-- Christian Doczkal's library, [available here][5].
+- Christian Doczkal's library, [available here][6].
 
   [1]: https://coq.inria.fr/distrib/current/refman/ssreflect.html
   [2]: https://github.com/math-comp/math-comp
-  [3]: https://github.com/math-comp/finmap
-  [4]: https://github.com/strub/ssrmisc/blob/master/fset.v
-  [5]: https://www.ps.uni-saarland.de/formalizations/fset/html/libs.fset.html
+  [3]: https://github.com/coq/opam-coq-archive
+  [4]: https://github.com/math-comp/finmap
+  [5]: https://github.com/strub/ssrmisc/blob/master/fset.v
+  [6]: https://www.ps.uni-saarland.de/formalizations/fset/html/libs.fset.html
