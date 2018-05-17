@@ -1,8 +1,9 @@
 *.glob
 *.v.d
+*.d
 *.vo
 *.aux
 .coq-native/
 Makefile
 Makefile.bak
-Makefile.conf
+*.conf
