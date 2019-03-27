@@ -74,31 +74,48 @@ Variables (T : ordType) (S : Type).
 
 Local Open Scope ord_scope.
 
-Record fmap_type (p : phant (T -> S)) := FMap {
+Record fmap_type := FMap {
   fmval : seq (T * S);
   _ : sorted (@Ord.lt T) (unzip1 fmval)
 }.
+
+Definition fmap_of & phant (T -> S) := fmap_type.
 
 End Def.
 
 Module Exports.
 
-Notation "{ 'fmap' T }" := (@fmap_type _ _ (Phant T))
+Identity Coercion fmap_of_fmap : fmap_of >-> fmap_type.
+Notation "{ 'fmap' T }" := (@fmap_of _ _ (Phant T))
   (at level 0, format "{ 'fmap'  T }") : type_scope.
+
+Section WithOrdType.
+
+Variable T : ordType.
+
 Coercion fmval : fmap_type >-> seq.
-Canonical fmap_subType T S p := [subType for @fmval T S p].
-Definition fmap_eqMixin T (S : eqType) p :=
-  [eqMixin of @fmap_type T S p by <:].
-Canonical fmap_eqType T (S : eqType) p :=
-  Eval hnf in EqType (@fmap_type T S p) (@fmap_eqMixin T S p).
-Definition fmap_choiceMixin T (S : choiceType) p :=
-  [choiceMixin of @fmap_type T S p by <:].
-Canonical fmap_choiceType T (S : choiceType) p :=
-  Eval hnf in ChoiceType (@fmap_type T S p) (@fmap_choiceMixin T S p).
-Definition fmap_ordMixin T (S : ordType) p :=
-  [ordMixin of @fmap_type T S p by <:].
-Canonical fmap_ordType T (S : ordType) p :=
-  Eval hnf in OrdType (@fmap_type T S p) (@fmap_ordMixin T S p).
+Canonical fmap_subType S := [subType for @fmval T S].
+Definition fmap_eqMixin (S : eqType) :=
+  [eqMixin of fmap_type T S by <:].
+Canonical fmap_eqType (S : eqType) :=
+  Eval hnf in EqType (fmap_type T S) (fmap_eqMixin S).
+Definition fmap_choiceMixin (S : choiceType) :=
+  [choiceMixin of fmap_type T S by <:].
+Canonical fmap_choiceType (S : choiceType) :=
+  Eval hnf in ChoiceType (fmap_type T S) (fmap_choiceMixin S).
+Definition fmap_ordMixin (S : ordType) :=
+  [ordMixin of fmap_type T S by <:].
+Canonical fmap_ordType (S : ordType) :=
+  Eval hnf in OrdType (fmap_type T S) (fmap_ordMixin S).
+
+Canonical fmap_of_subType (S : Type) :=
+  Eval hnf in [subType of {fmap T -> S}].
+Canonical fmap_of_eqType (S : eqType) :=
+  Eval hnf in [eqType of {fmap T -> S}].
+Canonical fmap_of_choiceType (S : choiceType) :=
+  Eval hnf in [choiceType of {fmap T -> S}].
+Canonical fmap_of_ordType (S : ordType) :=
+  Eval hnf in [ordType of {fmap T -> S}].
 
 (*
 
@@ -112,6 +129,8 @@ Canonical fmap_subCountType T (S : countType) :=
   [subCountType of type T S].
 *)
 
+End WithOrdType.
+
 End Exports.
 
 End FMap.
@@ -121,7 +140,7 @@ Export FMap.Exports.
 (* Redefine the fmap constructor with a different signature, in
 order to keep types consistent. *)
 Definition fmap (T : ordType) S s Ps : {fmap T -> S} :=
-  @FMap.FMap T S _ s Ps.
+  @FMap.FMap T S s Ps.
 
 Section Operations.
 
@@ -138,7 +157,7 @@ Fixpoint getm_def s k : option S :=
     else getm_def s k
   else None.
 
-Definition getm p (m : @FMap.fmap_type T S p) k := getm_def m k.
+Definition getm (m : FMap.fmap_type T S) k := getm_def m k.
 
 Fixpoint setm_def s k v : seq (T * S) :=
   if s is p :: s' then

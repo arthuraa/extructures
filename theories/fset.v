@@ -51,7 +51,7 @@ Variables (T : ordType).
 
 Local Open Scope ord_scope.
 
-CoInductive fset_type (p : phant T) := FSet {
+Record fset_type := FSet {
   fsval : seq T;
   _ : sorted (@Ord.lt T) fsval
 }.
@@ -71,7 +71,10 @@ End Def.
 
 Module Exports.
 
-Notation "{ 'fset' T }" := (@fset_type _ (Phant T))
+Definition fset_of (T : ordType) & phant T := fset_type T.
+Identity Coercion fset_of_fset : fset_of >-> fset_type.
+
+Notation "{ 'fset' T }" := (@fset_of _ (Phant T))
   (at level 0, format "{ 'fset'  T }") : type_scope.
 Coercion fsval : fset_type >-> seq.
 
@@ -79,13 +82,22 @@ Section Instances.
 
 Variable T : ordType.
 
-Canonical fset_subType := [subType for @fsval _ (Phant T)].
-Definition fset_eqMixin := [eqMixin of {fset T} by <:].
-Canonical fset_eqType := Eval hnf in EqType {fset T} fset_eqMixin.
-Definition fset_choiceMixin := [choiceMixin of {fset T} by <:].
-Canonical fset_choiceType := Eval hnf in ChoiceType {fset T} fset_choiceMixin.
-Definition fset_ordMixin := [ordMixin of {fset T} by <:].
-Canonical fset_ordType := Eval hnf in OrdType {fset T} fset_ordMixin.
+Canonical fset_subType := [subType for @fsval T].
+Definition fset_eqMixin := [eqMixin of fset_type T by <:].
+Canonical fset_eqType :=
+  Eval hnf in EqType (fset_type T) fset_eqMixin.
+Definition fset_choiceMixin :=
+  [choiceMixin of fset_type T by <:].
+Canonical fset_choiceType :=
+  Eval hnf in ChoiceType (fset_type T) fset_choiceMixin.
+Definition fset_ordMixin := [ordMixin of fset_type T by <:].
+Canonical fset_ordType :=
+  Eval hnf in OrdType (fset_type T) fset_ordMixin.
+
+Canonical fset_of_subType := Eval hnf in [subType of {fset T}].
+Canonical fset_of_eqType := Eval hnf in [eqType of {fset T}].
+Canonical fset_of_choiceType := Eval hnf in [choiceType of {fset T}].
+Canonical fset_of_ordType := Eval hnf in [ordType of {fset T}].
 
 End Instances.
 
@@ -101,7 +113,7 @@ Lemma fset_key : unit. Proof. exact: tt. Qed.
 Definition fset (T : ordType) : seq T -> {fset T} :=
   locked_with fset_key
               (fun (s : seq T) =>
-                 @FSet.FSet T _ _ (FSet.fset_subproof s)).
+                 @FSet.FSet T _ (FSet.fset_subproof s)).
 
 Prenex Implicits fset.
 
@@ -119,8 +131,8 @@ Proof. by rewrite [fset]unlock inE /= mem_sort mem_undup. Qed.
 
 Implicit Type s : {fset T}.
 
-Definition fset0 := @FSet.FSet T _ [::] erefl : {fset T}.
-Definition fset1 x := @FSet.FSet T _ [:: x] erefl : {fset T}.
+Definition fset0 := @FSet.FSet T [::] erefl : {fset T}.
+Definition fset1 x := @FSet.FSet T [:: x] erefl : {fset T}.
 Definition fsetU s1 s2 := fset (val s1 ++ val s2).
 Definition fset_filter P s := fset [seq x <- s | P x].
 Definition fsetI s1 s2 := fset_filter (mem s1) s2.
@@ -226,7 +238,7 @@ Lemma fsetP s : fset_spec s.
 Proof.
 case: s=> [[|x xs] /= Pxs]; first by rewrite eq_axiomK; apply: FSetSpec0.
 have Pxs' := path_sorted Pxs.
-set s' : {fset T} := FSet.FSet _ Pxs'; set s : {fset T} := FSet.FSet _ _.
+set s' : {fset T} := FSet.FSet Pxs'; set s : {fset T} := FSet.FSet _.
 have x_nin_s : x \notin s'.
   apply/negP=> /(allP (order_path_min (@Ord.lt_trans T) Pxs)).
   by rewrite Ord.ltxx.
@@ -241,7 +253,7 @@ Lemma fset_rect (P : {fset T} -> Type) :
 Proof.
 move=> H0 HS []; elim=> [|/= x xs IH] Pxs; first by rewrite eq_axiomK.
 move: IH => /(_ (path_sorted Pxs)).
-set s : {fset T} := FSet.FSet _ _; set s' : {fset T} := FSet.FSet _ _ => Ps.
+set s : {fset T} := FSet.FSet _; set s' : {fset T} := FSet.FSet _ => Ps.
 have x_nin_s : x \notin s.
   apply/negP=> /(allP (order_path_min (@Ord.lt_trans T) Pxs)).
   by rewrite Ord.ltxx.
