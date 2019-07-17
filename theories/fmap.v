@@ -55,10 +55,10 @@ Require Import ord fset.
 (*     mkfmap kvs == construct a map from kvs : seq (T * S).  If multiple     *)
 (*                   bindings are present in kvs for a given key k : T, the   *)
 (*                   first one is used.                                       *)
-(*   mkfmapf ks f == construct a map that associates to each element k of     *)
+(*   mkfmapf f ks == construct a map that associates to each element k of     *)
 (*                   the sequence ks the value f k, mapping all other keys to *)
 (*                   None.                                                    *)
-(*  mkfmapfp ks f == same as above but for a partial function                 *)
+(*  mkfmapfp f ks == same as above but for a partial function                 *)
 (*                   f : T -> option S.                                       *)
 (******************************************************************************)
 
