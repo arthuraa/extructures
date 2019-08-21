@@ -597,6 +597,49 @@ Proof. exact: domm_mapi. Qed.
 
 End Map.
 
+Section Map2.
+
+Implicit Types (T : ordType) (S : Type).
+
+Local Open Scope fset_scope.
+
+Definition mapm2 T T' S S' f g (m : {fmap T -> S}) : {fmap T' -> S'} :=
+  mkfmap [seq (f p.1, g p.2) | p <- m].
+
+Lemma mapm2E T T' S S' (f : T -> T') (g : S -> S') m x :
+  injective f ->
+  mapm2 f g m (f x) = omap g (m x).
+Proof.
+rewrite /mapm2 => f_inj; rewrite mkfmapE /getm.
+case: m=> [/= m _]; elim: m=> [|[x' y] m IH] //=.
+by rewrite (inj_eq f_inj) [in RHS]fun_if IH.
+Qed.
+
+Lemma domm_map2 T T' S S' (f : T -> T') (g : S -> S') m :
+  domm (mapm2 f g m) = f @: domm m.
+Proof.
+apply/eq_fset=> x; rewrite /mapm2 domm_mkfmap /unzip1 -map_comp /comp /=.
+by rewrite /domm imfset_fset in_fset -map_comp.
+Qed.
+
+Lemma mapm2_comp T T' T'' S S' S'' f f' g g' :
+  injective f  ->
+  injective f' ->
+  mapm2 (f' \o f) (g' \o g) =1
+  @mapm2 T' T'' S' T'' f' g' \o @mapm2 T T' S S' f g.
+Proof.
+move=> f_inj f'_inj m; apply/eq_fmap=> x /=.
+have [|xnin] := boolP (x \in domm (mapm2 (f' \o f) (g' \o g) m)).
+- rewrite domm_map2; case/imfsetP=> {x} x xin ->.
+  rewrite mapm2E /=; last exact: inj_comp.
+  by rewrite !mapm2E //; case: (m x).
+- move: (xnin); rewrite (dommPn xnin).
+  rewrite !domm_map2 // imfset_comp -(domm_map2 f g) -(domm_map2 f' g').
+  by move/dommPn=> ->.
+Qed.
+
+End Map2.
+
 Section EqType.
 
 Variables (T : ordType) (S : eqType).
