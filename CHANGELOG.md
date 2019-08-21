@@ -1,4 +1,4 @@
-# Current
+# 0.2.0 (2019/08/21)
 
 - Separate phantom argument from the definitions of `fset`, `fmap` and `fperm`.
 
