@@ -178,7 +178,7 @@ Lemma imfset_supp_sub s X : fsubset (supp s) X -> s @: X = X.
 Proof.
 move=> h_sub; apply/eq_fset=> x; have h_im_sub := imfsetS s h_sub.
 have [in_supp|nin_supp] := boolP (x \in supp s).
-  rewrite (fsubsetP _ _ h_sub _ in_supp); move/fsubsetP: h_im_sub; apply.
+  rewrite (fsubsetP h_sub _ in_supp); move/fsubsetP: h_im_sub; apply.
   by rewrite imfset_supp.
 move: nin_supp; rewrite mem_supp negbK =>/eqP ex.
 apply/(sameP idP)/(iffP idP); first by rewrite -{2}ex; apply: mem_imfset.

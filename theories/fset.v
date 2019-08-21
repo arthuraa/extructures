@@ -227,6 +227,7 @@ rewrite in_fset2; apply/(iffP idP).
   by case/orP=> [/eqP->|/eqP->]; auto.
 by case=> [->|->]; rewrite eqxx ?orbT.
 Qed.
+Arguments fset2P [_ _ _].
 
 CoInductive fset_spec : {fset T} -> Type :=
 | FSetSpec0 : fset_spec fset0
@@ -295,6 +296,7 @@ apply/(iffP idP)=> [/eqP <- x|hs1s2]; first by rewrite in_fsetU => ->.
 apply/eqP/eq_fset=> x; rewrite in_fsetU.
 have [/hs1s2|//] //= := boolP (x \in s1).
 Qed.
+Arguments fsubsetP [_ _].
 
 Lemma fsubsetxx s : fsubset s s.
 Proof. by apply/fsubsetP. Qed.
@@ -358,7 +360,7 @@ Qed.
 
 Lemma fsub1set x s1 : fsubset (fset1 x) s1 = (x \in s1).
 Proof.
-apply/(sameP (fsubsetP _ _))/(iffP idP); last by [apply; rewrite in_fset1].
+apply/(sameP fsubsetP)/(iffP idP); last by [apply; rewrite in_fset1].
 by move=> x_in x' /fset1P ->.
 Qed.
 
@@ -453,7 +455,7 @@ Qed.
 
 Lemma fsetIidPl s1 s2 : reflect (s1 :&: s2 = s1) (fsubset s1 s2).
 Proof.
-apply: (iffP (fsubsetP _ _)) => [sAB | <- x /fsetIP[] //].
+apply: (iffP fsubsetP) => [sAB | <- x /fsetIP[] //].
 apply/eq_fset=> x; rewrite in_fsetI; apply: andb_idr; exact: sAB.
 Qed.
 
@@ -685,7 +687,7 @@ apply/(iffP idP)=> [/andP [x_in_s2 hs1s2]|].
     by have [->|] := altP (x' =P x).
   congr fsetU; apply: IH.
     by move: h_size; rewrite (sizesD1 x s2) x_in_s2 add1n=> - [?].
-  apply/fsubsetP=> x' x'_in_s1; rewrite in_fsetD1 (fsubsetP _ _ hs1s2) //.
+  apply/fsubsetP=> x' x'_in_s1; rewrite in_fsetD1 (fsubsetP hs1s2) //.
   by rewrite andbT; apply: contraTN x'_in_s1 => /eqP ->.
 move=> hs2; rewrite -{}hs2 {s2} in h_size *.
 by rewrite in_fsetU1 eqxx /= fsubsetUr.
@@ -752,6 +754,9 @@ by move=> dis; rewrite /fdisjoint -dis fsetIDAC -fsetIDA fsetDv fsetI0 eqxx.
 Qed.
 
 End Properties.
+
+Arguments fsubsetP {_} [_ _].
+Arguments fset2P {_} [_ _].
 
 Section setOpsAlgebra.
 
@@ -871,6 +876,7 @@ apply/(iffP idP).
 move=> [y Py {x}->]; rewrite /imfset in_fset.
 by apply/mapP; eauto.
 Qed.
+Arguments imfsetP [_ _ _].
 
 Lemma eq_imfset f1 f2 : f1 =1 f2 -> imfset f1 =1 imfset f2.
 Proof.
@@ -923,6 +929,7 @@ End Image.
 Notation "f @: s" := (imfset f s) (at level 24) : fset_scope.
 
 Prenex Implicits imfset.
+Arguments imfsetP {_ _} [_ _ _].
 
 Section ImageProps.
 
@@ -981,7 +988,7 @@ Qed.
 Lemma mem_imfset_inj f y s :
   injective f -> (f y \in f @: s) = (y \in s).
 Proof.
-move=> f_inj; apply/(sameP (imfsetP f s _))/(iffP idP); first by eauto.
+move=> f_inj; apply/(sameP imfsetP)/(iffP idP); first by eauto.
 by move=> [y' Py' /f_inj ->].
 Qed.
 
@@ -1035,7 +1042,7 @@ Qed.
 
 Lemma powersetS s1 s2 : fsubset (powerset s1) (powerset s2) = fsubset s1 s2.
 Proof.
-apply/(sameP (fsubsetP _ _))/(iffP idP).
+apply/(sameP fsubsetP)/(iffP idP).
   move=> sub s3; rewrite !powersetE => sub'; exact: fsubset_trans sub.
 move/(_ s1); rewrite !powersetE; apply; exact: fsubsetxx.
 Qed.
