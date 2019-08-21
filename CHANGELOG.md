@@ -4,7 +4,8 @@
 
 - Add `ordType` instance for `mathcomp.choice.GenTree.tree`.
 
-- Add more implicit arguments for `fsubsetP`, `fset2P` and `imfsetP`.
+- Add more implicit arguments for `fsubsetP`, `fset2P`, `imfsetP`, `dommP`,
+  `dommPn`, `codommP` and `codommPn`.
 
 # 0.1.0 (2018/04/26)
 

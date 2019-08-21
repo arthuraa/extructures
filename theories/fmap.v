@@ -330,6 +330,9 @@ Proof.
 by rewrite mem_domm; case: (m k)=> /=; constructor.
 Qed.
 
+Arguments dommP [_ _].
+Arguments dommPn [_ _].
+
 Lemma setmE m k v k' :
   setm m k v k' =
   if k' == k then Some v else getm m k'.
@@ -376,7 +379,7 @@ Qed.
 
 Lemma domm_set m k v : domm (setm m k v) = k |: domm m.
 Proof.
-apply/eq_fset=> k'; apply/(sameP (dommP _ _))/(iffP idP);
+apply/eq_fset=> k'; apply/(sameP dommP)/(iffP idP);
 rewrite setmE in_fsetU1.
   case/orP=> [->|]; first by eauto.
   by move=> /dommP [v' ->]; case: eq_op; eauto.
@@ -394,8 +397,7 @@ Qed.
 Lemma emptymP m : reflect (m = emptym) (domm m == fset0).
 Proof.
 apply/(iffP eqP); last by move=> ->; rewrite domm0.
-move=> e; apply/eq_fmap => x; rewrite emptymE.
-by case: (altP (dommPn m x))=> //; rewrite e.
+by move=> e; apply/eq_fmap => x; apply/dommPn; rewrite e.
 Qed.
 
 Lemma mapimE S' (f : T -> S -> S') m k : mapim f m k = omap (f k) (m k).
@@ -576,6 +578,9 @@ Qed.
 
 End Properties.
 
+Arguments dommP {_ _} [_ _].
+Arguments dommPn {_ _} [_ _].
+
 Section Map.
 
 Variables (T : ordType) (S S' : Type).
@@ -716,6 +721,9 @@ move=> h; apply/negP=> /codommP [k' h'].
 by move: (h k'); rewrite h' eqxx.
 Qed.
 
+Arguments codommP [_ _].
+Arguments codommPn [_ _].
+
 Lemma codomm0 : codomm (@emptym T S) = fset0.
 Proof. by rewrite /codomm /domm fset0E. Qed.
 
@@ -781,6 +789,9 @@ by move: (invmE m k'); rewrite im_k' /= m_k.
 Qed.
 
 End Inverse.
+
+Arguments codommP {_ _} [_ _].
+Arguments codommPn {_ _} [_ _].
 
 Section OfSeq.
 
