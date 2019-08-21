@@ -61,21 +61,20 @@ Record mixin_of T := Mixin {
 Record class_of T := Class {base : Choice.class_of T; mixin : mixin_of T}.
 Local Coercion base : class_of >->  Choice.class_of.
 
-Structure type := Pack {sort; _ : class_of sort; _ : Type}.
+Structure type := Pack {sort; _ : class_of sort}.
 Local Coercion sort : type >-> Sortclass.
 Variables (T : Type) (cT : type).
-Definition class := let: Pack _ c _ as cT' := cT return class_of cT' in c.
-Definition clone c of phant_id class c := @Pack T c T.
-Let xT := let: Pack T _ _ := cT in T.
+Definition class := let: Pack _ c as cT' := cT return class_of cT' in c.
+Definition clone c of phant_id class c := @Pack T c.
+Let xT := let: Pack T _ := cT in T.
 Notation xclass := (class : class_of xT).
 
 Definition pack m :=
-  fun b bT & phant_id (Choice.class bT) b => Pack (@Class T b m) T.
+  fun b bT & phant_id (Choice.class bT) b => Pack (@Class T b m).
 
 (* Inheritance *)
-Definition eqType := @Equality.Pack cT xclass xT.
-
-Definition choiceType := @Choice.Pack cT xclass xT.
+Definition eqType := @Equality.Pack cT xclass.
+Definition choiceType := @Choice.Pack cT xclass.
 
 End ClassDef.
 
