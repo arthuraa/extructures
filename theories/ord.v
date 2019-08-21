@@ -1,5 +1,6 @@
 From mathcomp Require Import
-  ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype generic_quotient.
+  ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype generic_quotient
+  tuple.
 
 (******************************************************************************)
 (*   Class of types with a decidable total order relation.  Its main purpose  *)
@@ -516,3 +517,8 @@ Definition tree_ordMixin := OrdMixin tree_leqP.
 Canonical tree_ordType := Eval hnf in OrdType (GenTree.tree T) tree_ordMixin.
 
 End TreeOrdType.
+
+Definition tuple_ordMixin (T : ordType) (n : nat) :=
+  [ordMixin of n.-tuple T by <:].
+Canonical tuple_ordType (T : ordType) (n : nat) :=
+  Eval hnf in OrdType (n.-tuple T) (tuple_ordMixin T n).
