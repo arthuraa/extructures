@@ -185,6 +185,9 @@ apply: uniq_perm => //; [move: Ps1|move: Ps2]; apply/sorted_uniq => //;
 by [apply: Ord.ltxx|apply: Ord.lt_trans].
 Qed.
 
+Lemma fsvalK : cancel val (@fset T).
+Proof. by move=> X; apply/eq_fset=> x; rewrite in_fset. Qed.
+
 Lemma fset0E : @fset0 T = fset [::].
 Proof. by apply/eq_fset=> x; rewrite in_fset. Qed.
 
@@ -922,6 +925,21 @@ move=> inj; apply/eq_fset=> x; apply/imfsetP/fsetIP.
   by apply/andP; rewrite ?mem_imfset.
 case=> [/imfsetP [y1 y1_in ->] /imfsetP [y2 y2_in]] e.
 by exists y1; rewrite // in_fsetI y1_in /= (inj _ _ y1_in y2_in e).
+Qed.
+
+Lemma imfset_fset f s : f @: fset s = fset [seq f x | x <- s].
+Proof.
+apply/eq_fset=> x; rewrite in_fset.
+apply/(sameP imfsetP)/(iffP mapP).
+- by case=> {x} x xin ->; exists x; rewrite ?in_fset.
+- by case=> {x} x xin ->; exists x; rewrite -1?in_fset.
+Qed.
+
+Lemma imfset_eq0 f X : (f @: X == fset0) = (X == fset0).
+Proof.
+apply/(sameP idP)/(iffP idP)=> [/eqP ->|]; first by rewrite imfset0.
+apply: contraTT; case/fset0Pn=> x xX; apply/fset0Pn; exists (f x).
+by rewrite mem_imfset.
 Qed.
 
 End Image.

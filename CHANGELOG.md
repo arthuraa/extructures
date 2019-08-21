@@ -7,6 +7,8 @@
 - Add more implicit arguments for `fsubsetP`, `fset2P`, `imfsetP`, `dommP`,
   `dommPn`, `codommP` and `codommPn`.
 
+- Miscellaneous lemmas for finite sets.
+
 # 0.1.0 (2018/04/26)
 
 Initial release
