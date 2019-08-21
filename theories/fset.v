@@ -60,7 +60,7 @@ Lemma fset_subproof (s : seq T) :
   sorted (@Ord.lt T) (sort (@Ord.leq T) (undup s)).
 Proof.
 move: (undup s) (undup_uniq s)=> {s} s.
-move/perm_eqlP/perm_eq_uniq: (perm_sort (@Ord.leq T) s)=> <- u_s.
+move/permPl/perm_uniq: (perm_sort (@Ord.leq T) s)=> <- u_s.
 move: {s} (sort _ _) u_s (sort_sorted (@Ord.leq_total T) s)=> [|x s] //=.
 case/andP; elim: s x => //= x' s IH x; rewrite inE negb_or Ord.leq_eqVlt.
 rewrite eq_sym=> /andP [/negbTE -> /= _] /andP [nin u_s] /andP [-> /=].
@@ -181,7 +181,7 @@ have anti: antisymmetric (@Ord.lt T).
   exact: Ord.anti_leq (introT andP (conj xy yx)).
 rewrite -[s1 =i s2]/(_) in E; apply: (eq_sorted _ _ Ps1 Ps2) => //.
   exact: Ord.lt_trans.
-apply: uniq_perm_eq => //; [move: Ps1|move: Ps2]; apply/sorted_uniq => //;
+apply: uniq_perm => //; [move: Ps1|move: Ps2]; apply/sorted_uniq => //;
 by [apply: Ord.ltxx|apply: Ord.lt_trans].
 Qed.
 
