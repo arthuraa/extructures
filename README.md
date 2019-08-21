@@ -82,7 +82,7 @@ Other packages with similar goals are available out there.
 
 - Mathematical Components also includes implementations of sets and functions
   with extensional equality, but they only work for finite types.  In contrast,
-      the above definitions work with infinite types as well.
+  the above definitions work with infinite types as well.
 
 - Cyril Cohen's `finmap` library, [available here][4].
 
