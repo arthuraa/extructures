@@ -927,7 +927,7 @@ case=> [/imfsetP [y1 y1_in ->] /imfsetP [y2 y2_in]] e.
 by exists y1; rewrite // in_fsetI y1_in /= (inj _ _ y1_in y2_in e).
 Qed.
 
-Lemma imfset_fset f s : f @: fset s = fset [seq f x | x <- s].
+Lemma imfset_fset f xs : f @: fset xs = fset [seq f x | x <- xs].
 Proof.
 apply/eq_fset=> x; rewrite in_fset.
 apply/(sameP imfsetP)/(iffP mapP).
