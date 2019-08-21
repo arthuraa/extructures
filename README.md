@@ -64,8 +64,8 @@ After installing OPAM and adding the Coq archive, run:
 Alternatively, you can compile the package by hand.  You'll need the following
 dependencies:
 
-- Coq v8.7 or v8.8
-- [Ssreflect][2] v1.6 or v1.7 (`coq-mathcomp-ssreflect` on OPAM).
+- Coq v8.9
+- [Ssreflect][2] v1.9 (`coq-mathcomp-ssreflect` on OPAM).
 
 To compile the package, simply run
 
