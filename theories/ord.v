@@ -6,7 +6,7 @@ From void Require Import void.
 
 From deriving Require Import base deriving.
 
-From Coq Require Import ZArith NArith.
+From Coq Require Import ZArith NArith Ascii String.
 
 (******************************************************************************)
 (*   Class of types with a decidable total order relation.  Its main purpose  *)
@@ -375,6 +375,10 @@ Definition bool_ordMixin := Eval simpl in [indOrdMixin for bool].
 Canonical bool_ordType := Eval hnf in OrdType bool bool_ordMixin.
 Definition unit_ordMixin := Eval simpl in [indOrdMixin for unit].
 Canonical unit_ordType := Eval hnf in OrdType unit unit_ordMixin.
+Definition ascii_ordMixin := Eval simpl in [indOrdMixin for ascii].
+Canonical ascii_ordType := Eval hnf in OrdType ascii ascii_ordMixin.
+Definition string_ordMixin := Eval simpl in [indOrdMixin for string].
+Canonical string_ordType := Eval hnf in OrdType string string_ordMixin.
 (* NB: These instances use a different ordering than the standard numeric one. *)
 Definition positive_ordMixin := Eval simpl in [indOrdMixin for positive].
 Canonical positive_ordType := Eval hnf in OrdType positive positive_ordMixin.
