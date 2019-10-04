@@ -6,6 +6,8 @@ From void Require Import void.
 
 From deriving Require Import base deriving.
 
+From Coq Require Import ZArith NArith.
+
 (******************************************************************************)
 (*   Class of types with a decidable total order relation.  Its main purpose  *)
 (* is to supply an interface for aggregate structures (sets, maps) that       *)
@@ -366,10 +368,20 @@ Definition seq_ordMixin := Eval simpl in [indOrdMixin for seq T].
 Canonical seq_ordType := Eval hnf in OrdType (seq T) seq_ordMixin.
 Definition void_ordMixin := Eval simpl in [indOrdMixin for void].
 Canonical void_ordType := Eval hnf in OrdType void void_ordMixin.
+Definition comparison_ordMixin := Eval simpl in [indOrdMixin for comparison].
+Canonical comparison_ordType :=
+  Eval hnf in OrdType comparison comparison_ordMixin.
 Definition bool_ordMixin := Eval simpl in [indOrdMixin for bool].
 Canonical bool_ordType := Eval hnf in OrdType bool bool_ordMixin.
 Definition unit_ordMixin := Eval simpl in [indOrdMixin for unit].
 Canonical unit_ordType := Eval hnf in OrdType unit unit_ordMixin.
+(* NB: These instances use a different ordering than the standard numeric one. *)
+Definition positive_ordMixin := Eval simpl in [indOrdMixin for positive].
+Canonical positive_ordType := Eval hnf in OrdType positive positive_ordMixin.
+Definition N_ordMixin := Eval simpl in [indOrdMixin for N].
+Canonical N_ordType := Eval hnf in OrdType N N_ordMixin.
+Definition Z_ordMixin := Eval simpl in [indOrdMixin for Z].
+Canonical Z_ordType := Eval hnf in OrdType Z Z_ordMixin.
 
 End BasicInstances.
 
