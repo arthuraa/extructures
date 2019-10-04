@@ -66,6 +66,8 @@ dependencies:
 
 - Coq v8.9
 - [Ssreflect][2] v1.9 (`coq-mathcomp-ssreflect` on OPAM).
+- `coq-void` (https://github.com/arthuraa/coq-void)
+- `deriving` (https://github.com/arthuraa/deriving)
 
 To compile the package, simply run
 
