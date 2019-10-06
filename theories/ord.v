@@ -4,7 +4,8 @@ From mathcomp Require Import
 
 From void Require Import void.
 
-From deriving Require Import base deriving.
+From deriving Require base.
+From deriving Require Import deriving.
 
 From Coq Require Import ZArith NArith Ascii String.
 
@@ -215,6 +216,8 @@ Definition nat_ordMixin :=
 Canonical nat_ordType := Eval hnf in OrdType nat nat_ordMixin.
 
 Module IndOrdType.
+
+Import base.
 
 Local Notation kind_class := (kind_class Ord.sort).
 Local Notation kind_inst := (kind_inst Ord.sort).
