@@ -227,8 +227,8 @@ Local Notation sig_inst := (sig_inst Ord.sort).
 Section OrdType.
 
 Variable (Σ : sig_inst).
-Let F := CoqIndFunctor.coqInd_functor Σ.
-Variable (T : indEqType F).
+Let F := IndF.functor Σ.
+Variable (T : initAlgEqType F).
 
 Definition leq_branch As (cAs : hlist arg_class As) :
   hlist (type_of_arg (T * (T -> bool))) As ->
@@ -246,12 +246,12 @@ Definition leq : T -> T -> bool :=
   rec (fun args1 =>
          case
            (fun args2 =>
-              match leq_fin (CoqIndFunctor.constr args2) (CoqIndFunctor.constr args1) with
+              match leq_fin (IndF.constr args2) (IndF.constr args1) with
               | inl e =>
                 leq_branch
-                  (nth_hlist (sig_inst_class Σ) (CoqIndFunctor.constr args1))
-                  (CoqIndFunctor.args args1)
-                  (cast (hlist (type_of_arg T) \o @nth_fin _ _) e (CoqIndFunctor.args args2))
+                  (nth_hlist (sig_inst_class Σ) (IndF.constr args1))
+                  (IndF.args args1)
+                  (cast (hlist (type_of_arg T) \o @nth_fin _ _) e (IndF.args args2))
               | inr b => ~~ b
               end)).
 
@@ -263,7 +263,7 @@ have anti: antisymmetric leq.
   rewrite /leq !recE -[rec _]/(leq) /= !caseE /=.
   case ie: (leq_fin yi xi) (leq_nat_of_fin yi xi)=> [e|b].
     case: xi / e {ie} xargs=> xargs _ /=; rewrite leq_finii /= => h.
-    congr (Roll (CoqIndFunctor.CoqInd _))=> /=.
+    congr (Roll (IndF.Cons _))=> /=.
     elim/arity_ind: {yi} (nth_fin yi) / (nth_hlist _ _) xargs yargs h
         => [[] []|R As cAs IH|As cAs IH] //=.
       case=> [x xargs] [y yargs] /=.
@@ -333,11 +333,11 @@ End OrdType.
 Definition pack :=
   fun (T : Type) =>
   fun (b : Equality.mixin_of T) bT & phant_id (Equality.class bT) b =>
-  fun Σ (sT : coqIndType Σ) & phant_id (CoqInd.sort sT) T =>
+  fun Σ (sT : indType Σ) & phant_id (Ind.sort sT) T =>
   fun (sΣ : sig_inst) & phant_id Σ (sig_inst_sort sΣ) =>
-  fun (cT : CoqInd.mixin_of sΣ T) & phant_id (CoqInd.class sT) cT =>
+  fun (cT : Ind.mixin_of sΣ T) & phant_id (Ind.class sT) cT =>
     ltac:(
-      let ax := constr:(@leqP _ (IndEqType.Pack b (Ind.class (CoqInd.Pack cT)))) in
+      let ax := constr:(@leqP _ (InitAlgEqType b (InitAlg.class (Ind.Pack cT)))) in
       match type of ax with
       | Ord.axioms ?e =>
         let e' := (eval compute -[Ord.leq eq_op Equality.sort Choice.sort Ord.sort Ord.eqType andb] in e) in
