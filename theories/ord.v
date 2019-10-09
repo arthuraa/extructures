@@ -219,28 +219,28 @@ Module IndOrdType.
 
 Import base.
 
-Local Notation kind_class := (kind_class Ord.sort).
-Local Notation kind_inst := (kind_inst Ord.sort).
+Local Notation arg_class := (arg_class Ord.sort).
+Local Notation arg_inst := (arg_inst Ord.sort).
 Local Notation arity_inst := (arity_inst Ord.sort).
 Local Notation sig_inst := (sig_inst Ord.sort).
 
 Section OrdType.
 
-Variable (s : sig_inst).
-Let F := CoqIndFunctor.coqInd_functor s.
+Variable (Σ : sig_inst).
+Let F := CoqIndFunctor.coqInd_functor Σ.
 Variable (T : indEqType F).
 
-Definition leq_branch a (ac : hlist kind_class a) :
-  hlist (type_of_kind (T * (T -> bool))) a ->
-  hlist (type_of_kind T)                 a ->
+Definition leq_branch As (cAs : hlist arg_class As) :
+  hlist (type_of_arg (T * (T -> bool))) As ->
+  hlist (type_of_arg T)                 As ->
   bool :=
   @arity_rec
-    _ _ (fun a => hlist (type_of_kind (T * (T -> bool))) a -> hlist (type_of_kind T) a -> bool)
+    _ _ (fun a => hlist (type_of_arg (T * (T -> bool))) a -> hlist (type_of_arg T) a -> bool)
     (fun _ _ => true)
-    (fun R a rec x y =>
+    (fun R As rec x y =>
        if x.1 == y.1 then rec x.2 y.2 else (x.1 <= y.1)%ord)
-    (fun   a rec x y =>
-       if x.1.1 == y.1 then rec x.2 y.2 else x.1.2 y.1) a ac.
+    (fun   As rec x y =>
+       if x.1.1 == y.1 then rec x.2 y.2 else x.1.2 y.1) As cAs.
 
 Definition leq : T -> T -> bool :=
   rec (fun args1 =>
@@ -249,50 +249,50 @@ Definition leq : T -> T -> bool :=
               match leq_fin (CoqIndFunctor.constr args2) (CoqIndFunctor.constr args1) with
               | inl e =>
                 leq_branch
-                  (nth_hlist (sig_inst_class s) (CoqIndFunctor.constr args1))
+                  (nth_hlist (sig_inst_class Σ) (CoqIndFunctor.constr args1))
                   (CoqIndFunctor.args args1)
-                  (cast (hlist (type_of_kind T) \o @nth_fin _ _) e (CoqIndFunctor.args args2))
+                  (cast (hlist (type_of_arg T) \o @nth_fin _ _) e (CoqIndFunctor.args args2))
               | inr b => ~~ b
               end)).
 
 Lemma leqP : Ord.axioms leq.
 Proof.
 have anti: antisymmetric leq.
-  elim/indP=> [[i_x xargs]] y.
-  rewrite -(unrollK y); case: {y} (unroll y)=> [i_y yargs].
+  elim/indP=> [[xi xargs]] y.
+  rewrite -(unrollK y); case: {y} (unroll y)=> [yi yargs].
   rewrite /leq !recE -[rec _]/(leq) /= !caseE /=.
-  case ie: (leq_fin i_y i_x) (leq_nat_of_fin i_y i_x)=> [e|b].
-    case: i_x / e {ie} xargs=> xargs _ /=; rewrite leq_finii /= => h.
+  case ie: (leq_fin yi xi) (leq_nat_of_fin yi xi)=> [e|b].
+    case: xi / e {ie} xargs=> xargs _ /=; rewrite leq_finii /= => h.
     congr (Roll (CoqIndFunctor.CoqInd _))=> /=.
-    elim/arity_ind: {i_y} (nth_fin i_y) / (nth_hlist _ _) xargs yargs h
-        => [[] []|R a ac IH|a ac IH] //=.
+    elim/arity_ind: {yi} (nth_fin yi) / (nth_hlist _ _) xargs yargs h
+        => [[] []|R As cAs IH|As cAs IH] //=.
       case=> [x xargs] [y yargs] /=.
       rewrite eq_sym; case: (altP (_ =P _))=> [-> /IH ->|yx] //.
       by move=> /Ord.anti_leq e; rewrite e eqxx in yx.
     case=> [[x xP] xargs] [y yargs] /=.
     rewrite eq_sym; case: (altP (_ =P _))=> [-> /IH ->|yx /xP e] //.
     by rewrite e eqxx in yx.
-  case: (leq_fin i_x i_y) (leq_nat_of_fin i_x i_y)=> [e|b'].
+  case: (leq_fin xi yi) (leq_nat_of_fin xi yi)=> [e|b'].
     by rewrite e leq_finii in ie.
   move=> <- <-.
-  have ne: nat_of_fin i_y != nat_of_fin i_x.
+  have ne: nat_of_fin yi != nat_of_fin xi.
     by apply/eqP=> /nat_of_fin_inj e; rewrite e leq_finii in ie.
     by case: ltngtP ne.
 split=> //.
 - elim/indP=> [[i args]].
   rewrite /leq recE /= -[rec _]/(leq) caseE leq_finii /=.
-  elim/arity_ind: {i} _ / (nth_hlist _ _) args=> [[]|R a ac IH|a ac IH] //=.
+  elim/arity_ind: {i} _ / (nth_hlist _ _) args=> [[]|R As cAs IH|As cAs IH] //=.
     by case=> [x args]; rewrite /= eqxx.
   by case=> [[x xP] args] /=; rewrite eqxx.
-- move=> y x z; elim/indP: x y z=> [[i_x xargs]] y z.
+- move=> y x z; elim/indP: x y z=> [[xi xargs]] y z.
   rewrite -(unrollK y) -(unrollK z).
-  move: (unroll y) (unroll z)=> {y z} [i_y yargs] [i_z zargs].
+  move: (unroll y) (unroll z)=> {y z} [yi yargs] [zi zargs].
   rewrite /leq !recE /= -[rec _]/(leq) !caseE /=.
-  case: (leq_fin i_y i_x) (leq_nat_of_fin i_y i_x)=> [e _|b] //.
-    case: i_x / e xargs=> /= xargs.
-    case: (leq_fin i_z i_y) (leq_nat_of_fin i_z i_y)=> [e _|b] //.
-      case: i_y / e xargs yargs => xargs yargs /=.
-      elim/arity_ind: {i_z} _ / (nth_hlist _ _) xargs yargs zargs => [//|R|] a ac IH /=.
+  case: (leq_fin yi xi) (leq_nat_of_fin yi xi)=> [e _|b] //.
+    case: xi / e xargs=> /= xargs.
+    case: (leq_fin zi yi) (leq_nat_of_fin zi yi)=> [e _|b] //.
+      case: yi / e xargs yargs => xargs yargs /=.
+      elim/arity_ind: {zi} _ / (nth_hlist _ _) xargs yargs zargs => [//|R|] As cAs IH /=.
         case=> [x xargs] [y yargs] [z zargs] /=.
         case: (altP (_ =P _)) => [<-|xy].
           case: ifP=> // /eqP _; exact: IH.
@@ -308,19 +308,19 @@ split=> //.
         suffices e : x = y by rewrite e eqxx in xy.
         by apply: anti; rewrite le1.
       case: (altP (_ =P _))=> [<-|_] //; exact: xP.
-  move=> <- {b} i_xy.
-  case: (leq_fin i_z i_y) (leq_nat_of_fin i_z i_y)=> [e _|_ <-].
-    case: i_y / e yargs i_xy=> /= yargs.
-    by rewrite leq_nat_of_fin; case: (leq_fin i_z i_x).
-  case: (leq_fin i_z i_x) (leq_nat_of_fin i_z i_x)=> [e|_ <-].
-    by case: i_x / e i_xy xargs; rewrite -ltnNge => /ltnW ->.
-  move: i_xy; rewrite -!ltnNge; exact: ltn_trans.
-- elim/indP=> [[i_x xargs]] y.
-  rewrite -(unrollK y); case: {y} (unroll y)=> [i_y yargs].
-  rewrite /leq !recE /= -[rec _]/(leq) !caseE /= (leq_fin_swap i_x i_y).
-  case: (leq_fin i_y i_x)=> [e|[] //].
-  case: i_x / e xargs=> /= xargs.
-  elim/arity_ind: {i_y} _ / (nth_hlist _ _) xargs yargs=> [[] []|R|] //= a ac IH.
+  move=> <- {b} ei.
+  case: (leq_fin zi yi) (leq_nat_of_fin zi yi)=> [e _|_ <-].
+    case: yi / e yargs ei=> /= yargs.
+    by rewrite leq_nat_of_fin; case: (leq_fin zi xi).
+  case: (leq_fin zi xi) (leq_nat_of_fin zi xi)=> [e|_ <-].
+    by case: xi / e ei xargs; rewrite -ltnNge => /ltnW ->.
+  move: ei; rewrite -!ltnNge; exact: ltn_trans.
+- elim/indP=> [[xi xargs]] y.
+  rewrite -(unrollK y); case: {y} (unroll y)=> [yi yargs].
+  rewrite /leq !recE /= -[rec _]/(leq) !caseE /= (leq_fin_swap xi yi).
+  case: (leq_fin yi xi)=> [e|[] //].
+  case: xi / e xargs=> /= xargs.
+  elim/arity_ind: {yi} _ / (nth_hlist _ _) xargs yargs=> [[] []|R|] //= As cAs IH.
     case=> [x xargs] [y yargs] /=.
     rewrite eq_sym; case: (altP eqP)=> [{y} _|]; first exact: IH.
     by rewrite Ord.leq_total.
@@ -333,9 +333,9 @@ End OrdType.
 Definition pack :=
   fun (T : Type) =>
   fun (b : Equality.mixin_of T) bT & phant_id (Equality.class bT) b =>
-  fun s (sT : coqIndType s) & phant_id (CoqInd.sort sT) T =>
-  fun (ss : sig_inst) & phant_id s (sig_inst_sort ss) =>
-  fun (cT : CoqInd.mixin_of ss T) & phant_id (CoqInd.class sT) cT =>
+  fun Σ (sT : coqIndType Σ) & phant_id (CoqInd.sort sT) T =>
+  fun (sΣ : sig_inst) & phant_id Σ (sig_inst_sort sΣ) =>
+  fun (cT : CoqInd.mixin_of sΣ T) & phant_id (CoqInd.class sT) cT =>
     ltac:(
       let ax := constr:(@leqP _ (IndEqType.Pack b (Ind.class (CoqInd.Pack cT)))) in
       match type of ax with
