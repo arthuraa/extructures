@@ -1,6 +1,6 @@
 From mathcomp Require Import
   ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype generic_quotient
-  tuple ssrint.
+  tuple.
 
 From void Require Import void.
 
