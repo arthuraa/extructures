@@ -69,7 +69,6 @@ dependencies:
 
 To compile the package, simply run
 
-    coq_makefile -f _CoqProject -o Makefile
     make
 
 After compilation, you can install the package by running

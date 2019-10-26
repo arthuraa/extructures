@@ -4,6 +4,6 @@
 *.vo
 *.aux
 .coq-native/
-Makefile
-Makefile.bak
+CoqMakefile
+CoqMakefile.bak
 *.conf
