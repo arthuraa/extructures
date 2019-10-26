@@ -124,7 +124,7 @@ Local Open Scope ord_scope.
 
 Definition pred_of_fset (s : {fset T}) :=
   [pred x : T | x \in val s].
-Canonical fset_predType := mkPredType pred_of_fset.
+Canonical fset_predType := PredType pred_of_fset.
 
 Lemma in_fset s x : (x \in fset s) = (x \in s).
 Proof. by rewrite [fset]unlock inE /= mem_sort mem_undup. Qed.

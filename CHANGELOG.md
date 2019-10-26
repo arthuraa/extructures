@@ -1,3 +1,7 @@
+# 0.2.1 (2019/10/26)
+
+- Fix compatibility issue with Coq 8.10
+
 # 0.2.0 (2019/08/21)
 
 - Separate phantom argument from the definitions of `fset`, `fmap` and `fperm`.
