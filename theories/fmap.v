@@ -264,7 +264,7 @@ Variables (T : ordType) (S : eqType).
 Definition mem_fmap (m : {fmap T -> S}) :=
   [pred p : T * S | p \in val m].
 
-Canonical mem_fmap_predType := mkPredType mem_fmap.
+Canonical mem_fmap_predType := PredType mem_fmap.
 
 End PredFmap.
 
