@@ -330,8 +330,8 @@ Proof.
 by rewrite mem_domm; case: (m k)=> /=; constructor.
 Qed.
 
-Arguments dommP [_ _].
-Arguments dommPn [_ _].
+Arguments dommP {_ _}.
+Arguments dommPn {_ _}.
 
 Lemma setmE m k v k' :
   setm m k v k' =
@@ -418,7 +418,7 @@ elim: s Ps=> [|p s IH /= Ps] //=.
 rewrite ![in LHS](fun_if, if_arg) /= {}IH; last exact: path_sorted Ps.
 have [-> {k}|k_p] //= := altP (_ =P _); case: (a _)=> //.
 elim: s {Ps} (order_path_min (@Ord.lt_trans _) Ps)
-      => [|p' s IH /andP /= [lb /IH {IH} IH]] //=.
+      => [|p' s IH /andP /= [lb {}/IH IH]] //=.
 by move: lb; have [->|//] := altP (_ =P _); rewrite Ord.ltxx.
 Qed.
 
@@ -578,8 +578,8 @@ Qed.
 
 End Properties.
 
-Arguments dommP {_ _} [_ _].
-Arguments dommPn {_ _} [_ _].
+Arguments dommP {_ _ _ _}.
+Arguments dommPn {_ _ _ _}.
 
 Section Map.
 
@@ -630,7 +630,7 @@ Lemma mapm2_comp T T' T'' S S' S'' f f' g g' :
 Proof.
 move=> f_inj f'_inj m; apply/eq_fmap=> x /=.
 have [|xnin] := boolP (x \in domm (mapm2 (f' \o f) (g' \o g) m)).
-- rewrite domm_map2; case/imfsetP=> {x} x xin ->.
+- rewrite domm_map2; case/imfsetP=> {}x xin ->.
   rewrite mapm2E /=; last exact: inj_comp.
   by rewrite !mapm2E //; case: (m x).
 - move: (xnin); rewrite (dommPn xnin).
@@ -684,7 +684,7 @@ apply/(iffP idP).
     apply (sorted_uniq (@Ord.lt_trans T) (@Ord.ltxx T)).
     exact: (valP m).
   rewrite !inE /=; elim: (val m) => [|[k' v'] s IH] //=.
-  move=>/andP [k'_nin_s /IH {IH} IH] /andP [v'_nin_s /IH {IH} IH].
+  move=>/andP [k'_nin_s {}/IH IH] /andP [v'_nin_s {}/IH IH].
   rewrite !inE -pair_eqE /=.
   have [k1k'|k1k'] /= := altP (k1 =P k').
     subst k'; have /negbTE ->: (k1, v) \notin s.
@@ -695,7 +695,7 @@ apply/(iffP idP).
       apply: contra v'_nin_s => v'_in_s.
       by apply/mapP; exists (k2, v).
     by rewrite orbF => /eqP ->.
-  move=> k1_in_s; move: (k1_in_s)=> /IH {IH} IH.
+  move=> k1_in_s; move: (k1_in_s)=> {}/IH IH.
   have [k2k'|k2k'] //= := altP (k2 =P k').
   subst k'; case/orP=> [/eqP ?|//]; subst v'.
   suff c : v \in unzip2 s by rewrite c in v'_nin_s.
@@ -764,8 +764,8 @@ move=> h; apply/negP=> /codommP [k' h'].
 by move: (h k'); rewrite h' eqxx.
 Qed.
 
-Arguments codommP [_ _].
-Arguments codommPn [_ _].
+Arguments codommP {_ _}.
+Arguments codommPn {_ _}.
 
 Lemma codomm0 : codomm (@emptym T S) = fset0.
 Proof. by rewrite /codomm /domm fset0E. Qed.
@@ -833,8 +833,8 @@ Qed.
 
 End Inverse.
 
-Arguments codommP {_ _} [_ _].
-Arguments codommPn {_ _} [_ _].
+Arguments codommP {_ _ _ _}.
+Arguments codommPn {_ _ _ _}.
 
 Section OfSeq.
 

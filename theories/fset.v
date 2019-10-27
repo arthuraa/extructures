@@ -59,7 +59,7 @@ Record fset_type := FSet {
 Lemma fset_subproof (s : seq T) :
   sorted (@Ord.lt T) (sort (@Ord.leq T) (undup s)).
 Proof.
-move: (undup s) (undup_uniq s)=> {s} s.
+move: (undup s) (undup_uniq s)=> {}s.
 move/permPl/perm_uniq: (perm_sort (@Ord.leq T) s)=> <- u_s.
 move: {s} (sort _ _) u_s (sort_sorted (@Ord.leq_total T) s)=> [|x s] //=.
 case/andP; elim: s x => //= x' s IH x; rewrite inE negb_or Ord.leq_eqVlt.
@@ -107,6 +107,7 @@ End FSet.
 
 Export FSet.Exports.
 
+Declare Scope fset_scope.
 Delimit Scope fset_scope with fset.
 
 Lemma fset_key : unit. Proof. exact: tt. Qed.
@@ -230,7 +231,7 @@ rewrite in_fset2; apply/(iffP idP).
   by case/orP=> [/eqP->|/eqP->]; auto.
 by case=> [->|->]; rewrite eqxx ?orbT.
 Qed.
-Arguments fset2P [_ _ _].
+Arguments fset2P {_ _ _}.
 
 CoInductive fset_spec : {fset T} -> Type :=
 | FSetSpec0 : fset_spec fset0
@@ -299,7 +300,7 @@ apply/(iffP idP)=> [/eqP <- x|hs1s2]; first by rewrite in_fsetU => ->.
 apply/eqP/eq_fset=> x; rewrite in_fsetU.
 have [/hs1s2|//] //= := boolP (x \in s1).
 Qed.
-Arguments fsubsetP [_ _].
+Arguments fsubsetP {_ _}.
 
 Lemma fsubsetxx s : fsubset s s.
 Proof. by apply/fsubsetP. Qed.
@@ -758,7 +759,7 @@ Qed.
 
 End Properties.
 
-Arguments fsubsetP {_} [_ _].
+Arguments fsubsetP {_ _ _}.
 Arguments fset2P {_} [_ _].
 
 Section setOpsAlgebra.
@@ -813,7 +814,7 @@ Lemma bigcup_sup j s P F :
 Proof.
 elim: s=> [|j' s IH] //=; rewrite inE=> /orP [/eqP <-|]; rewrite big_cons.
   by move=> ->; rewrite fsubsetUl.
-case: ifP => // _ /IH {IH} IH /IH {IH} IH.
+case: ifP => // _ {}/IH IH {}/IH IH.
 by rewrite (fsubset_trans IH) // fsubsetUr.
 Qed.
 
@@ -879,7 +880,7 @@ apply/(iffP idP).
 move=> [y Py {x}->]; rewrite /imfset in_fset.
 by apply/mapP; eauto.
 Qed.
-Arguments imfsetP [_ _ _].
+Arguments imfsetP {_ _ _}.
 
 Lemma eq_imfset f1 f2 : f1 =1 f2 -> imfset f1 =1 imfset f2.
 Proof.
@@ -921,7 +922,7 @@ Lemma imfsetI f s1 s2 :
   {in s1 & s2, injective f} -> f @: (s1 :&: s2) = f @: s1 :&: f @: s2.
 Proof.
 move=> inj; apply/eq_fset=> x; apply/imfsetP/fsetIP.
-  case=> [{x} x x_in ->]; case/fsetIP: x_in=> [x_in1 x_in2].
+  case=> [{}x x_in ->]; case/fsetIP: x_in=> [x_in1 x_in2].
   by apply/andP; rewrite ?mem_imfset.
 case=> [/imfsetP [y1 y1_in ->] /imfsetP [y2 y2_in]] e.
 by exists y1; rewrite // in_fsetI y1_in /= (inj _ _ y1_in y2_in e).
@@ -931,8 +932,8 @@ Lemma imfset_fset f xs : f @: fset xs = fset [seq f x | x <- xs].
 Proof.
 apply/eq_fset=> x; rewrite in_fset.
 apply/(sameP imfsetP)/(iffP mapP).
-- by case=> {x} x xin ->; exists x; rewrite ?in_fset.
-- by case=> {x} x xin ->; exists x; rewrite -1?in_fset.
+- by case=> {}x xin ->; exists x; rewrite ?in_fset.
+- by case=> {}x xin ->; exists x; rewrite -1?in_fset.
 Qed.
 
 Lemma imfset_eq0 f X : (f @: X == fset0) = (X == fset0).
@@ -947,7 +948,7 @@ End Image.
 Notation "f @: s" := (imfset f s) (at level 24) : fset_scope.
 
 Prenex Implicits imfset.
-Arguments imfsetP {_ _} [_ _ _].
+Arguments imfsetP {_ _ _ _ _}.
 
 Section ImageProps.
 
