@@ -239,9 +239,9 @@ Definition leq_branch As (cAs : hlist arg_class As) :
     _ _ (fun a => hlist (type_of_arg (T * (T -> bool))) a -> hlist (type_of_arg T) a -> bool)
     (fun _ _ => true)
     (fun R As rec x y =>
-       if x.1 == y.1 then rec x.2 y.2 else (x.1 <= y.1)%ord)
+       if x.(hd) == y.(hd) then rec x.(tl) y.(tl) else (x.(hd) <= y.(hd))%ord)
     (fun   As rec x y =>
-       if x.1.1 == y.1 then rec x.2 y.2 else x.1.2 y.1) As cAs.
+       if x.(hd).1 == y.(hd) then rec x.(tl) y.(tl) else x.(hd).2 y.(hd)) As cAs.
 
 Definition leq : T -> T -> bool :=
   rec (fun args1 =>
