@@ -216,7 +216,7 @@ Definition nat_ordMixin :=
   OrdMixin (Ord.Ax leqnn leq_trans anti_leq leq_total).
 Canonical nat_ordType := Eval hnf in OrdType nat nat_ordMixin.
 
-Module IndOrdType.
+Module DerOrdType.
 
 Import base.
 
@@ -346,49 +346,49 @@ Definition pack :=
       end).
 
 Module Import Exports.
-Notation "[ 'indOrdMixin' 'for' T ]" :=
+Notation "[ 'derive' 'ordMixin' 'for' T ]" :=
   (let m := @pack T _ _ id _ _ id _ id _ id in
    ltac:(
      let x := eval hnf in m in
      exact x))
-  (at level 0, format "[ 'indOrdMixin'  'for'  T ]") : form_scope.
+  (at level 0, format "[ 'derive'  'ordMixin'  'for'  T ]") : form_scope.
 End Exports.
 
-End IndOrdType.
+End DerOrdType.
 
-Export IndOrdType.Exports.
+Export DerOrdType.Exports.
 
 Section BasicInstances.
 
 Variables T S : ordType.
 
-Definition prod_ordMixin := Eval simpl in [indOrdMixin for (T * S)%type].
+Definition prod_ordMixin := Eval simpl in [derive ordMixin for (T * S)%type].
 Canonical prod_ordType := Eval hnf in OrdType (T * S) prod_ordMixin.
-Definition sum_ordMixin := Eval simpl in [indOrdMixin for (T + S)%type].
+Definition sum_ordMixin := Eval simpl in [derive ordMixin for (T + S)%type].
 Canonical sum_ordType := Eval hnf in OrdType (T + S) sum_ordMixin.
-Definition option_ordMixin := Eval simpl in [indOrdMixin for option T].
+Definition option_ordMixin := Eval simpl in [derive ordMixin for option T].
 Canonical option_ordType := Eval hnf in OrdType (option T) option_ordMixin.
-Definition seq_ordMixin := Eval simpl in [indOrdMixin for seq T].
+Definition seq_ordMixin := Eval simpl in [derive ordMixin for seq T].
 Canonical seq_ordType := Eval hnf in OrdType (seq T) seq_ordMixin.
-Definition void_ordMixin := Eval simpl in [indOrdMixin for void].
+Definition void_ordMixin := Eval simpl in [derive ordMixin for void].
 Canonical void_ordType := Eval hnf in OrdType void void_ordMixin.
-Definition comparison_ordMixin := Eval simpl in [indOrdMixin for comparison].
+Definition comparison_ordMixin := Eval simpl in [derive ordMixin for comparison].
 Canonical comparison_ordType :=
   Eval hnf in OrdType comparison comparison_ordMixin.
-Definition bool_ordMixin := Eval simpl in [indOrdMixin for bool].
+Definition bool_ordMixin := Eval simpl in [derive ordMixin for bool].
 Canonical bool_ordType := Eval hnf in OrdType bool bool_ordMixin.
-Definition unit_ordMixin := Eval simpl in [indOrdMixin for unit].
+Definition unit_ordMixin := Eval simpl in [derive ordMixin for unit].
 Canonical unit_ordType := Eval hnf in OrdType unit unit_ordMixin.
-Definition ascii_ordMixin := Eval simpl in [indOrdMixin for ascii].
+Definition ascii_ordMixin := Eval simpl in [derive ordMixin for ascii].
 Canonical ascii_ordType := Eval hnf in OrdType ascii ascii_ordMixin.
-Definition string_ordMixin := Eval simpl in [indOrdMixin for string].
+Definition string_ordMixin := Eval simpl in [derive ordMixin for string].
 Canonical string_ordType := Eval hnf in OrdType string string_ordMixin.
 (* NB: These instances use a different ordering than the standard numeric one. *)
-Definition positive_ordMixin := Eval simpl in [indOrdMixin for positive].
+Definition positive_ordMixin := Eval simpl in [derive ordMixin for positive].
 Canonical positive_ordType := Eval hnf in OrdType positive positive_ordMixin.
-Definition N_ordMixin := Eval simpl in [indOrdMixin for N].
+Definition N_ordMixin := Eval simpl in [derive ordMixin for N].
 Canonical N_ordType := Eval hnf in OrdType N N_ordMixin.
-Definition Z_ordMixin := Eval simpl in [indOrdMixin for Z].
+Definition Z_ordMixin := Eval simpl in [derive ordMixin for Z].
 Canonical Z_ordType := Eval hnf in OrdType Z Z_ordMixin.
 
 End BasicInstances.
