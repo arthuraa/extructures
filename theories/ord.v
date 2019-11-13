@@ -250,7 +250,7 @@ Definition leq : T -> T -> bool :=
               match leq_fin (IndF.constr args2) (IndF.constr args1) with
               | inl e =>
                 leq_branch
-                  (nth_hlist (sig_inst_class Σ) (IndF.constr args1))
+                  (hnth (sig_inst_class Σ) (IndF.constr args1))
                   (IndF.args args1)
                   (cast (hlist (type_of_arg T) \o @nth_fin _ _) e (IndF.args args2))
               | inr b => ~~ b
@@ -265,7 +265,7 @@ have anti: antisymmetric leq.
   case ie: (leq_fin yi xi) (leq_nat_of_fin yi xi)=> [e|b].
     case: xi / e {ie} xargs=> xargs _ /=; rewrite leq_finii /= => h.
     congr (Roll (IndF.Cons _))=> /=.
-    elim/arity_ind: {yi} (nth_fin yi) / (nth_hlist _ _) xargs yargs h
+    elim/arity_ind: {yi} (nth_fin yi) / (hnth _ _) xargs yargs h
         => [[] []|R As cAs IH|As cAs IH] //=.
       case=> [x xargs] [y yargs] /=.
       rewrite eq_sym; case: (altP (_ =P _))=> [-> /IH ->|yx] //.
@@ -282,7 +282,7 @@ have anti: antisymmetric leq.
 split=> //.
 - elim/indP=> [[i args]].
   rewrite /leq recE /= -[rec _]/(leq) caseE leq_finii /=.
-  elim/arity_ind: {i} _ / (nth_hlist _ _) args=> [[]|R As cAs IH|As cAs IH] //=.
+  elim/arity_ind: {i} _ / (hnth _ _) args=> [[]|R As cAs IH|As cAs IH] //=.
     by case=> [x args]; rewrite /= eqxx.
   by case=> [[x xP] args] /=; rewrite eqxx.
 - move=> y x z; elim/indP: x y z=> [[xi xargs]] y z.
@@ -293,7 +293,7 @@ split=> //.
     case: xi / e xargs=> /= xargs.
     case: (leq_fin zi yi) (leq_nat_of_fin zi yi)=> [e _|b] //.
       case: yi / e xargs yargs => xargs yargs /=.
-      elim/arity_ind: {zi} _ / (nth_hlist _ _) xargs yargs zargs => [//|R|] As cAs IH /=.
+      elim/arity_ind: {zi} _ / (hnth _ _) xargs yargs zargs => [//|R|] As cAs IH /=.
         case=> [x xargs] [y yargs] [z zargs] /=.
         case: (altP (_ =P _)) => [<-|xy].
           case: ifP=> // /eqP _; exact: IH.
@@ -321,7 +321,7 @@ split=> //.
   rewrite /leq !recE /= -[rec _]/(leq) !caseE /= (leq_fin_swap xi yi).
   case: (leq_fin yi xi)=> [e|[] //].
   case: xi / e xargs=> /= xargs.
-  elim/arity_ind: {yi} _ / (nth_hlist _ _) xargs yargs=> [[] []|R|] //= As cAs IH.
+  elim/arity_ind: {yi} _ / (hnth _ _) xargs yargs=> [[] []|R|] //= As cAs IH.
     case=> [x xargs] [y yargs] /=.
     rewrite eq_sym; case: (altP eqP)=> [{y} _|]; first exact: IH.
     by rewrite Ord.leq_total.
