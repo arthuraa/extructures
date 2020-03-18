@@ -30,17 +30,26 @@ commands:
           opam install .
 
 jobs:
-  ocaml 4_05:
+  coq-8-10:
     <<: *defaults
     steps:
     - startup
     - prepare
     - build
     docker:
-    - image: coqorg/coq:8.10
+    - image: coqorg/coq:8.10.2
+
+  coq-8-11:
+    <<: *defaults
+    steps:
+    - startup
+    - prepare
+    - build
+    docker:
+    - image: coqorg/coq:8.11.0
 
 workflows:
   build:
     jobs:
-    - ocaml 4_05
-      
+    - coq-8-10
+    - coq-8-11
