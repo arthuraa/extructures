@@ -1,5 +1,7 @@
 # Extensional Structures
 
+[![arthuraa](https://circleci.com/gh/arthuraa/extructures.svg?style=shield)](https://circleci.com/gh/arthuraa/extructures/tree/v0.2)
+
 This package provides Coq data structures that support extensional reasoning,
 for which the notion of equality coincides with exhibiting the same _observable
 behavior_: sets are equal when they contain the same elements; functions are
