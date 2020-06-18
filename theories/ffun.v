@@ -90,6 +90,23 @@ rewrite /appf /= /upd_def; case: (altP (def x1 =P y)) => ey.
 by rewrite setmE; case: (altP (x2 =P x1)) => ex.
 Qed.
 
+Definition mkffun (fb : T -> S) (xs : seq T) :=
+  foldr (fun x f => upd f x (fb x)) emptyf xs.
+
+Lemma mkffunE fb xs x :
+  mkffun fb xs x = if x \in xs then fb x else def x.
+Proof.
+elim: xs=> [|x' xs IH] //=; rewrite inE updE IH.
+by case: eqP => [<-|_].
+Qed.
+
+Lemma supp_mkffun fb xs :
+  fsubset (supp (mkffun fb xs)) (fset [seq x <- xs | fb x != def x]).
+Proof.
+apply/fsubsetP=> x; rewrite mem_supp in_fset mem_filter.
+by rewrite mkffunE andbC; case: ifP=> //; rewrite eqxx.
+Qed.
+
 End FFun.
 
 Definition ffun_eqMixin T (S : eqType) def :=
