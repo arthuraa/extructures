@@ -91,3 +91,16 @@ by rewrite setmE; case: (altP (x2 =P x1)) => ex.
 Qed.
 
 End FFun.
+
+Definition ffun_eqMixin T (S : eqType) def :=
+  [eqMixin of @ffun T S def by <:].
+Canonical ffun_eqType T S def :=
+  EqType _ (@ffun_eqMixin T S def).
+Definition ffun_choiceMixin T (S : choiceType) def :=
+  [choiceMixin of @ffun T S def by <:].
+Canonical ffun_choiceType T S def :=
+  Eval hnf in ChoiceType _ (@ffun_choiceMixin T S def).
+Definition ffun_ordMixin T (S : ordType) def :=
+  [ordMixin of @ffun T S def by <:].
+Canonical ffun_ordType T S def :=
+  Eval hnf in OrdType _ (@ffun_ordMixin T S def).
