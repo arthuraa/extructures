@@ -10,7 +10,7 @@ Local Open Scope fset_scope.
 
 Section FFun.
 
-Variables (T : ordType) (S : eqType) (def : T -> S).
+Context {T : ordType} {S : eqType} {def : T -> S}.
 
 Local Notation wf f :=
   (all (fun x => f x != Some (def x)) (domm f)).
@@ -108,6 +108,8 @@ by rewrite mkffunE andbC; case: ifP=> //; rewrite eqxx.
 Qed.
 
 End FFun.
+
+Arguments ffun {T S} def.
 
 Definition ffun_eqMixin T (S : eqType) def :=
   [eqMixin of @ffun T S def by <:].
