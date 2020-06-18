@@ -522,6 +522,9 @@ Proof. by rewrite in_fsetD in_fset1. Qed.
 Lemma fsetDP x s1 s2 : reflect (x \in s1 /\ x \notin s2) (x \in s1 :\: s2).
 Proof. rewrite in_fsetD andbC; exact: andP. Qed.
 
+Lemma fsetD1P x s y : reflect (x != y /\ x \in s) (x \in s :\ y).
+Proof. rewrite in_fsetD1; exact/andP. Qed.
+
 Lemma fsubDset s1 s2 s3 : fsubset (s1 :\: s2) s3 = fsubset s1 (s2 :|: s3).
 Proof.
 apply/fsubsetP/fsubsetP=> [h x in1|h x ];

@@ -5,3 +5,4 @@ theories/ord.v
 theories/fperm.v
 theories/fset.v
 theories/fmap.v
+theories/ffun.v
