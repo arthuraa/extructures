@@ -101,10 +101,10 @@ by case: eqP => [<-|_].
 Qed.
 
 Lemma supp_mkffun fb xs :
-  fsubset (supp (mkffun fb xs)) (fset [seq x <- xs | fb x != def x]).
+  supp (mkffun fb xs) = fset [seq x <- xs | fb x != def x].
 Proof.
-apply/fsubsetP=> x; rewrite mem_supp in_fset mem_filter.
-by rewrite mkffunE andbC; case: ifP=> //; rewrite eqxx.
+apply/eq_fset=> x; rewrite mem_supp in_fset mem_filter mkffunE.
+by rewrite andbC; case: ifP=> //; rewrite eqxx.
 Qed.
 
 End FFun.
