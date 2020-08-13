@@ -175,9 +175,9 @@ have E: forall s, [seq p.1 | p <- setm_def s k v] =i k :: unzip1 s.
   by rewrite H orbA orbb.
 case: m; elim=> // p s /= IH Ps.
 move: (order_path_min (@Ord.lt_trans T) Ps) => lb.
-rewrite ![in X in is_true X]fun_if /= path_min_sorted; last exact: (allP lb).
+rewrite ![in X in is_true X]fun_if /= path_min_sorted; last exact: lb.
 rewrite (path_sorted Ps); case: Ord.ltgtP=> [k_p//|k_p|-> //] /=.
-rewrite path_min_sorted ?(IH (path_sorted Ps)) //=; apply/allP.
+rewrite path_min_sorted ?(IH (path_sorted Ps)) //=.
 by rewrite !(eq_all_r (E s)) {E} /= lb andbT.
 Qed.
 
