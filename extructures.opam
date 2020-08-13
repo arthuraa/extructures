@@ -16,8 +16,8 @@ install: [
 ]
 depends: [
   "ocaml"
-  "coq" {>= "8.10" & < "8.12~"}
-  "coq-mathcomp-ssreflect" {>= "1.9" & < "1.10~"}
+  "coq" {>= "8.10" & < "8.13~"}
+  "coq-mathcomp-ssreflect" {>= "1.9" & < "1.11~"}
 ]
 tags: [
   "keyword:finite maps"
