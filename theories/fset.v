@@ -230,7 +230,7 @@ rewrite in_fset2; apply/(iffP idP).
   by case/orP=> [/eqP->|/eqP->]; auto.
 by case=> [->|->]; rewrite eqxx ?orbT.
 Qed.
-Arguments fset2P [_ _ _].
+Arguments fset2P {_ _ _}.
 
 CoInductive fset_spec : {fset T} -> Type :=
 | FSetSpec0 : fset_spec fset0
@@ -299,7 +299,7 @@ apply/(iffP idP)=> [/eqP <- x|hs1s2]; first by rewrite in_fsetU => ->.
 apply/eqP/eq_fset=> x; rewrite in_fsetU.
 have [/hs1s2|//] //= := boolP (x \in s1).
 Qed.
-Arguments fsubsetP [_ _].
+Arguments fsubsetP {_ _}.
 
 Lemma fsubsetxx s : fsubset s s.
 Proof. by apply/fsubsetP. Qed.
@@ -758,8 +758,8 @@ Qed.
 
 End Properties.
 
-Arguments fsubsetP {_} [_ _].
-Arguments fset2P {_} [_ _].
+Arguments fsubsetP {_ _ _}.
+Arguments fset2P {_ _ _}.
 
 Section setOpsAlgebra.
 
@@ -879,7 +879,7 @@ apply/(iffP idP).
 move=> [y Py {x}->]; rewrite /imfset in_fset.
 by apply/mapP; eauto.
 Qed.
-Arguments imfsetP [_ _ _].
+Arguments imfsetP {_ _ _}.
 
 Lemma eq_imfset f1 f2 : f1 =1 f2 -> imfset f1 =1 imfset f2.
 Proof.
@@ -947,7 +947,7 @@ End Image.
 Notation "f @: s" := (imfset f s) (at level 24) : fset_scope.
 
 Prenex Implicits imfset.
-Arguments imfsetP {_ _} [_ _ _].
+Arguments imfsetP {_ _ _ _ _}.
 
 Section ImageProps.
 

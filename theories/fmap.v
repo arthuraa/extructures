@@ -330,8 +330,8 @@ Proof.
 by rewrite mem_domm; case: (m k)=> /=; constructor.
 Qed.
 
-Arguments dommP [_ _].
-Arguments dommPn [_ _].
+Arguments dommP {_ _}.
+Arguments dommPn {_ _}.
 
 Lemma setmE m k v k' :
   setm m k v k' =
@@ -578,8 +578,8 @@ Qed.
 
 End Properties.
 
-Arguments dommP {_ _} [_ _].
-Arguments dommPn {_ _} [_ _].
+Arguments dommP {_ _ _ _}.
+Arguments dommPn {_ _ _ _}.
 
 Section Map.
 
@@ -764,8 +764,8 @@ move=> h; apply/negP=> /codommP [k' h'].
 by move: (h k'); rewrite h' eqxx.
 Qed.
 
-Arguments codommP [_ _].
-Arguments codommPn [_ _].
+Arguments codommP {_ _}.
+Arguments codommPn {_ _}.
 
 Lemma codomm0 : codomm (@emptym T S) = fset0.
 Proof. by rewrite /codomm /domm fset0E. Qed.
@@ -833,8 +833,8 @@ Qed.
 
 End Inverse.
 
-Arguments codommP {_ _} [_ _].
-Arguments codommPn {_ _} [_ _].
+Arguments codommP {_ _ _ _}.
+Arguments codommPn {_ _ _ _}.
 
 Section OfSeq.
 
