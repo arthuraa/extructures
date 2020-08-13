@@ -86,6 +86,7 @@ End FPerm.
 
 Export FPerm.Exports.
 
+Declare Scope fperm_scope.
 Delimit Scope fperm_scope with fperm.
 
 Definition fun_of_fperm T (s : FPerm.fperm_type T) x :=
@@ -250,7 +251,7 @@ have st: fperm_def @: (X :|: f @: X) = X :|: f @: X.
         move=> n; elim=> [|n' IH]; first by rewrite leqn0=> _ /eqP->.
         rewrite leq_eqVlt=> nin /orP [/eqP-> //|]; rewrite ltnS=> lnn'.
         by rewrite (erefl : g n'.+1 = f' (g n')) IH // /f' (negbTE nin).
-      have {sub} sub: fsubset (g @: S) X.
+      have {}sub: fsubset (g @: S) X.
         apply/fsubsetP=> x' /imfsetP [n]; rewrite {1}/S in_fset mem_iota.
         rewrite leq0n /= add0n ltnS => Hn -> {x'}.
         by apply: contraTT it_in=> g_nin; rewrite (sub _ _ g_nin Hn).
