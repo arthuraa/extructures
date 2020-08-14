@@ -1,6 +1,7 @@
 synopsis: "Finite data structures with extensional reasoning"
 name: "coq-extructures"
 opam-version: "2.0"
+version: "dev"
 maintainer: "arthur.aa@gmail.com"
 homepage: "https://github.com/arthuraa/extructures"
 dev-repo: "git+https://github.com/arthuraa/extructures.git"
