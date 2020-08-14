@@ -49,8 +49,18 @@ jobs:
     docker:
     - image: coqorg/coq:8.11.0
 
+  coq-8-12:
+    <<: *defaults
+    steps:
+    - startup
+    - prepare
+    - build
+    docker:
+    - image: coqorg/coq:8.12.0
+
 workflows:
   build:
     jobs:
     - coq-8-10
     - coq-8-11
+    - coq-8-12
