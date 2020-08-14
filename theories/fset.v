@@ -763,7 +763,7 @@ Qed.
 End Properties.
 
 Arguments fsubsetP {_ _ _}.
-Arguments fset2P {_} [_ _].
+Arguments fset2P {_ _ _}.
 
 Section setOpsAlgebra.
 
