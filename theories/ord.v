@@ -2,8 +2,6 @@ From mathcomp Require Import
   ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype generic_quotient
   tuple.
 
-From void Require Import void.
-
 From deriving Require base.
 From deriving Require Import deriving.
 
