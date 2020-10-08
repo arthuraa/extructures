@@ -1081,6 +1081,38 @@ Qed.
 
 End Powerset.
 
+Section BigOp.
+
+Variables (R : Type) (idx : R) (op : Monoid.com_law idx).
+
+Local Notation "1" := idx.
+Local Notation "*%M" := op (at level 0).
+Local Notation "x * y" := (op x y).
+
+Local Open Scope fset_scope.
+
+Section Basic.
+
+Variables (I : ordType) (J : Type).
+Variables (F : I -> R) (G : J -> {fset I}).
+
+Lemma big_fsetU1 (x : I) (X : {fset I}) (P : pred I) :
+  x \notin X ->
+  let y := \big[op/idx]_(i <- X | P i) F i in
+  \big[op/idx]_(i <- x |: X | P i) F i =
+  if P x then op (F x) y else y.
+Proof.
+move=> x_X.
+have e: perm_eq (x |: X) (x :: X).
+  apply: uniq_perm; rewrite /= ?x_X ?uniq_fset // => x'.
+  by rewrite inE in_fsetU1.
+by rewrite /= (perm_big _ e) big_cons.
+Qed.
+
+End Basic.
+
+End BigOp.
+
 Section BigOpIdempotent.
 
 Variables (R : Type) (idx : R).
