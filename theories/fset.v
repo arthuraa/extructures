@@ -1096,7 +1096,9 @@ Section Basic.
 Variables (I : ordType) (J : Type).
 Variables (F : I -> R) (G : J -> {fset I}).
 
-Lemma big_fsetU1 (x : I) (X : {fset I}) (P : pred I) :
+Implicit Types (x y : I) (X Y : {fset I}) (P : pred I).
+
+Lemma big_fsetU1 x X P :
   x \notin X ->
   let y := \big[op/idx]_(i <- X | P i) F i in
   \big[op/idx]_(i <- x |: X | P i) F i =
@@ -1107,6 +1109,19 @@ have e: perm_eq (x |: X) (x :: X).
   apply: uniq_perm; rewrite /= ?x_X ?uniq_fset // => x'.
   by rewrite inE in_fsetU1.
 by rewrite /= (perm_big _ e) big_cons.
+Qed.
+
+Lemma big_fsetU X Y P :
+  fdisjoint X Y ->
+  \big[*%M/1]_(x <- X :|: Y | P x) F x =
+  (\big[*%M/1]_(x <- X | P x) F x) *
+  (\big[*%M/1]_(x <- Y | P x) F x).
+Proof.
+elim/fset_ind: X=> [|x X x_X IH].
+  by rewrite fset0U big_nil Monoid.mul1m.
+rewrite fdisjointUl fdisjoint1s; case/andP=> x_Y dis.
+rewrite -fsetUA !big_fsetU1 ?in_fsetU ?negb_or ?x_X ?IH //.
+by case: (P x)=> //; rewrite Monoid.mulmA.
 Qed.
 
 End Basic.
