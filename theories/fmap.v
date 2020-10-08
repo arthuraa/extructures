@@ -576,6 +576,32 @@ apply/eq_fmap=> k; rewrite filtermE unionmE.
 by case: (m1 k) (m2 k)=> //= - [].
 Qed.
 
+Lemma fmap_rect (P : {fmap T -> S} -> Type) :
+  P emptym ->
+  (forall m, P m -> forall x y, x \notin domm m -> P (setm m x y)) ->
+  forall m, P m.
+Proof.
+move=> H0 H1 m; move e: (domm m)=> X.
+elim/fset_rect: X m e=> [|x X x_X IH] m e.
+  by move/eqP/emptymP: e=> ->.
+have : x \in domm m by rewrite e in_fsetU1 eqxx.
+rewrite mem_domm; case yP: (m x)=> [y|] // _.
+set m' := remm m x; have em : m = setm m' x y.
+  apply/eq_fmap=> x'; rewrite /m' setmE remmE.
+  by case: eqP => [->|].
+have {}e : domm m' = X.
+  apply/eq_fset=> x'; rewrite /m' domm_rem e in_fsetD1 in_fsetU1.
+  by case: eqP=> // -> /=; rewrite (negbTE x_X).
+rewrite {}em; apply: H1; first by exact: IH.
+by rewrite e.
+Qed.
+
+Lemma fmap_ind (P : {fmap T -> S} -> Prop) :
+  P emptym ->
+  (forall m, P m -> forall x y, x \notin domm m -> P (setm m x y)) ->
+  forall m, P m.
+Proof. exact: fmap_rect. Qed.
+
 End Properties.
 
 Arguments dommP {_ _ _ _}.
