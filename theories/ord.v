@@ -218,142 +218,183 @@ Module DerOrdType.
 
 Import base.
 
-Local Notation arg_class := (arg_class Ord.sort).
-Local Notation arg_inst := (arg_inst Ord.sort).
-Local Notation arity_inst := (arity_inst Ord.sort).
-Local Notation sig_inst := (sig_inst Ord.sort).
-
 Section OrdType.
 
-Variable (Σ : sig_inst).
-Let F := IndF.functor Σ.
+Variable n : nat.
+Notation arg_class  := (arg_class  Ord.sort).
+Notation arg_inst   := (arg_inst   n Ord.sort).
+Notation arity_inst := (arity_inst n Ord.sort).
+Notation sig_inst   := (sig_inst   n Ord.sort).
+Notation decl_inst  := (decl_inst  n Ord.sort).
+Variable (D : decl_inst n).
+Let F := IndF.functor D.
 Variable (T : initAlgEqType F).
 
-Definition leq_branch As (cAs : hlist arg_class As) :
-  hlist (type_of_arg (T * (T -> bool))) As ->
-  hlist (type_of_arg T)                 As ->
+Definition leq_branch As (cAs : hlist' arg_class As) :
+  hlist' (type_of_arg (T *F (fun i => T i -> bool))) As ->
+  hlist' (type_of_arg T)                             As ->
   bool :=
   @arity_rec
-    _ _ (fun a => hlist (type_of_arg (T * (T -> bool))) a -> hlist (type_of_arg T) a -> bool)
+    _ _ _
+   (fun a => hlist' (type_of_arg (T *F (fun i => T i -> bool))) a ->
+             hlist' (type_of_arg T) a ->
+             bool)
     (fun _ _ => true)
     (fun R As rec x y =>
        if x.(hd) == y.(hd) then rec x.(tl) y.(tl) else (x.(hd) <= y.(hd))%ord)
-    (fun   As rec x y =>
+    (fun j As rec x y =>
        if x.(hd).1 == y.(hd) then rec x.(tl) y.(tl) else x.(hd).2 y.(hd)) As cAs.
 
-Definition leq : T -> T -> bool :=
-  rec (fun args1 =>
-         case
-           (fun args2 =>
-              match leq_fin (IndF.constr args2) (IndF.constr args1) with
-              | inl e =>
-                leq_branch
-                  (hnth (sig_inst_class Σ) (IndF.constr args1))
-                  (IndF.args args1)
-                  (cast (hlist (type_of_arg T) \o @nth_fin _ _) e (IndF.args args2))
-              | inr b => ~~ b
-              end)).
+Definition leq : forall i, T i -> T i -> bool :=
+  rec  (fun i args1 =>
+  case (fun   args2 =>
+          match leq_fin (IndF.constr args2) (IndF.constr args1) with
+          | inl e =>
+            leq_branch
+              (hnth (decl_inst_class D i) (IndF.constr args1))
+              (IndF.args args1)
+              (cast (hlist' (type_of_arg T) \o @nth_fin _ _) e (IndF.args args2))
+          | inr b => ~~ b
+          end)).
 
-Lemma leqP : Ord.axioms leq.
+Lemma refl i : reflexive (@leq i).
 Proof.
-have anti: antisymmetric leq.
-  elim/indP=> [[xi xargs]] y.
-  rewrite -(unrollK y); case: {y} (unroll y)=> [yi yargs].
-  rewrite /leq !recE -[rec _]/(leq) /= !caseE /=.
-  case ie: (leq_fin yi xi) (leq_nat_of_fin yi xi)=> [e|b].
-    case: xi / e {ie} xargs=> xargs _ /=; rewrite leq_finii /= => h.
-    congr (Roll (IndF.Cons _))=> /=.
-    elim/arity_ind: {yi} (nth_fin yi) / (hnth _ _) xargs yargs h
-        => [[] []|R As cAs IH|As cAs IH] //=.
-      case=> [x xargs] [y yargs] /=.
-      rewrite eq_sym; case: (altP (_ =P _))=> [-> /IH ->|yx] //.
-      by move=> /Ord.anti_leq e; rewrite e eqxx in yx.
-    case=> [[x xP] xargs] [y yargs] /=.
-    rewrite eq_sym; case: (altP (_ =P _))=> [-> /IH ->|yx /xP e] //.
-    by rewrite e eqxx in yx.
-  case: (leq_fin xi yi) (leq_nat_of_fin xi yi)=> [e|b'].
-    by rewrite e leq_finii in ie.
-  move=> <- <-.
-  have ne: nat_of_fin yi != nat_of_fin xi.
-    by apply/eqP=> /nat_of_fin_inj e; rewrite e leq_finii in ie.
-    by case: ltngtP ne.
-split=> //.
-- elim/indP=> [[i args]].
-  rewrite /leq recE /= -[rec _]/(leq) caseE leq_finii /=.
-  elim/arity_ind: {i} _ / (hnth _ _) args=> [[]|R As cAs IH|As cAs IH] //=.
-    by case=> [x args]; rewrite /= eqxx.
-  by case=> [[x xP] args] /=; rewrite eqxx.
-- move=> y x z; elim/indP: x y z=> [[xi xargs]] y z.
-  rewrite -(unrollK y) -(unrollK z).
-  move: (unroll y) (unroll z)=> {y z} [yi yargs] [zi zargs].
-  rewrite /leq !recE /= -[rec _]/(leq) !caseE /=.
-  case: (leq_fin yi xi) (leq_nat_of_fin yi xi)=> [e _|b] //.
-    case: xi / e xargs=> /= xargs.
-    case: (leq_fin zi yi) (leq_nat_of_fin zi yi)=> [e _|b] //.
-      case: yi / e xargs yargs => xargs yargs /=.
-      elim/arity_ind: {zi} _ / (hnth _ _) xargs yargs zargs => [//|R|] As cAs IH /=.
-        case=> [x xargs] [y yargs] [z zargs] /=.
-        case: (altP (_ =P _)) => [<-|xy].
-          case: ifP=> // /eqP _; exact: IH.
-        case: (altP (_ =P _)) => [<-|yz]; first by rewrite (negbTE xy).
-        case: (altP (_ =P _)) => [<-|xz]; last exact: Ord.leq_trans.
-        move=> c1 c2; suffices e: x = y by rewrite e eqxx in xy.
-        by have /andP/Ord.anti_leq := conj c1 c2.
-      case=> [[x xP] xargs] [y yargs] [z zargs] /=.
-      case: (altP (x =P y))=> [<-|xy].
-        case: (altP (x =P z))=> [_|//]; exact: IH.
-      case: (altP (x =P z))=> [<-|yz].
-        rewrite eq_sym (negbTE xy)=> le1 le2.
-        suffices e : x = y by rewrite e eqxx in xy.
-        by apply: anti; rewrite le1.
-      case: (altP (_ =P _))=> [<-|_] //; exact: xP.
-  move=> <- {b} ei.
-  case: (leq_fin zi yi) (leq_nat_of_fin zi yi)=> [e _|_ <-].
-    case: yi / e yargs ei=> /= yargs.
-    by rewrite leq_nat_of_fin; case: (leq_fin zi xi).
-  case: (leq_fin zi xi) (leq_nat_of_fin zi xi)=> [e|_ <-].
-    by case: xi / e ei xargs; rewrite -ltnNge => /ltnW ->.
-  move: ei; rewrite -!ltnNge; exact: ltn_trans.
-- elim/indP=> [[xi xargs]] y.
-  rewrite -(unrollK y); case: {y} (unroll y)=> [yi yargs].
-  rewrite /leq !recE /= -[rec _]/(leq) !caseE /= (leq_fin_swap xi yi).
-  case: (leq_fin yi xi)=> [e|[] //].
-  case: xi / e xargs=> /= xargs.
-  elim/arity_ind: {yi} _ / (hnth _ _) xargs yargs=> [[] []|R|] //= As cAs IH.
+elim/indP: i / => i [j args].
+rewrite /leq recE /= -[rec _]/(leq) caseE leq_finii /=.
+elim/arity_ind: {j} _ / (hnth _ _) args=> [[]|R As cAs IH|j As cAs IH] //=.
+  case=> [x args]; rewrite /= eqxx; exact: IH.
+by case=> [[x xP] args] /=; rewrite eqxx; exact: IH.
+Qed.
+
+Lemma anti i : antisymmetric (@leq i).
+Proof.
+elim/indP: i / => i [xi xargs] y.
+rewrite -(unrollK y); case: {y} (unroll y)=> [yi yargs].
+rewrite /leq !recE -[rec _]/(leq) /= !caseE /=.
+case ie: (leq_fin yi xi) (leq_nat_of_fin yi xi)=> [e|b].
+  case: xi / e {ie} xargs=> xargs _ /=; rewrite leq_finii /= => h.
+  congr (Roll (IndF.Cons _))=> /=.
+  elim/arity_ind: {yi} (nth_fin yi) / (hnth _ _) xargs yargs h
+      => [[] []|R As cAs IH|j As cAs IH] //=.
     case=> [x xargs] [y yargs] /=.
-    rewrite eq_sym; case: (altP eqP)=> [{y} _|]; first exact: IH.
-    by rewrite Ord.leq_total.
-  case=> /= [[x xP] xargs] [y yargs] /=.
-  by rewrite eq_sym; case: (altP eqP).
+    rewrite eq_sym; case: (altP (_ =P _))=> [-> /IH <-|yx] //.
+    by move=> /Ord.anti_leq e; rewrite e eqxx in yx.
+  case=> [[x xP] xargs] [y yargs] /=.
+  rewrite eq_sym; case: (altP (_ =P _))=> [-> /IH <-|yx /xP e] //.
+  by rewrite e eqxx in yx.
+case: (leq_fin xi yi) (leq_nat_of_fin xi yi)=> [e|b'].
+  by rewrite e leq_finii in ie.
+move=> <- <-.
+have ne: nat_of_fin yi != nat_of_fin xi.
+  by apply/eqP=> /nat_of_fin_inj e; rewrite e leq_finii in ie.
+  by case: ltngtP ne.
+Qed.
+
+Lemma trans i : transitive (@leq i).
+Proof.
+move=> y x z; elim/indP: i / x y z => i [xi xargs] y z.
+rewrite -(unrollK y) -(unrollK z).
+move: (unroll y) (unroll z)=> {y z} [yi yargs] [zi zargs].
+rewrite /leq !recE /= -[rec _]/(leq) !caseE /=.
+case: (leq_fin yi xi) (leq_nat_of_fin yi xi)=> [e _|b] //.
+  case: xi / e xargs=> /= xargs.
+  case: (leq_fin zi yi) (leq_nat_of_fin zi yi)=> [e _|b] //.
+    case: yi / e xargs yargs => xargs yargs /=.
+    elim/arity_ind: {zi} _ / (hnth _ _) xargs yargs zargs
+                    => [//|R|j] As cAs IH /=.
+      case=> [x xargs] [y yargs] [z zargs] /=.
+      case: (altP (_ =P _)) => [<-|xy].
+        case: ifP=> // /eqP _; exact: IH.
+      case: (altP (_ =P _)) => [<-|yz]; first by rewrite (negbTE xy).
+      case: (altP (_ =P _)) => [<-|xz]; last exact: Ord.leq_trans.
+      move=> c1 c2; suffices e: x = y by rewrite e eqxx in xy.
+      by have /andP/Ord.anti_leq := conj c1 c2.
+    case=> [[x xP] xargs] [y yargs] [z zargs] /=.
+    case: (altP (x =P y))=> [<-|xy].
+      case: (altP (x =P z))=> [_|//]; exact: IH.
+    case: (altP (x =P z))=> [<-|yz].
+      rewrite eq_sym (negbTE xy)=> le1 le2.
+      suffices e : x = y by rewrite e eqxx in xy.
+      by apply: anti; rewrite le1.
+    case: (altP (_ =P _))=> [<-|_] //; exact: xP.
+move=> <- {b} ei.
+case: (leq_fin zi yi) (leq_nat_of_fin zi yi)=> [e _|_ <-].
+  case: yi / e yargs ei=> /= yargs.
+  by rewrite leq_nat_of_fin; case: (leq_fin zi xi).
+case: (leq_fin zi xi) (leq_nat_of_fin zi xi)=> [e|_ <-].
+  by case: xi / e ei xargs; rewrite -ltnNge => /ltnW ->.
+move: ei; rewrite -!ltnNge; exact: ltn_trans.
+Qed.
+
+Lemma total i : total (@leq i).
+Proof.
+elim/indP: i / => i [xi xargs] y.
+rewrite -(unrollK y); case: {y} (unroll y)=> [yi yargs].
+rewrite /leq !recE /= -[rec _]/(leq) !caseE /= (leq_fin_swap xi yi).
+case: (leq_fin yi xi)=> [e|[] //].
+case: xi / e xargs=> /= xargs.
+elim/arity_ind: {yi} _ / (hnth _ _) xargs yargs=> [[] []|R|j] //= As cAs IH.
+  case=> [x xargs] [y yargs] /=.
+  rewrite eq_sym; case: (altP eqP)=> [{y} _|]; first exact: IH.
+  by rewrite Ord.leq_total.
+case=> /= [[x xP] xargs] [y yargs] /=.
+by rewrite eq_sym; case: (altP eqP)=> ?; [apply: IH|apply: xP].
+Qed.
+
+Lemma leqP i : Ord.axioms (@leq i).
+Proof.
+split.
+- exact: refl.
+- exact: trans.
+- exact: anti.
+- exact: total.
 Qed.
 
 End OrdType.
 
+Definition pack :=
+  fun (T : Type) =>
+  fun n D (T_ind : @indType n D) & phant_id T (Ind.sort T_ind) =>
+  fun (D_ord : decl_inst n Ord.sort n) & phant_id D (untag_decl D_ord) =>
+  fun (Ts : lift_class Equality.sort n) cTs idx =>
+  let T_ind' := Ind.Pack (@Ind.Mixin n D_ord T (@Ind.Def _ _ (untag_sort Ts) cTs) idx) in
+  fun & phant_id T_ind T_ind' =>
+  let T_init := IndF.initAlgType T_ind' in
+  let T_eq := lift_class_proj Equality.class Ts in
+  let T_ind_eq := @InitAlgEqType n _ Ts T_eq (InitAlg.class T_init) in
+  OrdMixin (@leqP n D_ord T_ind_eq (type_idx T_ind')).
+
 End DerOrdType.
 
+Notation "[ 'derive' 'nored' 'ordMixin' 'for' T ]" :=
+  (@DerOrdType.pack T _ _ _ id _ id _ _ _ id)
+  (at level 0) : form_scope.
+
 Ltac derive_ordMixin T :=
-  let sT_ind := eval hnf in [the indType _ of T by @Ind.sort _] in
-  match sT_ind with @Ind.Pack ?Σ _ ?cT_ind =>
-  let cT_ind := eval red in cT_ind in
-  let sT_ind := constr:(@Ind.Pack Σ T cT_ind) in
-  let sT_ind := constr:(IndF.initAlgType sT_ind) in
-  let sT_eq  := eval hnf in [eqType of T] in
-  let bT_eq  := constr:(Equality.class sT_eq) in
-  let sΣ     := eval hnf in [the sig_inst Ord.sort of Σ by @sig_inst_sort _ _] in
-  let cΣ     := eval hnf in (sig_inst_class sΣ) in
-  let cΣ     := eval deriving_compute in cΣ in
-  let sΣ     := constr:(@SigInst _ Ord.sort Σ cΣ) in
-  let sT_ind_eq := constr:(InitAlgEqType bT_eq (InitAlg.class sT_ind)) in
-  let op     := constr:(@DerOrdType.leq sΣ sT_ind_eq) in
-  let op     := eval cbv delta [DerOrdType.leq DerOrdType.leq_branch] in op in
-  let op     := eval deriving_compute in op in
-  let op     := eval simpl in op in
-  exact (@OrdMixin _ op (@DerOrdType.leqP sΣ sT_ind_eq))
+  let mixin := constr:([derive nored ordMixin for T]) in
+  match eval unfold DerOrdType.pack in mixin with
+  | @OrdMixin _ ?leq ?axioms =>
+    let leq := eval unfold DerOrdType.leq, DerOrdType.leq_branch in leq in
+    let leq := eval deriving_compute in leq in
+    exact (@OrdMixin T leq axioms)
   end.
 
 Notation "[ 'derive' 'ordMixin' 'for' T ]" :=
   (ltac:(derive_ordMixin T))
-  (at level 0) : form_scope.
+  (at level 0, format "[ 'derive'  'ordMixin'  'for'  T ]") : form_scope.
+
+Ltac derive_lazy_ordMixin T :=
+  let mixin := constr:([derive nored ordMixin for T]) in
+  match eval unfold DerOrdType.pack in mixin with
+  | @OrdMixin _ ?leq ?axioms =>
+    let leq := eval unfold DerOrdType.leq, DerOrdType.leq_branch in leq in
+    let leq := eval deriving_lazy in leq in
+    exact (@OrdMixin T leq axioms)
+  end.
+
+Notation "[ 'derive' 'lazy' 'ordMixin' 'for' T ]" :=
+  (ltac:(derive_ordMixin T))
+  (at level 0, format "[ 'derive'  'lazy'  'ordMixin'  'for'  T ]") : form_scope.
 
 Section BasicInstances.
 
