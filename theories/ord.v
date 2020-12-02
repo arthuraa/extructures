@@ -220,15 +220,17 @@ Import base.
 
 Section OrdType.
 
-Variable n : nat.
+Variable (T : indChoiceType).
+Notation n := (Ind.Def.n T).
+Notation D := (Ind.Def.decl T).
 Notation arg_class  := (arg_class  Ord.sort).
 Notation arg_inst   := (arg_inst   n Ord.sort).
 Notation arity_inst := (arity_inst n Ord.sort).
 Notation sig_inst   := (sig_inst   n Ord.sort).
 Notation decl_inst  := (decl_inst  n Ord.sort).
-Variable (D : decl_inst n).
-Let F := IndF.functor D.
-Variable (T : initAlgEqType F).
+Variable (sT : forall i, sig_class Ord.sort (D i)).
+
+Import IndF.
 
 Definition leq_branch As (cAs : hlist' arg_class As) :
   hlist' (type_of_arg (T *F (fun i => T i -> bool))) As ->
@@ -251,7 +253,7 @@ Definition leq : forall i, T i -> T i -> bool :=
           match leq_fin (IndF.constr args2) (IndF.constr args1) with
           | inl e =>
             leq_branch
-              (hnth (decl_inst_class D i) (IndF.constr args1))
+              (hnth (sT i) (IndF.constr args1))
               (IndF.args args1)
               (cast (hlist' (type_of_arg T) \o @nth_fin _ _) e (IndF.args args2))
           | inr b => ~~ b
@@ -260,7 +262,7 @@ Definition leq : forall i, T i -> T i -> bool :=
 Lemma refl i : reflexive (@leq i).
 Proof.
 elim/indP: i / => i [j args].
-rewrite /leq recE /= -[rec _]/(leq) caseE leq_finii /=.
+rewrite /leq recE /= -/leq caseE leq_finii /=.
 elim/arity_ind: {j} _ / (hnth _ _) args=> [[]|R As cAs IH|j As cAs IH] //=.
   case=> [x args]; rewrite /= eqxx; exact: IH.
 by case=> [[x xP] args] /=; rewrite eqxx; exact: IH.
@@ -270,7 +272,7 @@ Lemma anti i : antisymmetric (@leq i).
 Proof.
 elim/indP: i / => i [xi xargs] y.
 rewrite -(unrollK y); case: {y} (unroll y)=> [yi yargs].
-rewrite /leq !recE -[rec _]/(leq) /= !caseE /=.
+rewrite /leq !recE -/leq /= !caseE /=.
 case ie: (leq_fin yi xi) (leq_nat_of_fin yi xi)=> [e|b].
   case: xi / e {ie} xargs=> xargs _ /=; rewrite leq_finii /= => h.
   congr (Roll (IndF.Cons _))=> /=.
@@ -295,7 +297,7 @@ Proof.
 move=> y x z; elim/indP: i / x y z => i [xi xargs] y z.
 rewrite -(unrollK y) -(unrollK z).
 move: (unroll y) (unroll z)=> {y z} [yi yargs] [zi zargs].
-rewrite /leq !recE /= -[rec _]/(leq) !caseE /=.
+rewrite /leq !recE /= -/leq !caseE /=.
 case: (leq_fin yi xi) (leq_nat_of_fin yi xi)=> [e _|b] //.
   case: xi / e xargs=> /= xargs.
   case: (leq_fin zi yi) (leq_nat_of_fin zi yi)=> [e _|b] //.
@@ -330,7 +332,7 @@ Lemma total i : total (@leq i).
 Proof.
 elim/indP: i / => i [xi xargs] y.
 rewrite -(unrollK y); case: {y} (unroll y)=> [yi yargs].
-rewrite /leq !recE /= -[rec _]/(leq) !caseE /= (leq_fin_swap xi yi).
+rewrite /leq !recE /= -/leq !caseE /= (leq_fin_swap xi yi).
 case: (leq_fin yi xi)=> [e|[] //].
 case: xi / e xargs=> /= xargs.
 elim/arity_ind: {yi} _ / (hnth _ _) xargs yargs=> [[] []|R|j] //= As cAs IH.
@@ -352,22 +354,19 @@ Qed.
 
 End OrdType.
 
-Definition pack :=
-  fun (T : Type) =>
-  fun n D (T_ind : @indType n D) & phant_id T (Ind.sort T_ind) =>
-  fun (D_ord : decl_inst n Ord.sort n) & phant_id D (untag_decl D_ord) =>
-  fun (Ts : lift_class Equality.sort n) cTs idx =>
-  let T_ind' := Ind.Pack (@Ind.Mixin n D_ord T (@Ind.Def _ _ (untag_sort Ts) cTs) idx) in
-  fun & phant_id T_ind T_ind' =>
-  let T_init := IndF.initAlgType T_ind' in
-  let T_eq := lift_class_proj Equality.class Ts in
-  let T_ind_eq := @InitAlgEqType n _ Ts T_eq (InitAlg.class T_init) in
-  OrdMixin (@leqP n D_ord T_ind_eq (type_idx T_ind')).
+Definition pack T :=
+  [infer indType of T with Ord.sort as sT n Ts' D cD in
+   fun (Ts : lift_class Choice.sort n) =>
+   fun & phant_id Ts' (untag_sort Ts) =>
+   fun T_choice & phant_id (lift_class_proj Choice.class Ts) T_choice =>
+   let T_ind_choice := @IndChoiceType _ _ _ T_choice sT in
+   fun cD' & phant_id cD cD' =>
+   OrdMixin (@leqP T_ind_choice cD' (Ind.idx sT))].
 
 End DerOrdType.
 
 Notation "[ 'derive' 'nored' 'ordMixin' 'for' T ]" :=
-  (@DerOrdType.pack T _ _ _ id _ id _ _ _ id)
+  (@DerOrdType.pack T _ id _ _ _ _ _ _ id _ id _ id _ id _ id _ id)
   (at level 0) : form_scope.
 
 Ltac derive_ordMixin T :=
