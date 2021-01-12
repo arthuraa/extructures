@@ -67,7 +67,7 @@ Alternatively, you can compile the package by hand.  You'll need the following
 dependencies:
 
 - Coq versions 8.10, 8.11, or 8.12
-- [Ssreflect][2] versions 1.10 or 1.11 (`coq-mathcomp-ssreflect` on OPAM).
+- [Ssreflect][2] versions 1.10, 1.11 or 1.12 (`coq-mathcomp-ssreflect` on OPAM).
 
 To compile the package, simply run
 
