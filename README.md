@@ -67,7 +67,7 @@ Alternatively, you can compile the package by hand.  You'll need the following
 dependencies:
 
 - Coq v8.10, v8.11, or v8.12
-- [Ssreflect][2] v1.10 or v1.11 (`coq-mathcomp-ssreflect` on OPAM).
+- [Ssreflect][2] v1.10 or v1.12 (`coq-mathcomp-ssreflect` on OPAM).
 - `deriving` (https://github.com/arthuraa/deriving)
 
 To compile the package, simply run
