@@ -110,6 +110,7 @@ Qed.
 End FFun.
 
 Arguments ffun {T S} def.
+Arguments suppPn {T S def f x}.
 
 Definition ffun_eqMixin T (S : eqType) def :=
   [eqMixin of @ffun T S def by <:].
