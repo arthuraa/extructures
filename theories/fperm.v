@@ -6,11 +6,9 @@ Require Import ord fset fmap ffun.
 (******************************************************************************)
 (*   This file defines a type {fperm T} of finite permutations of an ordType  *)
 (* T.  By "finite", we mean that that there are only finitely many x such     *)
-(* that s x != x.  Permutations are implemented as finite maps and thus       *)
-(* support extensional equality (cf. eq_fperm).                               *)
+(* that s x != x.  Permutations are a subtype of finite functions (cf. ffun)  *)
+(* and thus support extensional equality (cf. eq_fperm).                      *)
 (*                                                                            *)
-(*     fun_of_fperm s x == Applies the permutation s to x.  This is declared  *)
-(*                         as a coercion.                                     *)
 (*         fperm_one, 1 == Identity permutation.                              *)
 (*               supp s == The support of s (the set of elements that are not *)
 (*                         fixed by s).                                       *)
@@ -21,7 +19,7 @@ Require Import ord fset fmap ffun.
 (*           fperm2 x y == Transposition of x and y (i.e. the permutation     *)
 (*                         that swaps these elements)                         *)
 (*          fperm2_rect == Induction on the number of transpositions          *)
-(*         enum_fperm X == The set of all transpositions with support in X    *)
+(*         enum_fperm X == The set of all permutations with support in X      *)
 (******************************************************************************)
 
 Set Implicit Arguments.
