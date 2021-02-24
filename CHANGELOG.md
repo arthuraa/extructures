@@ -9,6 +9,8 @@
 - Implicit arguments for `fsetIidPl`, `fsetIidPr`, `fsetUidPl`, `fsetUidPr`,
   `fsetDidPl`.
 
+- Moved `mem_suppN` to `ffun`.
+
 # 0.2.2 (2020/08/13)
 
 - Fix compatibility issues with Coq 8.12 and Ssreflect 1.11.

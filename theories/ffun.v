@@ -52,6 +52,9 @@ have xP: x \in domm (val f) by rewrite mem_domm efx.
 by move: (allP (valP f) _ xP); rewrite efx => ->.
 Qed.
 
+Lemma mem_suppN f x : (x \notin supp f) = (f x == def x).
+Proof. by rewrite mem_supp negbK. Qed.
+
 Lemma suppPn f x : reflect (f x = def x) (x \notin supp f).
 Proof. rewrite mem_supp negbK; exact/eqP. Qed.
 
