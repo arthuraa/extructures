@@ -4,6 +4,8 @@
 
 - Type of finitely supported functions `ffun`.
 
+- Lemma `sizesD` about the size of a set difference.
+
 ## Changed
 
 - Implicit arguments for `fsetIidPl`, `fsetIidPr`, `fsetUidPl`, `fsetUidPr`,

@@ -650,6 +650,13 @@ apply/fdisjointP=> x' /fsetIP [/fset1P -> x_in].
 by rewrite in_fsetD in_fset1 eqxx.
 Qed.
 
+Lemma sizesD s1 s2 : size s1 = size (s1 :&: s2) + size (s1 :\: s2).
+Proof.
+rewrite -{1}(fsetID s1 s2) sizesU //.
+apply/fdisjointP => x /fsetIP [x_s1 x_s2].
+by rewrite in_fsetD x_s1 x_s2.
+Qed.
+
 Lemma size_fset xs : size (fset xs) <= size xs.
 Proof.
 have fsub: {subset fset xs <= xs} by move=> x; rewrite in_fset.
