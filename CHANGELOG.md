@@ -1,3 +1,9 @@
+# Unreleased
+
+## Added
+
+- Type of finitely supported functions `ffun`.
+
 # 0.2.2 (2020/08/13)
 
 - Fix compatibility issues with Coq 8.12 and Ssreflect 1.11.
