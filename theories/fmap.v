@@ -274,7 +274,7 @@ Variables (T : ordType) (S : Type).
 Local Open Scope ord_scope.
 Local Open Scope fset_scope.
 
-Implicit Type m : {fmap T -> S}.
+Implicit Type (m : {fmap T -> S}) (k : T) (v : S).
 
 Lemma eq_fmap m1 m2 : m1 =1 m2 <-> m1 = m2.
 Proof.
@@ -422,6 +422,9 @@ elim: s {Ps} (order_path_min (@Ord.lt_trans _) Ps)
 by move: lb; have [->|//] := altP (_ =P _); rewrite Ord.ltxx.
 Qed.
 
+Lemma filterm0 (a : T -> S -> bool) : filterm a emptym = emptym.
+Proof. by apply/eq_fmap=> x; rewrite filtermE. Qed.
+
 Lemma remmE m k k' :
   remm m k k' =
   if k' == k then None else getm m k'.
@@ -438,6 +441,27 @@ have [-> {k'}|ne'] // := altP (k' =P k).
 by rewrite eq_sym (negbTE ne).
 Qed.
 
+Lemma remmI m k : k \notin domm m -> remm m k = m.
+Proof.
+move=> /dommPn m_k; apply/eq_fmap=> k'; rewrite remmE.
+by case: eqP=> // ->; rewrite m_k.
+Qed.
+
+Lemma setm_rem m k v : setm (remm m k) k v = setm m k v.
+Proof.
+apply/eq_fmap=> k'; rewrite !setmE !remmE; by case: eqP.
+Qed.
+
+Lemma filterm_set (a : T -> S -> bool) m x y :
+  filterm a (setm m x y) =
+  if a x y then setm (filterm a m) x y
+  else remm (filterm a m) x.
+Proof.
+apply/eq_fmap=> x'; have [yes|no] := boolP (a x y).
+  by rewrite !(setmE, filtermE); case: eqP=> //= ->; rewrite yes.
+by rewrite remmE !filtermE setmE; case: eqP no=> //= -> /negbTE ->.
+Qed.
+
 Lemma domm_rem m k : domm (remm m k) = domm m :\ k.
 Proof.
 by apply/eq_fset=> k'; rewrite in_fsetD1 !mem_domm remmE; case: eqP.
@@ -449,6 +473,11 @@ move=> k; rewrite mem_domm.
 elim: kvs => [|kv kvs IH] //=; rewrite !inE setmE -{}IH.
 by case: (_ == _).
 Qed.
+
+(* TODO rename this *)
+Lemma domm_mkfmap' (kvs : seq (T * S)) :
+  domm (mkfmap kvs) = fset (unzip1 kvs).
+Proof. by apply/eq_fset=> x; rewrite domm_mkfmap in_fset. Qed.
 
 Lemma mkfmapE (kvs : seq (T * S)) : mkfmap kvs =1 getm_def kvs.
 Proof.
@@ -602,10 +631,131 @@ Lemma fmap_ind (P : {fmap T -> S} -> Prop) :
   forall m, P m.
 Proof. exact: fmap_rect. Qed.
 
+Lemma val_domm m : domm m = unzip1 m :> seq _.
+Proof.
+apply: (eq_sorted (@Ord.lt_trans T)).
+- move=> x y /andP [/Ord.ltW xy /Ord.ltW yx].
+  by apply: Ord.anti_leq; rewrite xy.
+- exact: valP.
+- exact: (valP m).
+rewrite uniq_perm // ?uniq_fset //.
+  apply: sorted_uniq.
+  - exact: (@Ord.lt_trans T).
+  - exact: Ord.ltxx.
+  - exact: (valP m).
+by move=> x; rewrite in_fset.
+Qed.
+
+Lemma fmvalK : cancel val (@mkfmap T S).
+Proof.
+by move=> /= m; apply/eq_fmap=> x; rewrite mkfmapE.
+Qed.
+
+Lemma mkfmapK (kvs : seq (T * S)) :
+  sorted Ord.lt (unzip1 kvs) ->
+  mkfmap kvs = kvs :> seq (T * S).
+Proof.
+elim: kvs=> [|[k v] kvs IH]=> //= kvs_sorted.
+rewrite IH ?(path_sorted kvs_sorted) //.
+case: kvs kvs_sorted {IH} => [|[k' v'] kvs] //=.
+by case/andP=> ->.
+Qed.
+
+Lemma getm_nth p (m : {fmap T -> S}) i :
+  (i < size m)%N ->
+  m (nth p.1 (domm m) i) = Some (nth p m i).2.
+Proof.
+rewrite val_domm /getm; move: (valP m); rewrite /=.
+elim: (val m) i=> [//|[/= k v] kv IH] [|i] /= kv_sorted.
+  by rewrite eqxx.
+rewrite ltnS=> isize; rewrite (IH _ (path_sorted kv_sorted) isize).
+case: eqP=> // kP; have kkv: k \in unzip1 kv.
+  by rewrite -kP; apply/mem_nth; rewrite size_map.
+move/(order_path_min (@Ord.lt_trans T))/allP/(_ _ kkv): kv_sorted.
+by rewrite Ord.ltxx.
+Qed.
+
 End Properties.
 
 Arguments dommP {_ _ _ _}.
 Arguments dommPn {_ _ _ _}.
+
+Lemma eq_setm (T : ordType) (S : eqType) m1 m2 (x : T) (y1 y2 : S) :
+  (setm m1 x y1 == setm m2 x y2) =
+  (y1 == y2) && (remm m1 x == remm m2 x).
+Proof.
+apply/(sameP eqP)/(iffP andP).
+  rewrite -[setm m1 x y1]setm_rem.
+  by case=> /eqP -> /eqP ->; rewrite setm_rem.
+move=> /eq_fmap e.
+move: (e x); rewrite !setmE eqxx; case=> ->; split=> //.
+apply/eqP/eq_fmap=> x'; move: (e x'); rewrite !setmE !remmE.
+by case: eqP.
+Qed.
+
+Section MapSplitting.
+
+Local Open Scope fset_scope.
+
+Variables (T : ordType) (S : Type).
+Implicit Types m : {fmap T -> S}.
+
+Definition splitm m :=
+  match val m with
+  | (x, y) :: ps => Some (x, y, mkfmap ps)
+  | [::] => None
+  end.
+
+Lemma sizeES m :
+  size m = if splitm m is Some (_, _, m') then (size m').+1 else 0.
+Proof.
+rewrite /splitm /=; move: (valP m)=> /=.
+by case: (val m)=> [|[x y] m'] //= /path_sorted /mkfmapK ->.
+Qed.
+
+Lemma dommES m :
+  domm m = if splitm m is Some (x, _, m) then x |: domm m
+           else fset0.
+Proof.
+rewrite /domm /splitm /=.
+case: m=> [[|[x y] m] mP] //=; first by rewrite fset0E.
+move: mP=> /= /path_sorted/mkfmapK ->.
+by rewrite fset_cons.
+Qed.
+
+End MapSplitting.
+
+Section FilterMap.
+
+Variables T : ordType.
+Variables S R : Type.
+
+Implicit Types (f : T -> S -> option R) (m : {fmap T -> S}).
+
+Definition filter_map f m :=
+  mkfmapfp (fun x => obind (f x) (m x)) (domm m).
+
+Lemma filter_mapE f m x : filter_map f m x = obind (f x) (m x).
+Proof.
+by rewrite /filter_map mkfmapfpE mem_domm; case: (m x).
+Qed.
+
+Lemma domm_filter_map f m :
+  domm (filter_map f m) = fset_filter (fun x => obind (f x) (m x)) (domm m).
+Proof.
+apply/eq_fset=> x.
+by rewrite mem_domm filter_mapE in_fset_filter mem_domm andbC; case: (m x).
+Qed.
+
+Lemma mapimK (g : T -> R -> S) f :
+  (forall x y, f x (g x y) = Some y) ->
+  cancel (mapim g) (filter_map f).
+Proof.
+move=> gK m; apply/eq_fmap=> x.
+by rewrite filter_mapE mapimE; case: (m x)=> //= z.
+Qed.
+
+End FilterMap.
 
 Section Map.
 
@@ -620,6 +770,27 @@ Qed.
 
 Lemma domm_map (f : S -> S') m : domm (mapm f m) = domm m.
 Proof. exact: domm_mapi. Qed.
+
+Lemma mapim_map (f : S -> S') m : mapim (fun=> f) m = mapm f m.
+Proof. by []. Qed.
+
+Lemma eq_mapm f g : f =1 g -> @mapm T S S' f =1 mapm g.
+Proof.
+move=> e m; apply/eq_fmap=> x; rewrite !mapmE.
+by case: (m x)=> [y|] //=; rewrite e.
+Qed.
+
+Lemma mapm_comp S'' (g : S' -> S'') (f : S -> S') m :
+  mapm (g \o f) m = mapm g (mapm f m).
+Proof.
+by apply/eq_fmap=> x; rewrite !mapmE; case: (m x).
+Qed.
+
+Lemma mapm_mkfmapf (f : S -> S') (g : T -> S) (X : {fset T}) :
+  mapm f (mkfmapf g X) = mkfmapf (f \o g) X.
+Proof.
+by apply/eq_fmap=> x; rewrite !mapmE !mkfmapfE /=; case: ifP.
+Qed.
 
 End Map.
 
