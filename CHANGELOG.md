@@ -1,3 +1,22 @@
+# Unreleased
+
+## Added
+
+- Type of finitely supported functions `ffun`.
+
+- Lemma `sizesD` about the size of a set difference.
+
+- Lemma `supp_mkffun_sub`.
+
+## Changed
+
+- Implicit arguments for `fsetIidPl`, `fsetIidPr`, `fsetUidPl`, `fsetUidPr`,
+  `fsetDidPl`.
+
+- Implement `fperm` using `ffun`.
+
+- Generalize `supp` and `mem_suppN` to `ffun`.
+
 # 0.2.2 (2020/08/13)
 
 - Fix compatibility issues with Coq 8.12 and Ssreflect 1.11.

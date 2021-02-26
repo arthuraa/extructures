@@ -52,6 +52,9 @@ have xP: x \in domm (val f) by rewrite mem_domm efx.
 by move: (allP (valP f) _ xP); rewrite efx => ->.
 Qed.
 
+Lemma mem_suppN f x : (x \notin supp f) = (f x == def x).
+Proof. by rewrite mem_supp negbK. Qed.
+
 Lemma suppPn f x : reflect (f x = def x) (x \notin supp f).
 Proof. rewrite mem_supp negbK; exact/eqP. Qed.
 
@@ -107,9 +110,15 @@ apply/eq_fset=> x; rewrite mem_supp in_fset mem_filter mkffunE.
 by rewrite andbC; case: ifP=> //; rewrite eqxx.
 Qed.
 
+Lemma supp_mkffun_sub fb (X : {fset T}) : fsubset (supp (mkffun fb X)) X.
+Proof.
+by apply/fsubsetP => x; rewrite supp_mkffun in_fset mem_filter; case/andP.
+Qed.
+
 End FFun.
 
 Arguments ffun {T S} def.
+Arguments suppPn {T S def f x}.
 
 Definition ffun_eqMixin T (S : eqType) def :=
   [eqMixin of @ffun T S def by <:].
