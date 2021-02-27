@@ -204,6 +204,11 @@ Proof. by rewrite /= inE. Qed.
 Lemma fset1P x y : reflect (x = y) (x \in fset1 y).
 Proof. by rewrite in_fset1; apply/eqP. Qed.
 
+Lemma fset1_inj : injective (@fset1 T).
+Proof.
+by move=> x y e; apply/fset1P; rewrite -e; apply/fset1P.
+Qed.
+
 Lemma in_fsetU x s1 s2 : (x \in s1 :|: s2) = (x \in s1) || (x \in s2).
 Proof. by rewrite /fsetU in_fset mem_cat. Qed.
 
@@ -559,6 +564,13 @@ rewrite -[in RHS](andbA (x \notin s2)) andbb -!andbA; congr andb.
 exact: andbC.
 Qed.
 
+Lemma fsetUDr (A B C : {fset T}) :
+  A :|: B :\: C = (A :|: B) :\: (C :\: A).
+Proof.
+apply/eq_fset=> x; rewrite !(in_fsetU, in_fsetD).
+by case: (x \in A).
+Qed.
+
 Lemma fsetDIl s1 s2 s3 : (s1 :&: s2) :\: s3 = (s1 :\: s3) :&: (s2 :\: s3).
 Proof.
 by apply/eq_fset=> x; rewrite !(in_fsetD, in_fsetI); case: (x \notin s3).
@@ -767,9 +779,30 @@ apply/(iffP idP).
 by move=> dis; rewrite /fdisjoint -dis fsetIDAC -fsetIDA fsetDv fsetI0 eqxx.
 Qed.
 
+Lemma val_fset_filter (P : T -> bool) (X : {fset T}) :
+  fset_filter P X = filter P X :> seq T.
+Proof.
+apply: (eq_sorted (@Ord.lt_trans T)).
+- move=> x y /andP [/Ord.ltW xy /Ord.ltW yx].
+  by apply: Ord.anti_leq; rewrite xy.
+- rewrite /fset_filter /fset unlock /=.
+  exact: FSet.fset_subproof.
+- rewrite sorted_filter ?valP //.
+  exact: Ord.lt_trans.
+rewrite uniq_perm ?filter_uniq ?uniq_fset //.
+by move=> x; rewrite /= in_fset_filter mem_filter.
+Qed.
+
+Lemma fset_filter_subset (P : T -> bool) X :
+  fsubset (fset_filter P X) X.
+Proof.
+by apply/fsubsetP=> x; rewrite in_fset_filter; case/andP.
+Qed.
+
 End Properties.
 
 Arguments fsubsetP {_ _ _}.
+Arguments fdisjointP {_ _ _}.
 Arguments fset2P {_ _ _}.
 Arguments fsetIidPl {T s1 s2}.
 Arguments fsetIidPr {T s1 s2}.
@@ -852,6 +885,8 @@ Qed.
 
 End General.
 
+Arguments bigcupP {_ _ _ _ _ _}.
+
 Section Finite.
 
 Variable T : ordType.
@@ -866,7 +901,7 @@ Proof. by apply: bigcup_sup; rewrite mem_index_enum. Qed.
 Lemma bigcup_finP x P F :
   reflect (exists2 i, P i & x \in F i) (x \in \bigcup_(i | P i) F i).
 Proof.
-apply/(iffP (bigcupP _ _ _ _))=> [[i _ Pi x_in]|[i Pi x_in]]; eauto.
+apply/(iffP bigcupP)=> [[i _ Pi x_in]|[i Pi x_in]]; eauto.
 by econstructor; eauto.
 Qed.
 
@@ -957,6 +992,10 @@ apply/(sameP idP)/(iffP idP)=> [/eqP ->|]; first by rewrite imfset0.
 apply: contraTT; case/fset0Pn=> x xX; apply/fset0Pn; exists (f x).
 by rewrite mem_imfset.
 Qed.
+
+(* TODO Find a notation for this *)
+Definition pimfset (f : T -> option S) X : {fset S} :=
+  fset (pmap f X).
 
 End Image.
 
@@ -1050,6 +1089,21 @@ apply: contra Px=> /imfsetP [x' Px' hfx']; suff -> : x = x' by [].
 by apply: hinj _ _ hfx'; apply/fsetU1P; auto.
 Qed.
 
+Lemma in_pimfset (f : T -> option S) (X : {fset T}) y :
+  y \in (pimfset f X) = (Some y \in f @: X).
+Proof.
+rewrite /pimfset in_fset mem_pmap.
+by apply/(sameP mapP)/(iffP imfsetP).
+Qed.
+
+Lemma pimfsetP(f : T -> option S) (X : {fset T}) y :
+  reflect (exists2 x, x \in X & f x = Some y) (y \in pimfset f X).
+Proof.
+rewrite in_pimfset; apply/(iffP imfsetP); case=> ??.
+- by move=> ->; eauto.
+- by move=> <-; eauto.
+Qed.
+
 End ImageProps.
 
 Section Powerset.
@@ -1092,6 +1146,18 @@ by apply/eq_fset=> s; rewrite in_fset2 powersetE fsubset1.
 Qed.
 
 End Powerset.
+
+Section SetSplitting.
+
+Variables (T : ordType).
+
+Implicit Types X : {fset T}.
+
+Definition splits X :=
+  if val X is x :: xs then Some (x, fset xs)
+  else None.
+
+End SetSplitting.
 
 Section BigOp.
 
@@ -1203,11 +1269,12 @@ End BigOpIdempotent.
 
 Section BigOpUnion.
 
-(* Specialize previous lemmas to unions *)
-
-Variables (I J R : ordType) (F : I -> {fset R}) (G : J -> {fset I}).
-
 Local Open Scope fset_scope.
+
+Section WithVariables.
+
+Variables (I J R : ordType) (P : I -> bool).
+Variables (F : I -> {fset R}) (G : J -> {fset I}).
 
 Lemma bigcup_fsetU1 i0 s :
   \bigcup_(i <- i0 |: s) F i = F i0 :|: \bigcup_(i <- s) F i.
@@ -1223,4 +1290,36 @@ Lemma bigcup_bigcup s :
   \bigcup_(j <- s) \bigcup_(i <- G j) F i.
 Proof. apply: big_idem_bigcup; exact: fsetUid. Qed.
 
+Lemma bigcupS s X :
+  reflect (forall i : I, i \in s -> P i -> fsubset (F i) X)
+          (fsubset (\bigcup_(i <- s | P i) F i) X).
+Proof.
+apply/(iffP fsubsetP).
+- move=> sub i i_s Pi; apply/fsubsetP=> x x_i.
+  by apply: sub; apply/bigcupP; exists i.
+- move=> sub x /bigcupP [i i_s Pi]; apply/fsubsetP; exact: sub.
+Qed.
+
+Lemma in_bigcup s x :
+  x \in \bigcup_(i <- s | P i) F i = has (fun i => P i && (x \in F i)) s.
+Proof.
+elim: s=> [|y s IH] /=; first by rewrite big_nil.
+by rewrite big_cons; case: ifP; rewrite // in_fsetU IH.
+Qed.
+
+End WithVariables.
+
+Lemma bigcup1_cond (T : ordType) (P : T -> bool) s :
+  \bigcup_(x <- s | P x) fset1 x = fset [seq x <- s | P x].
+Proof.
+apply/eq_fset=> x; rewrite in_bigcup in_fset mem_filter.
+apply/(sameP hasP)/(iffP andP).
+  by case=> Px xs; exists x; rewrite // Px in_fset1 eqxx.
+by case=> {}x xs /andP [] Px /fset1P ->.
+Qed.
+
+Lemma bigcup1 (T : ordType) (s : seq T) : \bigcup_(x <- s) fset1 x = fset s.
+Proof. by rewrite bigcup1_cond filter_predT. Qed.
+
 End BigOpUnion.
+

@@ -115,10 +115,73 @@ Proof.
 by apply/fsubsetP => x; rewrite supp_mkffun in_fset mem_filter; case/andP.
 Qed.
 
+Definition updfm f (xs : {fmap T -> S}) : ffun :=
+  mkffun (fun v => if xs v is Some x then x else f v)
+         (supp f :|: domm xs).
+
+Lemma updfmE f xs x :
+  updfm f xs x = if xs x is Some y then y else f x.
+Proof.
+rewrite /updm mkffunE in_fsetU orbC mem_domm.
+case e: (xs x)=> [y|] //=.
+by case: ifPn=> // /suppPn ->.
+Qed.
+
+Definition mkffunm (m : {fmap T -> S}) : ffun :=
+  mkffun (fun x => odflt (def x) (m x)) (domm m).
+
+Lemma mkffunmE m x : mkffunm m x = odflt (def x) (m x).
+Proof. by rewrite /mkffunm mkffunE mem_domm; case: (m x). Qed.
+
+Lemma val_mkffun (f : T -> S) (X : {fset T}) :
+  ffval (mkffun f X) =
+  mkfmapfp (fun x => if f x == def x then None else Some (f x)) X.
+Proof.
+apply/eq_fmap=> x; rewrite mkfmapfpE.
+move: (mkffunE f X x); rewrite /appf /=.
+set ff := mkffun f X; case e: (ffval ff x) => [y|].
+- have xdomm: x \in domm (ffval ff) by rewrite mem_domm e.
+  move/allP/(_ _ xdomm): (valP ff); rewrite /= e => yP ey.
+  move: yP; rewrite {}ey; case: ifP; last by rewrite eqxx.
+  rewrite inj_eq; last exact: Some_inj.
+  by move=> _ /negbTE ->.
+- by case: ifP=> // _ ->; rewrite eqxx.
+Qed.
+
 End FFun.
 
 Arguments ffun {T S} def.
 Arguments suppPn {T S def f x}.
+
+Section Mapping.
+
+Variables (T : ordType) (S R : eqType) (def : T -> S).
+
+Definition mapf (g : S -> R) (f : ffun def) : ffun (g \o def) :=
+  mkffun (g \o f) (supp f).
+
+Lemma mapfE (g : S -> R) (f : ffun def) x :
+  mapf g f x = g (f x).
+Proof.
+rewrite /mapf mkffunE mem_supp /=.
+by case: eqP=> //= ->.
+Qed.
+
+Lemma val_mapf (g : S -> R) :
+  injective g ->
+  forall f : ffun def, ffval (mapf g f) = mapm g (ffval f).
+Proof.
+move=> g_inj f; apply/eq_fmap=> x.
+rewrite /mapf val_mkffun mkfmapfpE mapmE mem_supp /= /appf /=.
+rewrite inj_eq //.
+case e: (ffval f x)=> [y|] /=; last by rewrite eqxx.
+have xdomm: x \in domm (ffval f) by rewrite mem_domm e.
+move/allP/(_ _ xdomm): (valP f); rewrite e.
+rewrite inj_eq; last exact: Some_inj.
+by move=> /negbTE ->.
+Qed.
+
+End Mapping.
 
 Definition ffun_eqMixin T (S : eqType) def :=
   [eqMixin of @ffun T S def by <:].

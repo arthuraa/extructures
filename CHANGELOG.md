@@ -4,14 +4,28 @@
 
 - Type of finitely supported functions `ffun`.
 
-- Lemma `sizesD` about the size of a set difference.
+### Functions
 
-- Lemma `supp_mkffun_sub`.
+`splits` and `splitm`, for extracting an element of a set or map.
+
+`filter_map`
+
+`pimfset`, an image operator for partial functions.
+
+### Lemmas
+
+`sizesD`, about the size of a set difference
+
+`filterm0`, `remmI`, `setm_rem`, `filterm_set`, `domm_mkfmap'`, `val_domm`,
+`fmvalK`, `mkfmapK`, `getm_nth`, `eq_setm`, `sizeES`, `dommES`, `filter_mapE`,
+`domm_filter_map`, `mapimK`, `mapim_map`, `eq_mapm`, `mapm_comp`,
+`mapm_mkfmapf`, `fset1_inj`, `fsetUDr`, `val_fset_filter`, `fset_filter_subset`,
+`in_pimfset`, `bigcupS`, `in_bigcup`, `bigcup1_cond`, `bigcup1`.
 
 ## Changed
 
-- Implicit arguments for `fsetIidPl`, `fsetIidPr`, `fsetUidPl`, `fsetUidPr`,
-  `fsetDidPl`.
+- Implicit arguments for `fdisjointP`, `fsetIidPl`, `fsetIidPr`, `fsetUidPl`,
+  `fsetUidPr`, `fsetDidPl`, `bigcupP`.
 
 - Implement `fperm` using `ffun`.
 
