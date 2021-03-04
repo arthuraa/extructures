@@ -2,6 +2,25 @@ From mathcomp Require Import ssreflect ssrfun ssrbool eqtype choice seq.
 
 From extructures Require Import ord fset fmap.
 
+(******************************************************************************)
+(*   Given a function def : T -> S, the type ffun def is the type of          *)
+(* finitely supported functions of type T -> S. That is, f agrees with def    *)
+(* on all but finitely many inputs.  The type T must be an instance of        *)
+(* ordType, and S must be an eqType.                                          *)
+(*                                                                            *)
+(*        supp f == the finite set of inputs where f differs from def         *)
+(*   mkffun f xs == the finite function defined by                            *)
+(*                      mkffun f xs x = if x \in xs then f x else def x       *)
+(*     mkffunm m == complete a finite map m with def outside of the domain    *)
+(*                  of m                                                      *)
+(*        emptyf == the finite function with empty support; i.e. that agrees  *)
+(*                  with def everywhere                                       *)
+(*     upd f x y == override the value of f at x to be y                      *)
+(*     updfm f m == override the values of f with the finite map m            *)
+(*      mapf g f == compose the finite function f with g : S -> R; the result *)
+(*                  has type ffun (g \o def)                                  *)
+(******************************************************************************)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.

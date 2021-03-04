@@ -4,6 +4,8 @@
 
 - Type of finitely supported functions `ffun`.
 
+- A Deriving instance for `ordType` (cf. https://github.com/arthuraa/deriving).
+
 ### Functions
 
 `splits` and `splitm`, for extracting an element of a set or map.
