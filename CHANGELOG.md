@@ -31,6 +31,10 @@
 
 - Generalize `supp` and `mem_suppN` to `ffun`.
 
+## Removed
+
+- Support for Coq 8.10
+
 # 0.2.2 (2020/08/13)
 
 - Fix compatibility issues with Coq 8.12 and Ssreflect 1.11.

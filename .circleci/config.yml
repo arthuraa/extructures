@@ -19,6 +19,9 @@ commands:
       mathcomp-version:
         type: string
         default: 1.12.0
+      deriving-version:
+        type: string
+        default: 0.1.0
     steps:
     - run:
         name: Install dependencies
@@ -27,6 +30,8 @@ commands:
           opam update
           opam pin add coq-mathcomp-ssreflect \
             --kind=version << parameters.mathcomp-version >>
+          opam pin add coq-deriving \
+            --kind=version << parameters.deriving-version >>
           opam install --deps-only .
 
   build:
@@ -37,15 +42,6 @@ commands:
           opam install .
 
 jobs:
-  coq-8-10:
-    <<: *defaults
-    steps:
-    - startup
-    - prepare
-    - build
-    docker:
-    - image: coqorg/coq:8.10.2
-
   coq-8-11:
     <<: *defaults
     steps:
@@ -64,9 +60,18 @@ jobs:
     docker:
     - image: coqorg/coq:8.12.0
 
+  coq-8-13:
+    <<: *defaults
+    steps:
+    - startup
+    - prepare
+    - build
+    docker:
+    - image: coqorg/coq:8.13.0
+
 workflows:
   build:
     jobs:
-    - coq-8-10
     - coq-8-11
     - coq-8-12
+    - coq-8-13
