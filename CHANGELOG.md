@@ -2,6 +2,12 @@
 
 ## Added
 
+## Removed
+
+# 0.3.0 (2021/08/31)
+
+## Added
+
 - Type of finitely supported functions `ffun`.
 
 - A Deriving instance for `ordType` (cf. https://github.com/arthuraa/deriving).
