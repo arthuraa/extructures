@@ -633,7 +633,7 @@ Proof. exact: fmap_rect. Qed.
 
 Lemma val_domm m : domm m = unzip1 m :> seq _.
 Proof.
-apply: (eq_sorted (@Ord.lt_trans T)).
+apply: (sorted_eq (@Ord.lt_trans T)).
 - move=> x y /andP [/Ord.ltW xy /Ord.ltW yx].
   by apply: Ord.anti_leq; rewrite xy.
 - exact: valP.

@@ -180,7 +180,7 @@ case: s1 s2 => [s1 Ps1] [s2 Ps2] /= E; apply/val_inj=> /=.
 have anti: antisymmetric (@Ord.lt T).
   move=> x y /andP [/Ord.ltW xy /Ord.ltW yx].
   exact: Ord.anti_leq (introT andP (conj xy yx)).
-rewrite -[s1 =i s2]/(_) in E; apply: (eq_sorted _ _ Ps1 Ps2) => //.
+rewrite -[s1 =i s2]/(_) in E; apply: (sorted_eq _ _ Ps1 Ps2) => //.
   exact: Ord.lt_trans.
 apply: uniq_perm => //; [move: Ps1|move: Ps2]; apply/sorted_uniq => //;
 by [apply: Ord.ltxx|apply: Ord.lt_trans].
@@ -782,7 +782,7 @@ Qed.
 Lemma val_fset_filter (P : T -> bool) (X : {fset T}) :
   fset_filter P X = filter P X :> seq T.
 Proof.
-apply: (eq_sorted (@Ord.lt_trans T)).
+apply: (sorted_eq (@Ord.lt_trans T)).
 - move=> x y /andP [/Ord.ltW xy /Ord.ltW yx].
   by apply: Ord.anti_leq; rewrite xy.
 - rewrite /fset_filter /fset unlock /=.
