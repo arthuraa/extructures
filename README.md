@@ -37,8 +37,7 @@ Currently, four data structures are supported:
   `f x != x` only for finitely many values of `x` (defined in `fperm`)
 
 Here, `T` ranges over instances of `ordType` (defined in `ord`), which are types
-endowed with a decidable total order relation.  (For `ffun def`, the codomain of
-the codomain of `def` must be an `eqType` as well.) Basic data types such as
+endowed with a decidable total order relation.  (For `ffun def`, the codomain of `def` must be an `eqType` as well.) Basic data types such as
 `nat`, `bool`, `option`, products, and sums are all pre-declared as instances of
 `ordType`.  Instances for other types can be transported via subtyping,
 injective functions, etc., as for other MathComp classes, or derived
