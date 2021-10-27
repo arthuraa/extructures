@@ -38,11 +38,11 @@ Currently, four data structures are supported:
 
 Here, `T` ranges over instances of `ordType` (defined in `ord`), which are types
 endowed with a decidable total order relation.  (For `ffun def`, the codomain of
-the codomain of `def` must be an `eqType` as well.) Basic data types such as
-`nat`, `bool`, `option`, products, and sums are all pre-declared as instances of
-`ordType`.  Instances for other types can be transported via subtyping,
-injective functions, etc., as for other MathComp classes, or derived
-automatically using [Deriving][7].
+`def` must be an `eqType` as well.) Basic data types such as `nat`, `bool`,
+`option`, products, and sums are all pre-declared as instances of `ordType`.
+Instances for other types can be transported via subtyping, injective functions,
+etc., as for other MathComp classes, or derived automatically using
+[Deriving][7].
 
 The function-like structures coerce into Coq functions, allowing us to write
 `f x` to retrieve the value of the map `f` at `x`.  Similarly, sets coerce to
