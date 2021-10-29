@@ -4,6 +4,16 @@
 
 ## Removed
 
+# 0.3.1. (2021/10/28)
+
+## Added
+
+- Support for SSReflect 1.13.0
+
+## Removed
+
+- Support for SSReflect 1.11.0 and earlier.
+
 # 0.3.0 (2021/08/31)
 
 ## Added
