@@ -73,7 +73,7 @@ After installing OPAM and adding the Coq archive, run:
 Alternatively, you can compile the package by hand.  You'll need the following
 dependencies:
 
-- Coq v8.11 -- v8.13
+- Coq v8.11 -- v8.14
 - [Ssreflect][2] v1.12 -- v1.13 (`coq-mathcomp-ssreflect` on OPAM).
 - `deriving` v0.1 (https://github.com/arthuraa/deriving)
 
