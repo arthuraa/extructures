@@ -909,6 +909,8 @@ End Finite.
 
 End BigSetOps.
 
+Arguments bigcupP {_ _ _ _ _ _}.
+
 Section Image.
 
 Variables T S : ordType.

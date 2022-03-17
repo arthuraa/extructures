@@ -2,7 +2,17 @@
 
 ## Added
 
+## Changed
+
+- Use maximally implicit arguments for the type arguments of `getm`, `setm`,
+  `repm`, `updm`, `mapim`, `mapm`, `filterm`, `remm`, `mkfmap`, `mkfmapf`,
+  `mkfmapfp` and `domm`.
+
 ## Removed
+
+## Fixed
+
+- Make implicit arguments for `bigcupP` valid globally.
 
 # 0.3.1. (2021/10/28)
 
