@@ -249,8 +249,20 @@ End Operations.
 
 Coercion getm : FMap.fmap_type >-> Funclass.
 
-Arguments emptym {_ _}.
+Arguments getm {_ _} _ _.
+Arguments setm {_ _} _ _.
+Arguments repm {_ _} _ _ _.
+Arguments updm {_ _} _ _ _.
 Arguments unionm {_ _} _ _.
+Arguments mapim {_ _ _} _ _.
+Arguments mapm {_ _ _} _ _.
+Arguments filterm {_ _} _ _.
+Arguments remm {_ _} _ _.
+Arguments emptym {_ _}.
+Arguments mkfmap {_ _} _.
+Arguments mkfmapf {_ _} _ _.
+Arguments mkfmapfp {_ _} _ _.
+Arguments domm {_ _} _.
 
 Notation "[ 'fmap' kv1 ; .. ; kvn ]" :=
   (mkfmap (cons kv1 .. (cons kvn nil) ..))
