@@ -129,7 +129,7 @@ apply/eq_fset=> x; rewrite mem_supp in_fset mem_filter mkffunE.
 by rewrite andbC; case: ifP=> //; rewrite eqxx.
 Qed.
 
-Lemma supp_mkffun_sub fb (X : {fset T}) : fsubset (supp (mkffun fb X)) X.
+Lemma supp_mkffun_sub fb (X : {fset T}) : supp (mkffun fb X) :<=: X.
 Proof.
 by apply/fsubsetP => x; rewrite supp_mkffun in_fset mem_filter; case/andP.
 Qed.

@@ -567,8 +567,7 @@ case: (m k) => [v|] //=.
 by rewrite e.
 Qed.
 
-Lemma domm_filter p m :
-  fsubset (domm (filterm p m)) (domm m).
+Lemma domm_filter p m : domm (filterm p m) :<=: domm m.
 Proof.
 apply/fsubsetP=> k; rewrite !mem_domm filtermE.
 by case: (m k).
@@ -949,6 +948,8 @@ Variables (T S : ordType).
 
 Implicit Type (m : {fmap T -> S}).
 
+Open Scope fset_scope.
+
 Lemma getm_inv m k k' : invm m k = Some k' -> m k' = Some k.
 Proof.
 rewrite /invm =>/mkfmap_Some/mapP [[h h'] /getmP get_k /= [??]].
@@ -979,7 +980,7 @@ Arguments codommPn {_ _}.
 Lemma codomm0 : codomm (@emptym T S) = fset0.
 Proof. by rewrite /codomm /domm fset0E. Qed.
 
-Lemma codomm_rem m k : fsubset (codomm (remm m k)) (codomm m).
+Lemma codomm_rem m k : codomm (remm m k) :<=: codomm m.
 Proof.
 apply/fsubsetP=> v /codommP [k']; rewrite remmE.
 by case: eqP=> // _ Pv; apply/codommP; eauto.
