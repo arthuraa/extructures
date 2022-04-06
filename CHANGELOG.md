@@ -2,6 +2,8 @@
 
 ## Added
 
+- Infix notations for `fsubset` (`:<=:`) and `fdisjoint` (`:#:`).
+
 ## Changed
 
 - Use maximally implicit arguments for the type arguments of `getm`, `setm`,
