@@ -63,6 +63,8 @@ it can be required using the `extructures` qualifier.
 
     From extructures Require Import ord fset.
 
+Check the `tests/` directory for detailed examples.
+
 ## Installation
 
 The easiest way to install the package is through the [OPAM Coq archive][3].
