@@ -39,7 +39,7 @@ commands:
     - run:
         name: Building extructures
         command:
-          opam install .
+          opam install --with-test .
 
 jobs:
   coq-8-11:

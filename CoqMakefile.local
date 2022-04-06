@@ -1,0 +1,22 @@
+TESTVFILES=$(wildcard tests/*.v)
+TESTVOFILES=$(TESTVFILES:.v=.vo)
+
+test: $(TESTVOFILES)
+.PHONY: test
+
+.CoqMakefile.test.d: $(TESTVFILES)
+	$(SHOW)'COQDEP TESTVFILES'
+	$(HIDE)$(COQDEP) -vos -dyndep var $(COQMF_COQLIBS_NOML) $^ $(redir_if_ok)
+-include .CoqMakefile.test.d
+
+$(TESTVOFILES): %.vo: %.v
+	$(SHOW)TEST $<
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
+
+clean::
+	$(HIDE)rm -f $(TESTVOFILES)
+	$(HIDE)rm -f .CoqMakefile.test.d
+
+# Local Variables:
+# mode: Makefile
+# End:

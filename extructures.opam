@@ -9,7 +9,10 @@ bug-reports: "https://github.com/arthuraa/extructures/issues"
 authors: ["Arthur Azevedo de Amorim"]
 license: "MIT"
 build: [
-  [make "-j%{jobs}%"]
+  [make "-j" "%{jobs}%"]
+]
+run-test: [
+  [make "-j" "%{jobs}%" "test"]
 ]
 install: [
   [make "install"]
