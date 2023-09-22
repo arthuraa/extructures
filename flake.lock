@@ -10,16 +10,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1695157553,
-        "narHash": "sha256-xq0ifYi6E97SZAbDv0N0xBYvI+rm8Jhwd9ZV3hkCWV0=",
+        "lastModified": 1695411086,
+        "narHash": "sha256-2N7H6G14dUj+A+1HV8s41HJB2xYNgAVMozQedGOgf3Y=",
         "owner": "arthuraa",
         "repo": "deriving",
-        "rev": "afe7573c177983ddde262ef28b8ba6b285e7d647",
+        "rev": "6936173a2ee40855a955c4f52c45b3f74891fe1b",
         "type": "github"
       },
       "original": {
         "owner": "arthuraa",
-        "ref": "flake",
+        "ref": "mathcomp-2.0.0",
         "repo": "deriving",
         "type": "github"
       }
@@ -44,11 +44,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1694948089,
-        "narHash": "sha256-d2B282GmQ9o8klc22/Rbbbj6r99EnELQpOQjWMyv0rU=",
+        "lastModified": 1695227375,
+        "narHash": "sha256-76WTkeCu3npPZDkay2hB2Dj3cOuCiF0P41dbmXWUKtA=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "5148520bfab61f99fd25fb9ff7bfbb50dad3c9db",
+        "rev": "fe977679240ac2027b151ecca1bc6ce808c2e8af",
         "type": "github"
       },
       "original": {

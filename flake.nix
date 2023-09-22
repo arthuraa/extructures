@@ -5,7 +5,7 @@
 
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
-  inputs.deriving.url = "github:arthuraa/deriving/flake";
+  inputs.deriving.url = "github:arthuraa/deriving/mathcomp-2.0.0";
   inputs.deriving.inputs.nixpkgs.follows = "nixpkgs";
   inputs.deriving.inputs.flake-utils.follows = "flake-utils";
 
