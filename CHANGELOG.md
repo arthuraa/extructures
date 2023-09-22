@@ -6,6 +6,14 @@
 
 ## Changed
 
+- Use Hierarchy Builder to define the ordType interface.
+
+- `InjOrdMixin`, `PcanOrdMixin` and `CanOrdMixin` have been deprecated in favor
+  of `InjHasOrd`, `PcanHasOrd` and `CanHasOrd`.
+
+- The `[ordMixin of T by <:]` notation has been deprecated in favor of `[Ord of
+  T by <:]`.
+
 - Use maximally implicit arguments for the type arguments of `getm`, `setm`,
   `repm`, `updm`, `mapim`, `mapm`, `filterm`, `remm`, `mkfmap`, `mkfmapf`,
   `mkfmapfp` and `domm`.

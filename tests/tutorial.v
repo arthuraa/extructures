@@ -8,6 +8,7 @@ as sets rather than lists. First, we import the main libraries.
 *)
 
 Require Import Coq.Strings.String. (* For atomic formulas *)
+From HB Require Import structures.
 From mathcomp Require Import all_ssreflect.
 From deriving Require Import deriving.
 From extructures Require Import ord fset fmap.
@@ -49,18 +50,20 @@ Notation "A → B" := (Impl A B)
 (**
 
 To store formulas in sets, they need to have an order relation. We use the
-deriving library to define instances of OrdType for the formula type.
+deriving library to define instances of Ord for the formula type.
 
 *)
 
 Definition formula_indDef := [indDef for formula_rect].
 Canonical formula_indType := IndType formula formula_indDef.
 Definition formula_eqMixin := [derive eqMixin for formula].
-Canonical formula_eqType := EqType formula formula_eqMixin.
+HB.instance Definition _ := formula_eqMixin.
 Definition formula_choiceMixin := [derive choiceMixin for formula].
-Canonical formula_choiceType := ChoiceType formula formula_choiceMixin.
+#[hnf] HB.instance Definition _ := formula_choiceMixin.
 Definition formula_ordMixin := [derive ordMixin for formula].
-Canonical formula_ordType := OrdType formula formula_ordMixin.
+(* FIXME: This is taking way too long. *)
+#[hnf] HB.instance Definition _ := formula_ordMixin.
+
 
 Notation context := {fset formula}.
 
@@ -202,8 +205,8 @@ Lemma in_eq_formula_den A ρ1 ρ2 :
   {in atoms A, ρ1 =1 ρ2} -> `F⟦A⟧^ρ1 = `F⟦A⟧^ρ2.
 Proof.
 move: {-1}(atoms A) (fsubsetxx (atoms A)) => Xs.
-by elim: A => /= [X|A IHA B IHB|A IHA B IHB|A IHA B IHB] sub ρ12;
-do ?[move: sub; rewrite fsubUset; case/andP => ??];
+by elim: A => /= [X|A IHA B IHB|A IHA B IHB|A IHA B IHB] AXs ρ12;
+do ?[move: AXs; rewrite fsubUset; case/andP => ??];
 rewrite ?ρ12 // ?IHA ?IHB // -fsub1set.
 Qed.
 

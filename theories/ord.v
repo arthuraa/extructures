@@ -1,3 +1,5 @@
+From HB Require Import structures.
+
 From mathcomp Require Import
   ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype generic_quotient
   tuple.
@@ -6,6 +8,8 @@ From deriving Require base.
 From deriving Require Import deriving.
 
 From Coq Require Import ZArith NArith Ascii String.
+
+(* FIXME: Update documentation *)
 
 (******************************************************************************)
 (*   Class of types with a decidable total order relation.  Its main purpose  *)
@@ -51,61 +55,19 @@ Unset Printing Implicit Defensive.
 Declare Scope ord_scope.
 Delimit Scope ord_scope with ord.
 
+HB.mixin Record hasOrd T := {
+  leq : rel T;
+  leqxx : reflexive leq;
+  leq_trans : transitive leq;
+  anti_leq : antisymmetric leq;
+  leq_total : total leq;
+}.
+
 Module Ord.
 
-Section ClassDef.
+#[short(type="ordType")]
+HB.structure Definition Ord := {T of hasOrd T & Choice T}.
 
-Record axioms T (r : rel T) := Ax {
-  _ : reflexive r;
-  _ : transitive r;
-  _ : antisymmetric r;
-  _ : total r
-}.
-
-Record mixin_of T := Mixin {
-  op : rel T;
-  _  : axioms op
-}.
-
-Record class_of T := Class {base : Choice.class_of T; mixin : mixin_of T}.
-Local Coercion base : class_of >->  Choice.class_of.
-
-Structure type := Pack {sort; _ : class_of sort}.
-Local Coercion sort : type >-> Sortclass.
-Variables (T : Type) (cT : type).
-Definition class := let: Pack _ c as cT' := cT return class_of cT' in c.
-Definition clone c of phant_id class c := @Pack T c.
-Let xT := let: Pack T _ := cT in T.
-Notation xclass := (class : class_of xT).
-
-Definition pack m :=
-  fun b bT & phant_id (Choice.class bT) b => Pack (@Class T b m).
-
-(* Inheritance *)
-Definition eqType := @Equality.Pack cT xclass.
-Definition choiceType := @Choice.Pack cT xclass.
-
-End ClassDef.
-
-Module Import Exports.
-Coercion base : class_of >-> Choice.class_of.
-Coercion mixin : class_of >-> mixin_of.
-Coercion sort : type >-> Sortclass.
-Coercion eqType : type >-> Equality.type.
-Canonical eqType.
-Coercion choiceType : type >-> Choice.type.
-Canonical choiceType.
-Notation ordType := type.
-Notation ordMixin := mixin_of.
-Notation OrdMixin := Mixin.
-Notation OrdType T m := (@pack T m _ _ id).
-Notation "[ 'ordType' 'of' T 'for' cT ]" :=  (@clone T cT _ idfun)
-  (at level 0, format "[ 'ordType'  'of'  T  'for'  cT ]") : form_scope.
-Notation "[ 'ordType' 'of' T ]" := (@clone T _ _ id)
-  (at level 0, format "[ 'ordType'  'of'  T ]") : form_scope.
-End Exports.
-
-Definition leq T := op (class T).
 Definition lt (T : ordType) (x y : T) := leq x y && (x != y).
 
 Notation "x <= y" := (leq x y) : ord_scope.
@@ -122,18 +84,6 @@ Local Open Scope ord_scope.
 Variable T : ordType.
 Implicit Types x y : T.
 
-Lemma leqxx : reflexive (@leq T).
-Proof. by case: T => ? [? [? []]]. Qed.
-
-Lemma leq_trans : transitive (@leq T).
-Proof. by case: T => ? [? [? []]]. Qed.
-
-Lemma anti_leq : antisymmetric (@leq T).
-Proof. by case: T => ? [? [? []]]. Qed.
-
-Lemma leq_total : total (@leq T).
-Proof. by case: T => [? [? [? []]]]. Qed.
-
 Lemma eq_leq x y : x = y -> x <= y.
 Proof. by move=> ->; rewrite leqxx. Qed.
 
@@ -146,8 +96,8 @@ Proof. by rewrite /lt eqxx andbF. Qed.
 Lemma lt_trans : transitive (@lt T).
 Proof.
 move=> y x z /= /andP [lxy exy] /andP [lyz eyz].
-rewrite /lt (@leq_trans y) //=.
-apply: contra eyz; move=> /eqP exz; move: (@anti_leq x y).
+rewrite /lt (@leq_trans _ y) //=.
+apply: contra eyz; move=> /eqP exz; move: (@anti_leq _ x y).
 by rewrite -{}exz {z} in lyz * => -> //; apply/andP; split.
 Qed.
 
@@ -171,7 +121,7 @@ Proof.
 rewrite /lt.
 have [lxy|] := boolP (x <= y).
   have [lyx|gyx] //= := boolP (y <= x).
-  rewrite negbK (@anti_leq x y) ?eqxx //.
+  rewrite negbK (@anti_leq _ x y) ?eqxx //.
   by rewrite lxy lyx.
 have [->{y}|nyx gyx] /= := altP (y =P x).
   by rewrite leqxx.
@@ -198,6 +148,10 @@ Qed.
 
 End Theory.
 
+Module Exports.
+HB.reexport.
+End Exports.
+
 End Ord.
 
 Export Ord.Exports.
@@ -212,9 +166,8 @@ Notation "x <  y <  z" := (Ord.lt  x y && Ord.lt  y z) : ord_scope.
 Arguments Ord.leq {_}.
 Arguments Ord.lt {_}.
 
-Definition nat_ordMixin :=
-  OrdMixin (Ord.Ax leqnn leq_trans anti_leq leq_total).
-Canonical nat_ordType := Eval hnf in OrdType nat nat_ordMixin.
+HB.instance Definition _ :=
+  hasOrd.Build nat leqnn leq_trans anti_leq leq_total.
 
 Module DerOrdType.
 
@@ -225,12 +178,12 @@ Section OrdType.
 Variable (T : indChoiceType).
 Notation n := (Ind.Def.n T).
 Notation D := (Ind.Def.decl T).
-Notation arg_class  := (arg_class  Ord.sort).
-Notation arg_inst   := (arg_inst   n Ord.sort).
-Notation arity_inst := (arity_inst n Ord.sort).
-Notation sig_inst   := (sig_inst   n Ord.sort).
-Notation decl_inst  := (decl_inst  n Ord.sort).
-Variable (sT : forall i, sig_class Ord.sort (D i)).
+Notation arg_class  := (arg_class  Ord.Ord.sort).
+Notation arg_inst   := (arg_inst   n Ord.Ord.sort).
+Notation arity_inst := (arity_inst n Ord.Ord.sort).
+Notation sig_inst   := (sig_inst   n Ord.Ord.sort).
+Notation decl_inst  := (decl_inst  n Ord.Ord.sort).
+Variable (sT : forall i, sig_class Ord.Ord.sort (D i)).
 
 Import IndF.
 
@@ -261,7 +214,7 @@ Definition leq : forall i, T i -> T i -> bool :=
           | inr b => ~~ b
           end)).
 
-Lemma refl i : reflexive (@leq i).
+Lemma refl' i : reflexive (@leq i).
 Proof.
 elim/indP: i / => i [j args].
 rewrite /leq recE /= -/leq caseE leq_finii /=.
@@ -270,7 +223,7 @@ elim/arity_ind: {j} _ / (hnth _ _) args=> [[]|R As cAs IH|j As cAs IH] //=.
 by case=> [[x xP] args] /=; rewrite eqxx; exact: IH.
 Qed.
 
-Lemma anti i : antisymmetric (@leq i).
+Lemma anti' i : antisymmetric (@leq i).
 Proof.
 elim/indP: i / => i [xi xargs] y.
 rewrite -(unrollK y); case: {y} (unroll y)=> [yi yargs].
@@ -294,9 +247,9 @@ have ne: nat_of_fin yi != nat_of_fin xi.
   by case: ltngtP ne.
 Qed.
 
-Lemma trans i : transitive (@leq i).
+Lemma trans' i : transitive (@leq i).
 Proof.
-move=> y x z; elim/indP: i / x y z => i [xi xargs] y z.
+move=> y x z; elim/indP: i / x y z => i' [xi xargs] y z.
 rewrite -(unrollK y) -(unrollK z).
 move: (unroll y) (unroll z)=> {y z} [yi yargs] [zi zargs].
 rewrite /leq !recE /= -/leq !caseE /=.
@@ -319,7 +272,7 @@ case: (leq_fin yi xi) (leq_nat_of_fin yi xi)=> [e _|b] //.
     case: (altP (x =P z))=> [<-|yz].
       rewrite eq_sym (negbTE xy)=> le1 le2.
       suffices e : x = y by rewrite e eqxx in xy.
-      by apply: anti; rewrite le1.
+      by apply: anti'; rewrite le1.
     case: (altP (_ =P _))=> [<-|_] //; exact: xP.
 move=> <- {b} ei.
 case: (leq_fin zi yi) (leq_nat_of_fin zi yi)=> [e _|_ <-].
@@ -330,7 +283,7 @@ case: (leq_fin zi xi) (leq_nat_of_fin zi xi)=> [e|_ <-].
 move: ei; rewrite -!ltnNge; exact: ltn_trans.
 Qed.
 
-Lemma total i : total (@leq i).
+Lemma total' i : total (@leq i).
 Proof.
 elim/indP: i / => i [xi xargs] y.
 rewrite -(unrollK y); case: {y} (unroll y)=> [yi yargs].
@@ -345,39 +298,38 @@ case=> /= [[x xP] xargs] [y yargs] /=.
 by rewrite eq_sym; case: (altP eqP)=> ?; [apply: IH|apply: xP].
 Qed.
 
-Lemma leqP i : Ord.axioms (@leq i).
-Proof.
-split.
-- exact: refl.
-- exact: trans.
-- exact: anti.
-- exact: total.
-Qed.
+Definition mixin_for i op (p : @leq i = op) :=
+  @hasOrd.Build (T i) op
+    (cast (@reflexive (T i)) p (@refl' i))
+    (cast (@transitive (T i)) p (@trans' i))
+    (cast (@antisymmetric (T i)) p (@anti' i))
+    (cast (@total (T i)) p (@total' i)).
 
 End OrdType.
 
-Definition pack T :=
-  [infer indType of T with Ord.sort as sT n Ts' D cD in
+Definition pack_for T :=
+  [infer indType of T with Ord.Ord.sort as sT n Ts' D cD in
    fun (Ts : lift_class Choice.sort n) =>
    fun & phant_id Ts' (untag_sort Ts) =>
    fun T_choice & phant_id (lift_class_proj Choice.class Ts) T_choice =>
    let T_ind_choice := @IndChoiceType _ _ _ T_choice sT in
    fun cD' & phant_id cD cD' =>
-   OrdMixin (@leqP T_ind_choice cD' (Ind.idx sT))].
+   @mixin_for T_ind_choice cD' (Ind.idx sT)].
 
 End DerOrdType.
 
 Notation "[ 'derive' 'nored' 'ordMixin' 'for' T ]" :=
-  (@DerOrdType.pack T _ id _ _ _ _ _ _ id _ id _ id _ id _ id _ id)
+  (@DerOrdType.pack_for T _ id _ _ _ _ _ _ id _ id _ id _ id _ id _ id _ erefl)
   (at level 0) : form_scope.
 
 Ltac derive_ordMixin T :=
-  let mixin := constr:([derive nored ordMixin for T]) in
-  match eval unfold DerOrdType.pack in mixin with
-  | @OrdMixin _ ?leq ?axioms =>
+  let pack :=
+    constr:(@DerOrdType.pack_for T _ id _ _ _ _ _ _ id _ id _ id _ id _ id _ id) in
+  match type of pack with
+  | forall op, ?leq = op -> _ =>
     let leq := eval unfold DerOrdType.leq, DerOrdType.leq_branch in leq in
     let leq := eval deriving_compute in leq in
-    exact (@OrdMixin T leq axioms)
+    exact (pack leq erefl : hasOrd T)
   end.
 
 Notation "[ 'derive' 'ordMixin' 'for' T ]" :=
@@ -385,12 +337,13 @@ Notation "[ 'derive' 'ordMixin' 'for' T ]" :=
   (at level 0, format "[ 'derive'  'ordMixin'  'for'  T ]") : form_scope.
 
 Ltac derive_lazy_ordMixin T :=
-  let mixin := constr:([derive nored ordMixin for T]) in
-  match eval unfold DerOrdType.pack in mixin with
-  | @OrdMixin _ ?leq ?axioms =>
+  let pack :=
+    constr:(@DerOrdType.pack_for T _ id _ _ _ _ _ _ id _ id _ id _ id _ id _ id) in
+  match type of pack with
+  | forall op, ?leq = op -> _ =>
     let leq := eval unfold DerOrdType.leq, DerOrdType.leq_branch in leq in
     let leq := eval deriving_lazy in leq in
-    exact (@OrdMixin T leq axioms)
+    exact (pack leq erefl : hasOrd T)
   end.
 
 Notation "[ 'derive' 'lazy' 'ordMixin' 'for' T ]" :=
@@ -402,33 +355,32 @@ Section BasicInstances.
 Variables T S : ordType.
 
 Definition prod_ordMixin := [derive ordMixin for (T * S)%type].
-Canonical prod_ordType := Eval hnf in OrdType (T * S) prod_ordMixin.
+HB.instance Definition _ := prod_ordMixin.
 Definition sum_ordMixin := [derive ordMixin for (T + S)%type].
-Canonical sum_ordType := Eval hnf in OrdType (T + S) sum_ordMixin.
+HB.instance Definition _ := sum_ordMixin.
 Definition option_ordMixin := [derive ordMixin for option T].
-Canonical option_ordType := Eval hnf in OrdType (option T) option_ordMixin.
+HB.instance Definition _ := option_ordMixin.
 Definition seq_ordMixin := [derive ordMixin for seq T].
-Canonical seq_ordType := Eval hnf in OrdType (seq T) seq_ordMixin.
+HB.instance Definition _ := seq_ordMixin.
 Definition void_ordMixin := [derive ordMixin for void].
-Canonical void_ordType := Eval hnf in OrdType void void_ordMixin.
+HB.instance Definition _ := void_ordMixin.
 Definition comparison_ordMixin := [derive ordMixin for comparison].
-Canonical comparison_ordType :=
-  Eval hnf in OrdType comparison comparison_ordMixin.
+HB.instance Definition _ := comparison_ordMixin.
 Definition bool_ordMixin := [derive ordMixin for bool].
-Canonical bool_ordType := Eval hnf in OrdType bool bool_ordMixin.
+HB.instance Definition _ := bool_ordMixin.
 Definition unit_ordMixin := [derive ordMixin for unit].
-Canonical unit_ordType := Eval hnf in OrdType unit unit_ordMixin.
+HB.instance Definition _ := unit_ordMixin.
 Definition ascii_ordMixin := [derive ordMixin for ascii].
-Canonical ascii_ordType := Eval hnf in OrdType ascii ascii_ordMixin.
+HB.instance Definition _ := ascii_ordMixin.
 Definition string_ordMixin := [derive ordMixin for string].
-Canonical string_ordType := Eval hnf in OrdType string string_ordMixin.
+HB.instance Definition _ := string_ordMixin.
 (* NB: These instances use a different ordering than the standard numeric one. *)
 Definition positive_ordMixin := [derive ordMixin for positive].
-Canonical positive_ordType := Eval hnf in OrdType positive positive_ordMixin.
+HB.instance Definition _ := positive_ordMixin.
 Definition N_ordMixin := [derive ordMixin for N].
-Canonical N_ordType := Eval hnf in OrdType N N_ordMixin.
+HB.instance Definition _ := N_ordMixin.
 Definition Z_ordMixin := [derive ordMixin for Z].
-Canonical Z_ordType := Eval hnf in OrdType Z Z_ordMixin.
+HB.instance Definition _ := Z_ordMixin.
 
 End BasicInstances.
 
@@ -439,50 +391,61 @@ Local Open Scope ord_scope.
 
 Local Notation le := (fun x y => f x <= f y).
 
-Lemma inj_ordP : injective f -> Ord.axioms le.
-Proof.
-move=> f_inj; split.
-- by move=> x; rewrite /= Ord.leqxx.
-- by move=> x y z /=; exact: Ord.leq_trans.
-- by move=> x y /= /Ord.anti_leq /f_inj.
-by move=> x y; exact: Ord.leq_total.
-Qed.
+Lemma inj_le_refl : reflexive le.
+Proof. by move=> x; rewrite /= Ord.leqxx. Qed.
 
-Definition InjOrdMixin f_inj := OrdMixin (inj_ordP f_inj).
+Lemma inj_le_trans : transitive le.
+Proof. by move=> x y z /=; exact: Ord.leq_trans. Qed.
 
-Definition PcanOrdMixin g (fK : pcancel f g) :=
-  InjOrdMixin (pcan_inj fK).
+Lemma inj_le_anti : injective f -> antisymmetric le.
+Proof. by move=> f_inj x y /= /Ord.anti_leq /f_inj. Qed.
 
-Definition CanOrdMixin g (fK : cancel f g) :=
-  InjOrdMixin (can_inj fK).
+Lemma inj_le_total : total le.
+Proof. by move=> x y; exact: Ord.leq_total. Qed.
+
+Definition InjHasOrd (f_inj : injective f) : hasOrd (inj_type f_inj) :=
+  hasOrd.Build (inj_type f_inj)
+    inj_le_refl inj_le_trans (inj_le_anti f_inj) inj_le_total.
+
+Definition PcanHasOrd g (fK : pcancel f g) : hasOrd (pcan_type fK) :=
+  InjHasOrd (pcan_inj fK).
+
+Definition CanHasOrd g (fK : cancel f g) : hasOrd (can_type fK) :=
+  InjHasOrd (can_inj fK).
 
 End TransferOrdType.
 
-Section SubOrdType.
+#[deprecated(since="extructures 0.4.0", note="Use InjHasOrd")]
+Notation InjOrdMixin := InjHasOrd.
+#[deprecated(since="extructures 0.4.0", note="Use PcanHasOrd")]
+Notation PcanOrdMixin := PcanHasOrd.
+#[deprecated(since="extructures 0.4.0", note="Use CanHasOrd")]
+Notation CanOrdMixin := CanHasOrd.
 
-Variables (T : ordType) (P : pred T) (sT : subType P).
-Local Open Scope ord_scope.
+(* FIXME: This is not generating an instance for inj_type... *)
+HB.instance Definition _ (T : choiceType) (S : ordType) (f : T -> S)
+  (f_inj : injective f) : hasOrd (inj_type f_inj) :=
+  InjHasOrd f_inj.
+HB.instance Definition _ (T : choiceType) (S : ordType) (f : T -> S) g
+  (fK : pcancel f g) :=
+  PcanHasOrd fK.
+HB.instance Definition _ (T : choiceType) (S : ordType) (f : T -> S) g
+  (fK : cancel f g) :=
+  CanHasOrd fK.
+HB.instance Definition _ (S : ordType) (P : pred S) (T : subType P) : hasOrd (sub_type T) :=
+  PcanHasOrd (@valK _ _ T).
 
-Definition sub_ordMixin := @InjOrdMixin _ _ (@val T P sT) val_inj.
-Canonical sub_ordType := Eval hnf in OrdType sT sub_ordMixin.
-
-Lemma val_ordE (u v : sT) : (val u <= val v) = (u <= v).
-Proof. by []. Qed.
-
-End SubOrdType.
-
-Notation "[ 'ordMixin' 'of' T 'by' <: ]" :=
-    (sub_ordMixin _ : Ord.mixin_of T)
+Notation "[ 'Ord' 'of' T 'by' <: ]" := (Ord.Ord.copy T%type (sub_type T%type))
+  (at level 0, format "[ 'Ord'  'of'  T  'by'  <: ]") : form_scope.
+#[deprecated(since="extructures 0.4.0", note="Use [Ord of _ by <:] instead")]
+Notation "[ 'ordMixin' 'of' T 'by' <: ]" := [Ord of T by <:]
   (at level 0, format "[ 'ordMixin'  'of'  T  'by'  <: ]") : form_scope.
 
-Definition sig_ordMixin (T : ordType) (P : pred T) : ordMixin {x | P x} :=
-  sub_ordMixin _.
-Canonical sig_ordType (T : ordType) (P : pred T) :=
-  Eval hnf in OrdType {x | P x} (sig_ordMixin P).
-
-Definition ordinal_ordMixin n := [ordMixin of 'I_n by <:].
-Canonical ordinal_ordType n :=
-  Eval hnf in OrdType 'I_n (ordinal_ordMixin n).
+(* FIXME: Why is this generating an instance of eqtype? *)
+HB.instance Definition _ (T : ordType) (P : pred T) :=
+  [Ord of {x | P x} by <:].
+HB.instance Definition _ (n : nat) :=
+  [Ord of 'I_n by <:].
 
 Section Tagged.
 
@@ -494,25 +457,41 @@ Local Open Scope ord_scope.
 Definition tag_leq u v :=
   (tag u < tag v) || (tag u == tag v) && (tagged u <= tagged_as u v).
 
-Definition tag_leqP : Ord.axioms tag_leq.
+Lemma tag_leq_refl : reflexive tag_leq.
 Proof.
-rewrite /tag_leq; split.
-- by move=> [i x] /=; rewrite Ord.ltxx eqxx tagged_asE Ord.leqxx.
-- move=> [i2 x2] [i1 x1] [i3 x3] /=.
-  case: Ord.ltgtP x2=> [i1i2 x2 _|?|<- {i2} x2] //=.
-    case: Ord.ltgtP x3=> [i2i3 x3 _|?|<- {i3} x3] //=; last by rewrite i1i2.
-    by rewrite (Ord.lt_trans i1i2 i2i3).
-  case: Ord.ltgtP x3=> //= <- {i3} x3; rewrite !tagged_asE.
-  exact: Ord.leq_trans.
-- move=> [i1 x1] [i2 x2] /=; rewrite [i2 == i1]eq_sym.
-  case: Ord.ltgtP x2=> //= i1i2; rewrite -{}i1i2 {i2} => x2.
-  by rewrite !tagged_asE => /Ord.anti_leq ->.
+rewrite /tag_leq.
+by move=> [i x] /=; rewrite Ord.ltxx eqxx tagged_asE Ord.leqxx.
+Qed.
+
+Lemma tag_leq_trans : transitive tag_leq.
+Proof.
+rewrite /tag_leq.
+move=> [i2 x2] [i1 x1] [i3 x3] /=.
+case: Ord.ltgtP x2=> [i1i2 x2 _|?|<- {i2} x2] //=.
+  case: Ord.ltgtP x3=> [i2i3 x3 _|?|<- {i3} x3] //=; last by rewrite i1i2.
+  by rewrite (Ord.lt_trans i1i2 i2i3).
+case: Ord.ltgtP x3=> //= <- {i3} x3; rewrite !tagged_asE.
+exact: Ord.leq_trans.
+Qed.
+
+Lemma tag_leq_anti : antisymmetric tag_leq.
+Proof.
+rewrite /tag_leq.
+move=> [i1 x1] [i2 x2] /=; rewrite [i2 == i1]eq_sym.
+case: Ord.ltgtP x2=> //= i1i2; rewrite -{}i1i2 {i2} => x2.
+by rewrite !tagged_asE => /Ord.anti_leq ->.
+Qed.
+
+Lemma tag_leq_total : total tag_leq.
+Proof.
+rewrite /tag_leq.
 move=> [i1 x1] [i2 x2] /=; rewrite [i2 == i1]eq_sym.
 by case: Ord.ltgtP x2 => //= <- {i2} x2; rewrite !tagged_asE Ord.leq_total.
 Qed.
 
-Definition tag_ordMixin := OrdMixin tag_leqP.
-Canonical tag_ordType := Eval hnf in OrdType {i : I & T_ i} tag_ordMixin.
+HB.instance Definition _ :=
+  hasOrd.Build {i : I & T_ i} tag_leq_refl tag_leq_trans
+               tag_leq_anti tag_leq_total.
 
 End Tagged.
 
@@ -523,10 +502,8 @@ Local Open Scope quotient_scope.
 Variable T : ordType.
 Variable e : equiv_rel T.
 
-Definition equivQuotient_ordMixin :=
-  CanOrdMixin (@reprK _ [quotType of {eq_quot e}]).
-Canonical equivQuotient_ordType :=
-  OrdType {eq_quot e} equivQuotient_ordMixin.
+HB.instance Definition _ :=
+  Ord.Ord.copy {eq_quot e} (can_type (@reprK _ [quotType of {eq_quot e}])).
 
 End EquivQuotOrd.
 
@@ -553,49 +530,57 @@ Fixpoint tree_leq t1 t2 :=
     (n1 == n2) && loop s1 s2
   end.
 
-Lemma tree_leqP : Ord.axioms tree_leq.
+Lemma tree_leq_anti : antisymmetric tree_leq.
 Proof.
-have anti: antisymmetric tree_leq.
-  elim=> [x1|n1 s1 IH] [x2|n2 s2] //= => [/Ord.anti_leq ->|] //.
-  have [l21|l12] /= := leqP n2 n1.
-    case: eqP=> [->|] //; rewrite eqxx ltnn /= => H.
-    rewrite (_ : s1 = s2) //.
-    elim: s1 s2 IH H {l21 n1 n2} => [|t1 s1 IH] [|t2 s2] //=.
-    case=> anti_t1 {}/IH IH.
-    by rewrite [t2 == _]eq_sym; case: eqP=> [-> /IH ->|_ /anti_t1] //.
-  by rewrite gtn_eqF //= ltnNge ltnW //=.
-split=> //.
-- elim=> [x|n s IH] //=; first exact: Ord.leqxx.
-  apply/orP; right; rewrite eqxx /=.
-  elim: s IH {n}=> /= [|t s IHs [-> /IHs ->]] //.
-  by rewrite eqxx.
-- elim=> [x2|n2 s2 IH] [x1|n1 s1] [x3|n3 s3] //=.
-    exact: Ord.leq_trans.
-  case/orP=> [e12|].
-    case/orP=> [e23|]; first by rewrite (ltn_trans e12 e23).
-    by case/andP=> [/eqP <-]; rewrite e12.
-  case/andP=> [/eqP <- e12].
-  case/orP=> [->|/andP [-> e23]] //=.
-  apply/orP; right.
-  elim: s2 s1 s3 IH e12 e23=> [|t2 s2 IH] [|t1 s1] [|t3 s3] //=.
-  case=> t2_trans {}/IH IH.
-  case: ifPn => [/eqP <-|ne12]; first by case: eqP; eauto.
-  case: ifPn => [/eqP <-|ne23]; first by rewrite (negbTE ne12).
-  move: ne12 ne23; case: (t1 =P t3) => [<-|]; last by eauto.
-  move=> ne _ l12 l21; move: (anti t1 t2) ne; rewrite l12 l21.
-  by move=> /(_ erefl) ->; rewrite eqxx.
-- elim=> [x1|n1 s1 IH] [x2|n2 s2] //=; first exact: Ord.leq_total.
-  case: ltngtP=> //= _.
-  elim: s1 s2 IH {n1 n2}=> [|t1 s1 IH] [|t2 s2] //= [total_t1 {}/IH IH].
-  by rewrite [t2 == _]eq_sym; case: (t1 =P t2)=> //.
+elim=> [x1|n1 s1 IH] [x2|n2 s2] //= => [/Ord.anti_leq ->|] //.
+have [l21|l12] /= := leqP n2 n1.
+  case: eqP=> [->|] //; rewrite eqxx ltnn /= => H.
+  rewrite (_ : s1 = s2) //.
+  elim: s1 s2 IH H {l21 n1 n2} => [|t1 s1 IH] [|t2 s2] //=.
+  case=> anti_t1 {}/IH IH.
+  by rewrite [t2 == _]eq_sym; case: eqP=> [-> /IH ->|_ /anti_t1] //.
+by rewrite gtn_eqF //= ltnNge ltnW //=.
 Qed.
 
-Definition tree_ordMixin := OrdMixin tree_leqP.
-Canonical tree_ordType := Eval hnf in OrdType (GenTree.tree T) tree_ordMixin.
+Lemma tree_leq_refl : reflexive tree_leq.
+Proof.
+elim=> [x|n s IH] //=; first exact: Ord.leqxx.
+apply/orP; right; rewrite eqxx /=.
+elim: s IH {n}=> /= [|t s IHs [-> /IHs ->]] //.
+by rewrite eqxx.
+Qed.
 
+Lemma tree_leq_trans : transitive tree_leq.
+Proof.
+elim=> [x2|n2 s2 IH] [x1|n1 s1] [x3|n3 s3] //=.
+  exact: Ord.leq_trans.
+case/orP=> [e12|].
+  case/orP=> [e23|]; first by rewrite (ltn_trans e12 e23).
+  by case/andP=> [/eqP <-]; rewrite e12.
+case/andP=> [/eqP <- e12].
+case/orP=> [->|/andP [-> e23]] //=.
+apply/orP; right.
+elim: s2 s1 s3 IH e12 e23=> [|t2 s2 IH] [|t1 s1] [|t3 s3] //=.
+case=> t2_trans {}/IH IH.
+case: ifPn => [/eqP <-|ne12]; first by case: eqP; eauto.
+case: ifPn => [/eqP <-|ne23]; first by rewrite (negbTE ne12).
+move: ne12 ne23; case: (t1 =P t3) => [<-|]; last by eauto.
+move=> ne _ l12 l21; move: (@tree_leq_anti t1 t2) ne; rewrite l12 l21.
+by move=> /(_ erefl) ->; rewrite eqxx.
+Qed.
+
+Lemma tree_leq_total : total tree_leq.
+Proof.
+elim=> [x1|n1 s1 IH] [x2|n2 s2] //=; first exact: Ord.leq_total.
+case: ltngtP=> //= _.
+elim: s1 s2 IH {n1 n2}=> [|t1 s1 IH] [|t2 s2] //= [total_t1 {}/IH IH].
+by rewrite [t2 == _]eq_sym; case: (t1 =P t2)=> //.
+Qed.
+
+HB.instance Definition _ :=
+  hasOrd.Build (GenTree.tree T) tree_leq_refl tree_leq_trans
+               tree_leq_anti tree_leq_total.
 End TreeOrdType.
 
-Definition tuple_ordMixin (T : ordType) (n : nat) :=
-  [ordMixin of n.-tuple T by <:].
-Canonical tuple_ordType (T : ordType) (n : nat) :=
-  Eval hnf in OrdType (n.-tuple T) (tuple_ordMixin T n).
+HB.instance Definition _ (T : ordType) (n : nat) :=
+  Ord.Ord.copy (n.-tuple T) (sub_type (n.-tuple T)).
