@@ -8,19 +8,15 @@ From deriving Require base.
 From deriving Require Import deriving.
 
 From Coq Require Import ZArith NArith Ascii String.
-
-(* FIXME: Update documentation *)
-
 (******************************************************************************)
 (*   Class of types with a decidable total order relation.  Its main purpose  *)
 (* is to supply an interface for aggregate structures (sets, maps) that       *)
 (* support extensional equality and executable operations; accordingly, it    *)
 (* sticks to basic constructions and results.                                 *)
 (*                                                                            *)
+(*       hasOrd T == a structure of a total order relation on T               *)
+(*   hasOrd.Build == the constructor of hasOrd                                *)
 (*        ordType == a type with a total order relation.                      *)
-(*   Ord.axioms r == the relation r is a total order.                         *)
-(*    OrdMixin ax == the mixin of the ordered class, where ax is a proof that *)
-(*                   a relation is a total order.                             *)
 (*         x <= y == order relation of an ordType (Ord.leq in prefix form).   *)
 (*         x <  y == strict ordering.                                         *)
 (*                                                                            *)
@@ -34,15 +30,15 @@ From Coq Require Import ZArith NArith Ascii String.
 (* quotients, this file provides infrastructure for defining some derived     *)
 (* instances.                                                                 *)
 (*                                                                            *)
-(*         PcanOrdMixin fK == the mixin for T, given f : T -> S and g with S  *)
+(*           PcanHasOrd fK == the mixin for T, given f : T -> S and g with S  *)
 (*                            an ordType and fK : pcancel f g.                *)
-(*          CanOrdMixin fK == the mixin for T, given f : T -> S and g with S  *)
+(*            CanHasOrd fK == the mixin for T, given f : T -> S and g with S  *)
 (*                            an ordType and fK : cancel f g.                 *)
-(*          InjOrdMixin fI == the mixin for T, given f : T -> S with S        *)
+(*            InjHasOrd fI == the mixin for T, given f : T -> S with S        *)
 (*                            an ordType and fI : injective f.                *)
-(*   [ordMixin of T by <:] == the mixin for T, assuming that it was           *)
-(*                            declared as the subtype of some ordType S.      *)
-(* [derive ordMixin for T] == derive an ordMixin for T automatically,         *)
+(*        [Ord of T by <:] == if T is a subType of S : ordType, this defines  *)
+(*                            an order structure on T inherited from S        *)
+(*   [derive hasOrd for T] == derive an hasOrd mixin for T automatically,     *)
 (*                            assuming that T is an instance of indType       *)
 (******************************************************************************)
 
@@ -50,7 +46,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-(* Interface of types with an order relation. *)
+(* Interface of types with a total order relation. *)
 
 Declare Scope ord_scope.
 Delimit Scope ord_scope with ord.
@@ -318,11 +314,11 @@ Definition pack_for T :=
 
 End DerOrdType.
 
-Notation "[ 'derive' 'nored' 'ordMixin' 'for' T ]" :=
+Notation "[ 'derive' 'nored' 'hasOrd' 'for' T ]" :=
   (@DerOrdType.pack_for T _ id _ _ _ _ _ _ id _ id _ id _ id _ id _ id _ erefl)
   (at level 0) : form_scope.
 
-Ltac derive_ordMixin T :=
+Ltac derive_hasOrd T :=
   let pack :=
     constr:(@DerOrdType.pack_for T _ id _ _ _ _ _ _ id _ id _ id _ id _ id _ id) in
   match type of pack with
@@ -332,11 +328,11 @@ Ltac derive_ordMixin T :=
     exact (pack leq erefl : hasOrd T)
   end.
 
-Notation "[ 'derive' 'ordMixin' 'for' T ]" :=
-  (ltac:(derive_ordMixin T))
-  (at level 0, format "[ 'derive'  'ordMixin'  'for'  T ]") : form_scope.
+Notation "[ 'derive' 'hasOrd' 'for' T ]" :=
+  (ltac:(derive_hasOrd T))
+  (at level 0, format "[ 'derive'  'hasOrd'  'for'  T ]") : form_scope.
 
-Ltac derive_lazy_ordMixin T :=
+Ltac derive_lazy_hasOrd T :=
   let pack :=
     constr:(@DerOrdType.pack_for T _ id _ _ _ _ _ _ id _ id _ id _ id _ id _ id) in
   match type of pack with
@@ -346,41 +342,52 @@ Ltac derive_lazy_ordMixin T :=
     exact (pack leq erefl : hasOrd T)
   end.
 
+Notation "[ 'derive' 'lazy' 'hasOrd' 'for' T ]" :=
+  (ltac:(derive_hasOrd T))
+  (at level 0, format "[ 'derive'  'lazy'  'hasOrd'  'for'  T ]") : form_scope.
+
+#[deprecated(since="extructures 0.4.0",
+      note="Use [derive nored hasOrd for _] instead")]
+Notation "[ 'derive' 'nored' 'ordMixin' 'for' T ]" :=
+  ([derive nored hasOrd for T])
+  (at level 0) : form_scope.
+#[deprecated(since="extructures 0.4.0",
+      note="Use [derive lazy hasOrd for _] instead")]
 Notation "[ 'derive' 'lazy' 'ordMixin' 'for' T ]" :=
-  (ltac:(derive_ordMixin T))
-  (at level 0, format "[ 'derive'  'lazy'  'ordMixin'  'for'  T ]") : form_scope.
+  ([derive lazy hasOrd for T])
+  (at level 0) : form_scope.
 
 Section BasicInstances.
 
 Variables T S : ordType.
 
-Definition prod_ordMixin := [derive ordMixin for (T * S)%type].
-HB.instance Definition _ := prod_ordMixin.
-Definition sum_ordMixin := [derive ordMixin for (T + S)%type].
-HB.instance Definition _ := sum_ordMixin.
-Definition option_ordMixin := [derive ordMixin for option T].
-HB.instance Definition _ := option_ordMixin.
-Definition seq_ordMixin := [derive ordMixin for seq T].
-HB.instance Definition _ := seq_ordMixin.
-Definition void_ordMixin := [derive ordMixin for void].
-HB.instance Definition _ := void_ordMixin.
-Definition comparison_ordMixin := [derive ordMixin for comparison].
-HB.instance Definition _ := comparison_ordMixin.
-Definition bool_ordMixin := [derive ordMixin for bool].
-HB.instance Definition _ := bool_ordMixin.
-Definition unit_ordMixin := [derive ordMixin for unit].
-HB.instance Definition _ := unit_ordMixin.
-Definition ascii_ordMixin := [derive ordMixin for ascii].
-HB.instance Definition _ := ascii_ordMixin.
-Definition string_ordMixin := [derive ordMixin for string].
-HB.instance Definition _ := string_ordMixin.
+Definition prod_hasOrd := [derive hasOrd for (T * S)%type].
+HB.instance Definition _ := prod_hasOrd.
+Definition sum_hasOrd := [derive hasOrd for (T + S)%type].
+HB.instance Definition _ := sum_hasOrd.
+Definition option_hasOrd := [derive hasOrd for option T].
+HB.instance Definition _ := option_hasOrd.
+Definition seq_hasOrd := [derive hasOrd for seq T].
+HB.instance Definition _ := seq_hasOrd.
+Definition void_hasOrd := [derive hasOrd for void].
+HB.instance Definition _ := void_hasOrd.
+Definition comparison_hasOrd := [derive hasOrd for comparison].
+HB.instance Definition _ := comparison_hasOrd.
+Definition bool_hasOrd := [derive hasOrd for bool].
+HB.instance Definition _ := bool_hasOrd.
+Definition unit_hasOrd := [derive hasOrd for unit].
+HB.instance Definition _ := unit_hasOrd.
+Definition ascii_hasOrd := [derive hasOrd for ascii].
+HB.instance Definition _ := ascii_hasOrd.
+Definition string_hasOrd := [derive hasOrd for string].
+HB.instance Definition _ := string_hasOrd.
 (* NB: These instances use a different ordering than the standard numeric one. *)
-Definition positive_ordMixin := [derive ordMixin for positive].
-HB.instance Definition _ := positive_ordMixin.
-Definition N_ordMixin := [derive ordMixin for N].
-HB.instance Definition _ := N_ordMixin.
-Definition Z_ordMixin := [derive ordMixin for Z].
-HB.instance Definition _ := Z_ordMixin.
+Definition positive_hasOrd := [derive hasOrd for positive].
+HB.instance Definition _ := positive_hasOrd.
+Definition N_hasOrd := [derive hasOrd for N].
+HB.instance Definition _ := N_hasOrd.
+Definition Z_hasOrd := [derive hasOrd for Z].
+HB.instance Definition _ := Z_hasOrd.
 
 End BasicInstances.
 
