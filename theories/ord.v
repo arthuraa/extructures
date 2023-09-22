@@ -510,7 +510,7 @@ Variable T : ordType.
 Variable e : equiv_rel T.
 
 HB.instance Definition _ :=
-  Ord.Ord.copy {eq_quot e} (can_type (@reprK _ [quotType of {eq_quot e}])).
+  Ord.Ord.copy {eq_quot e} (can_type (@reprK _ {eq_quot e})).
 
 End EquivQuotOrd.
 
