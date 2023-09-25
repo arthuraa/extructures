@@ -2,6 +2,8 @@
 
 ## Added
 
+- Lemmas `fset_eqP`, `fset_eq0E` and `domm_filter_eq`.
+
 ## Changed
 
 ## Deprecated
