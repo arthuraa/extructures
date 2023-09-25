@@ -352,6 +352,11 @@ Notation "[ 'derive' 'nored' 'ordMixin' 'for' T ]" :=
   ([derive nored hasOrd for T])
   (at level 0) : form_scope.
 #[deprecated(since="extructures 0.4.0",
+      note="Use [derive hasOrd for _] instead")]
+Notation "[ 'derive' 'ordMixin' 'for' T ]" :=
+  ([derive hasOrd for T])
+  (at level 0) : form_scope.
+#[deprecated(since="extructures 0.4.0",
       note="Use [derive lazy hasOrd for _] instead")]
 Notation "[ 'derive' 'lazy' 'ordMixin' 'for' T ]" :=
   ([derive lazy hasOrd for T])

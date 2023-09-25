@@ -56,13 +56,13 @@ deriving library to define instances of Ord for the formula type.
 
 Definition formula_indDef := [indDef for formula_rect].
 Canonical formula_indType := IndType formula formula_indDef.
-Definition formula_eqMixin := [derive eqMixin for formula].
-HB.instance Definition _ := formula_eqMixin.
-Definition formula_choiceMixin := [derive choiceMixin for formula].
-#[hnf] HB.instance Definition _ := formula_choiceMixin.
-Definition formula_ordMixin := [derive ordMixin for formula].
+Definition formula_hasDecEq := [derive hasDecEq for formula].
+HB.instance Definition _ := formula_hasDecEq.
+Definition formula_hasChoice := [derive hasChoice for formula].
+#[hnf] HB.instance Definition _ := formula_hasChoice.
+Definition formula_hasOrd := [derive hasOrd for formula].
 (* FIXME: This is taking way too long. *)
-#[hnf] HB.instance Definition _ := formula_ordMixin.
+#[hnf] HB.instance Definition _ := formula_hasOrd.
 
 
 Notation context := {fset formula}.

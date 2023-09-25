@@ -34,8 +34,8 @@
 - The `[ordMixin of T by <:]` notation has been deprecated in favor of `[Ord of
   T by <:]`.
 
-- The `[derive ordMixin for T]` notation has been deprecated in favor of
-  `[derive hasOrd for T]`.
+- The `[derive [<flag>] ordMixin for T]` notations have been deprecated in favor
+  of `[derive [<flag>] hasOrd for T]`.
 
 ## Fixed
 
