@@ -18,10 +18,10 @@ commands:
     parameters:
       mathcomp-version:
         type: string
-        default: 1.13.0
+        default: 2.0.0
       deriving-version:
         type: string
-        default: 0.1.0
+        default: 0.2.0
     steps:
     - run:
         name: Install dependencies
@@ -42,72 +42,27 @@ commands:
           opam install --with-test .
 
 jobs:
-  coq-8-11:
-    <<: *defaults
-    steps:
-    - startup
-    - prepare
-    - build
-    docker:
-    - image: coqorg/coq:8.11
-
-  coq-8-12:
-    <<: *defaults
-    steps:
-    - startup
-    - prepare
-    - build
-    docker:
-    - image: coqorg/coq:8.12
-
-  coq-8-13:
-    <<: *defaults
-    steps:
-    - startup
-    - prepare
-    - build
-    docker:
-    - image: coqorg/coq:8.13
-
-  coq-8-14:
-    <<: *defaults
-    steps:
-    - startup
-    - prepare
-    - build
-    docker:
-    - image: coqorg/coq:8.14
-
-  coq-8-15:
-    <<: *defaults
-    steps:
-    - startup
-    - prepare:
-        mathcomp-version: 1.15.0
-    - build
-    docker:
-    - image: coqorg/coq:8.15
-
-  coq-8-16:
-    <<: *defaults
-    steps:
-    - startup
-    - prepare:
-        mathcomp-version: 1.16.0
-    - build
-    docker:
-    - image: coqorg/coq:8.16
-
   coq-8-17:
     <<: *defaults
     steps:
     - startup
     - prepare:
-        mathcomp-version: 1.16.0
-        deriving-version: 0.1.1
+        mathcomp-version: 2.0.0
+        deriving-version: 0.2.0
     - build
     docker:
     - image: coqorg/coq:8.17
+
+  coq-8-18:
+    <<: *defaults
+    steps:
+    - startup
+    - prepare:
+        mathcomp-version: 2.0.0
+        deriving-version: 0.2.0
+    - build
+    docker:
+    - image: coqorg/coq:8.18
 
   coq-dev:
     <<: *defaults
@@ -124,11 +79,6 @@ jobs:
 workflows:
   build:
     jobs:
-    - coq-8-11
-    - coq-8-12
-    - coq-8-13
-    - coq-8-14
-    - coq-8-15
-    - coq-8-16
     - coq-8-17
+    - coq-8-18
     - coq-dev
