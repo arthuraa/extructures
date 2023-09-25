@@ -5,7 +5,7 @@
 
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
-  inputs.deriving.url = "github:arthuraa/deriving/mathcomp-2.0.0";
+  inputs.deriving.url = "github:arthuraa/deriving/v0.2.0";
   inputs.deriving.inputs.nixpkgs.follows = "nixpkgs";
   inputs.deriving.inputs.flake-utils.follows = "flake-utils";
 
@@ -21,7 +21,7 @@
                     version = "2.0.0";
                   };
                   deriving = super.deriving.overrideAttrs (s: {
-                    version = "dev";
+                    version = "0.2.0";
                     src = derivingSrc;
                   });
                 });
@@ -29,7 +29,12 @@
             };
 
             devShell = pkgs.mkShell {
-              packages = with packages; [ coq coqPackages.mathcomp.ssreflect coqPackages.deriving ocaml ];
+              packages = with packages; [
+                coq
+                coqPackages.mathcomp.ssreflect
+                coqPackages.deriving
+                ocaml
+              ];
             };
       }
     );

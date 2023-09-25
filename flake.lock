@@ -10,16 +10,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1695411086,
-        "narHash": "sha256-2N7H6G14dUj+A+1HV8s41HJB2xYNgAVMozQedGOgf3Y=",
+        "lastModified": 1695416077,
+        "narHash": "sha256-xPsuEayHstjF0PGFJZJ+5cm0oMUrpoGLXN23op97vjM=",
         "owner": "arthuraa",
         "repo": "deriving",
-        "rev": "6936173a2ee40855a955c4f52c45b3f74891fe1b",
+        "rev": "a6bcc47832bd6d082fdbee995ffaa6e549658451",
         "type": "github"
       },
       "original": {
         "owner": "arthuraa",
-        "ref": "mathcomp-2.0.0",
+        "ref": "v0.2.0",
         "repo": "deriving",
         "type": "github"
       }
