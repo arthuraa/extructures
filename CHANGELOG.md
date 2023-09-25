@@ -2,7 +2,7 @@
 
 ## Added
 
-- Lemmas `fset_eqP`, `fset_eq0E` and `domm_filter_eq`.
+- Lemmas: `fset_eqP` `fset_eq0E` `domm_filter_eq` `fperm1V`
 
 ## Changed
 
