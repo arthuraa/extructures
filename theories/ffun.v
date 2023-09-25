@@ -1,3 +1,4 @@
+From HB Require Import structures.
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype choice seq.
 
 From extructures Require Import ord fset fmap.
@@ -40,7 +41,7 @@ Record ffun := FFun {
 }.
 Arguments FFun _ _ : clear implicits.
 
-Canonical ffun_subType := [subType for ffval].
+HB.instance Definition _ := [isSub of ffun for ffval].
 
 Implicit Types (f g : ffun) (x : T) (y : S).
 
@@ -202,15 +203,9 @@ Qed.
 
 End Mapping.
 
-Definition ffun_eqMixin T (S : eqType) def :=
-  [eqMixin of @ffun T S def by <:].
-Canonical ffun_eqType T S def :=
-  EqType _ (@ffun_eqMixin T S def).
-Definition ffun_choiceMixin T (S : choiceType) def :=
-  [choiceMixin of @ffun T S def by <:].
-Canonical ffun_choiceType T S def :=
-  Eval hnf in ChoiceType _ (@ffun_choiceMixin T S def).
-Definition ffun_ordMixin T (S : ordType) def :=
-  [ordMixin of @ffun T S def by <:].
-Canonical ffun_ordType T S def :=
-  Eval hnf in OrdType _ (@ffun_ordMixin T S def).
+HB.instance Definition _ T (S : eqType) def :=
+  [Equality of @ffun T S def by <:].
+#[hnf] HB.instance Definition _ T (S : choiceType) def :=
+  [Choice of @ffun T S def by <:].
+#[hnf] HB.instance Definition _ T (S : ordType) def :=
+  [Ord of @ffun T S def by <:].

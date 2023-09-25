@@ -1,3 +1,4 @@
+From HB Require Import structures.
 From mathcomp Require Import
   ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype path bigop.
 
@@ -94,40 +95,24 @@ Section WithOrdType.
 Variable T : ordType.
 
 Coercion fmval : fmap_type >-> seq.
-Canonical fmap_subType S := [subType for @fmval T S].
-Definition fmap_eqMixin (S : eqType) :=
-  [eqMixin of fmap_type T S by <:].
-Canonical fmap_eqType (S : eqType) :=
-  Eval hnf in EqType (fmap_type T S) (fmap_eqMixin S).
-Definition fmap_choiceMixin (S : choiceType) :=
-  [choiceMixin of fmap_type T S by <:].
-Canonical fmap_choiceType (S : choiceType) :=
-  Eval hnf in ChoiceType (fmap_type T S) (fmap_choiceMixin S).
-Definition fmap_ordMixin (S : ordType) :=
-  [ordMixin of fmap_type T S by <:].
-Canonical fmap_ordType (S : ordType) :=
-  Eval hnf in OrdType (fmap_type T S) (fmap_ordMixin S).
+HB.instance Definition _ S :=
+  [isSub of fmap_type T S for @fmval T S].
+HB.instance Definition _ (S : eqType) :=
+  [Equality of fmap_type T S by <:].
+#[hnf] HB.instance Definition _ (S : choiceType) :=
+  [Choice of fmap_type T S by <:].
+#[hnf] HB.instance Definition _ (S : ordType) :=
+  [Ord of fmap_type T S by <:].
+HB.instance Definition _ S :=
+  SubType.copy {fmap T -> S} (fmap_type T S).
+HB.instance Definition _ (S : eqType) :=
+  Equality.copy {fmap T -> S} (fmap_type T S).
+HB.instance Definition _ (S : choiceType) :=
+  Choice.copy {fmap T -> S} (fmap_type T S).
+HB.instance Definition _ (S : ordType) :=
+  Ord.Ord.copy {fmap T -> S} (fmap_type T S).
 
-Canonical fmap_of_subType (S : Type) :=
-  Eval hnf in [subType of {fmap T -> S}].
-Canonical fmap_of_eqType (S : eqType) :=
-  Eval hnf in [eqType of {fmap T -> S}].
-Canonical fmap_of_choiceType (S : choiceType) :=
-  Eval hnf in [choiceType of {fmap T -> S}].
-Canonical fmap_of_ordType (S : ordType) :=
-  Eval hnf in [ordType of {fmap T -> S}].
-
-(*
-
-Still need to rethink the interface hierarchy to allow this...
-
-Definition fmap_countMixin T (S : countType) :=
-  [countMixin of type T S by <:].
-Canonical fmap_countType T (S : countType) :=
-  Eval hnf in CountType (type T S) (fmap_countMixin T S).
-Canonical fmap_subCountType T (S : countType) :=
-  [subCountType of type T S].
-*)
+(* FIXME: Allow defining fmaps as countTypes *)
 
 End WithOrdType.
 

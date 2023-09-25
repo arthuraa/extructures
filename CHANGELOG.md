@@ -2,15 +2,40 @@
 
 ## Added
 
+## Changed
+
+## Deprecated
+
+## Fixed
+
+## Removed
+
+# 0.4.0 (2023/09/25)
+
+## Added
+
 - Infix notations for `fsubset` (`:<=:`) and `fdisjoint` (`:#:`).
 
 ## Changed
+
+- Use Hierarchy Builder to define the ordType interface.
+
+- `ordMixin` has been replaced with `hasOrd`
 
 - Use maximally implicit arguments for the type arguments of `getm`, `setm`,
   `repm`, `updm`, `mapim`, `mapm`, `filterm`, `remm`, `mkfmap`, `mkfmapf`,
   `mkfmapfp` and `domm`.
 
-## Removed
+## Deprecated
+
+- `InjOrdMixin`, `PcanOrdMixin` and `CanOrdMixin` have been deprecated in favor
+  of `InjHasOrd`, `PcanHasOrd` and `CanHasOrd`.
+
+- The `[ordMixin of T by <:]` notation has been deprecated in favor of `[Ord of
+  T by <:]`.
+
+- The `[derive [<flag>] ordMixin for T]` notations have been deprecated in favor
+  of `[derive [<flag>] hasOrd for T]`.
 
 ## Fixed
 

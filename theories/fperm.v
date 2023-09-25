@@ -1,3 +1,4 @@
+From HB Require Import structures.
 From mathcomp Require Import
   ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype path bigop.
 
@@ -56,24 +57,14 @@ Notation "{ 'fperm' T }" := (@fperm_of _ (Phant T))
 Section WithOrdType.
 
 Variable T : ordType.
-Canonical fperm_subType := [subType for @fpval T].
-Definition fperm_eqMixin :=
-   [eqMixin of fperm_type T by <:].
-Canonical fperm_eqType :=
-  Eval hnf in EqType (fperm_type T) fperm_eqMixin.
-Definition fperm_choiceMixin :=
-  [choiceMixin of fperm_type T by <:].
-Canonical fperm_choiceType :=
-  Eval hnf in ChoiceType (fperm_type T) fperm_choiceMixin.
-Definition fperm_ordMixin :=
-  [ordMixin of fperm_type T by <:].
-Canonical fperm_ordType :=
-  Eval hnf in OrdType (fperm_type T) fperm_ordMixin.
-
-Canonical fperm_of_subType := Eval hnf in [subType of {fperm T}].
-Canonical fperm_of_eqType := Eval hnf in [eqType of {fperm T}].
-Canonical fperm_of_choiceType := Eval hnf in [choiceType of {fperm T}].
-Canonical fperm_of_ordType := Eval hnf in [ordType of {fperm T}].
+HB.instance Definition _ := [isSub of fperm_type T for @fpval T].
+HB.instance Definition _ := [Equality of fperm_type T by <:].
+#[hnf] HB.instance Definition _ := [Choice of fperm_type T by <:].
+#[hnf] HB.instance Definition _ := [Ord of fperm_type T by <:].
+HB.instance Definition _ := SubType.copy {fperm T} (fperm_type T).
+HB.instance Definition _ := Equality.copy {fperm T} (fperm_type T).
+HB.instance Definition _ := Choice.copy {fperm T} (fperm_type T).
+HB.instance Definition _ := Ord.Ord.copy {fperm T} (fperm_type T).
 
 End WithOrdType.
 
@@ -530,7 +521,8 @@ by rewrite -mem_supp e in_fsetU1 (negbTE e2).
 Qed.
 
 Definition enum_fperm X : {fset {fperm T}} :=
-  fset (pmap (obind insub \o insub) (enum_fmap X X)).
+  fset (pmap (obind (insub : ffun _ -> option {fperm T}) \o insub)
+          (enum_fmap X X)).
 
 Lemma enum_fpermE X s : supp s :<=: X = (s \in enum_fperm X).
 Proof.

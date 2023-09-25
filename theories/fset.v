@@ -1,3 +1,4 @@
+From HB Require Import structures.
 From mathcomp Require Import
   ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype path bigop tuple.
 
@@ -82,22 +83,14 @@ Section Instances.
 
 Variable T : ordType.
 
-Canonical fset_subType := [subType for @fsval T].
-Definition fset_eqMixin := [eqMixin of fset_type T by <:].
-Canonical fset_eqType :=
-  Eval hnf in EqType (fset_type T) fset_eqMixin.
-Definition fset_choiceMixin :=
-  [choiceMixin of fset_type T by <:].
-Canonical fset_choiceType :=
-  Eval hnf in ChoiceType (fset_type T) fset_choiceMixin.
-Definition fset_ordMixin := [ordMixin of fset_type T by <:].
-Canonical fset_ordType :=
-  Eval hnf in OrdType (fset_type T) fset_ordMixin.
-
-Canonical fset_of_subType := Eval hnf in [subType of {fset T}].
-Canonical fset_of_eqType := Eval hnf in [eqType of {fset T}].
-Canonical fset_of_choiceType := Eval hnf in [choiceType of {fset T}].
-Canonical fset_of_ordType := Eval hnf in [ordType of {fset T}].
+HB.instance Definition _ := [isSub of fset_type T for @fsval T].
+HB.instance Definition _ := [Equality of fset_type T by <:].
+#[hnf] HB.instance Definition _ := [Choice of fset_type T by <:].
+#[hnf] HB.instance Definition _ := [Ord of fset_type T by <:].
+#[hnf] HB.instance Definition _ := SubType.copy {fset T} (fset_type T).
+#[hnf] HB.instance Definition _ := Equality.copy {fset T} (fset_type T).
+#[hnf] HB.instance Definition _ := Choice.copy {fset T} (fset_type T).
+#[hnf] HB.instance Definition _ := Ord.Ord.copy {fset T} (fset_type T).
 
 End Instances.
 
@@ -448,7 +441,7 @@ Qed.
 
 Lemma fsetIS s1 s2 s3 : s1 :<=: s2 -> s3 :&: s1 :<=: s3 :&: s2.
 Proof.
-by rewrite fsubsetI fsubsetIl /= => sub; rewrite fsubIset // sub orbT.
+by rewrite fsubsetI fsubsetIl /= => s1s2; rewrite fsubIset // s1s2 orbT.
 Qed.
 
 Lemma fsetSI s1 s2 s3 : s1 :<=: s2 -> s1 :&: s3 :<=: s2 :&: s3.
@@ -812,8 +805,8 @@ Import Monoid.
 
 Variable T : ordType.
 
-Canonical fsetU_monoid := Law (@fsetUA T) (@fset0U T) (@fsetU0 T).
-Canonical fsetU_comoid := ComLaw (@fsetUC T).
+HB.instance Definition _ :=
+  isComLaw.Build {fset T} fset0 fsetU (@fsetUA T) (@fsetUC T) (@fset0U T).
 
 End setOpsAlgebra.
 
@@ -1128,8 +1121,8 @@ Qed.
 Lemma powersetS s1 s2 : powerset s1 :<=: powerset s2 = s1 :<=: s2.
 Proof.
 apply/(sameP fsubsetP)/(iffP idP).
-  move=> sub s3; rewrite !powersetE => sub'; exact: fsubset_trans sub.
-move/(_ s1); rewrite !powersetE; apply; exact: fsubsetxx.
+- move=> s1s2 s3; rewrite !powersetE => sub'; exact: fsubset_trans s1s2.
+- move/(_ s1); rewrite !powersetE; apply; exact: fsubsetxx.
 Qed.
 
 Lemma powerset0 : powerset fset0 = fset1 fset0.
@@ -1294,7 +1287,7 @@ Proof.
 apply/(iffP fsubsetP).
 - move=> sub i i_s Pi; apply/fsubsetP=> x x_i.
   by apply: sub; apply/bigcupP; exists i.
-- move=> sub x /bigcupP [i i_s Pi]; apply/fsubsetP; exact: sub.
+- move=> FX x /bigcupP [i i_s Pi]; apply/fsubsetP; exact: FX.
 Qed.
 
 Lemma in_bigcup s x :
