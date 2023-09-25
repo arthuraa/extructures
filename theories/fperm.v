@@ -423,6 +423,11 @@ Proof. by move=> s1 s2; rewrite -{2}(fperm_invK s1) fperm_mulsK. Qed.
 Lemma fperm_mulKVs : rev_left_loop fperm_inv fperm_mul.
 Proof. by move=> s1 s2; rewrite -{1}(fperm_invK s1) fperm_mulKs. Qed.
 
+Lemma fperm1V : 1^-1 = 1 :> {fperm T}.
+Proof.
+by apply: (@fperm_mulIs 1); rewrite fperm_mul1s fperm_mulVs.
+Qed.
+
 Notation fperm2_def x y := [fun z => z with x |-> y, y |-> x].
 
 Lemma fperm2_subproof x y :

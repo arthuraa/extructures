@@ -558,6 +558,13 @@ apply/fsubsetP=> k; rewrite !mem_domm filtermE.
 by case: (m k).
 Qed.
 
+Lemma domm_filter_eq (p : pred T) m :
+  domm (filterm (fun k v => p k) m) = fset_filter p (domm m).
+Proof.
+apply/eq_fset => k; rewrite !(mem_domm, in_fset_filter) filtermE andbC.
+by case: (m k) => //= v; case: ifP.
+Qed.
+
 Lemma setmI m k v : m k = Some v -> setm m k v = m.
 Proof.
 move=> get_k; apply/eq_fmap=> k'; rewrite setmE.

@@ -13,7 +13,7 @@ Require Import ord.
 (*   These definitions and notations are largely similar to the finset        *)
 (* library of the Mathematical Components distribution.                       *)
 (*                                                                            *)
-(*          fset s == the set of elements contained in the sequence s.        *)
+(*         fset xs == the set of elements contained in the sequence xs.       *)
 (*         x \in s == {fset T} coerces into a collective predicate.           *)
 (*                    Membership is computed like for sequences.              *)
 (*          size s == the cardinality of s, defined by converting it to a     *)
@@ -156,7 +156,7 @@ Section Properties.
 Variables (T : ordType).
 Local Open Scope fset_scope.
 
-Implicit Types (s : {fset T}) (x y : T) (xs : seq T).
+Implicit Types (s : {fset T}) (x y : T) (xs ys : seq T).
 
 Lemma all_fset P xs : all P (fset xs) = all P xs.
 Proof.
@@ -181,6 +181,12 @@ rewrite -[s1 =i s2]/(_) in E; apply: (sorted_eq _ _ Ps1 Ps2) => //.
   exact: Ord.lt_trans.
 apply: uniq_perm => //; [move: Ps1|move: Ps2]; apply/sorted_uniq => //;
 by [apply: Ord.ltxx|apply: Ord.lt_trans].
+Qed.
+
+Lemma fset_eqP {xs ys} : reflect (xs =i ys) (fset xs == fset ys).
+Proof.
+apply/(iffP eqP) => [xsys x|xsys]; rewrite -?(in_fset xs x) ?xsys ?in_fset //.
+by apply/eq_fset => x; rewrite !in_fset xsys.
 Qed.
 
 Lemma fsvalK : cancel val (@fset T).
@@ -295,6 +301,12 @@ Proof. by move=> s; rewrite fsetUC fset0U. Qed.
 
 Lemma fsetUid : idempotent (@fsetU T).
 Proof. by move=> s; apply/eq_fset=> x; rewrite in_fsetU orbb. Qed.
+
+Lemma fset_eq0E xs : (fset xs == fset0) = (xs == [::]).
+Proof.
+rewrite fset0E; apply/(sameP fset_eqP)/(iffP eqP) => [-> //|].
+by case: xs => [|x xs] // /(_ x); rewrite inE eqxx.
+Qed.
 
 Lemma fsubsetP s1 s2 : reflect {subset s1 <= s2} (s1 :<=: s2).
 Proof.
