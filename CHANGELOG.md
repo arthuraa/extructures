@@ -2,6 +2,18 @@
 
 ## Added
 
+## Changed
+
+## Deprecated
+
+## Fixed
+
+## Removed
+
+# 0.4.0 (2023/09/25)
+
+## Added
+
 - Infix notations for `fsubset` (`:<=:`) and `fdisjoint` (`:#:`).
 
 ## Changed
@@ -24,8 +36,6 @@
 
 - The `[derive ordMixin for T]` notation has been deprecated in favor of
   `[derive hasOrd for T]`.
-
-## Removed
 
 ## Fixed
 
