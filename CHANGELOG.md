@@ -6,6 +6,9 @@
 
 ## Changed
 
+- The functions `mkfmapfp` and `mkfmapf` now take a set as an argument, rather
+  than a key-value list.
+
 ## Deprecated
 
 ## Fixed

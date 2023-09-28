@@ -56,10 +56,10 @@ Require Import ord fset.
 (*     mkfmap kvs == construct a map from kvs : seq (T * S).  If multiple     *)
 (*                   bindings are present in kvs for a given key k : T, the   *)
 (*                   first one is used.                                       *)
-(*   mkfmapf f ks == construct a map that associates to each element k of     *)
-(*                   the sequence ks the value f k, mapping all other keys to *)
+(*   mkfmapf f X  == construct a map that associates to each element k of     *)
+(*                   the set ks the value f k, mapping all other keys to      *)
 (*                   None.                                                    *)
-(*  mkfmapfp f ks == same as above but for a partial function                 *)
+(*  mkfmapfp f X  == same as above but for a partial function                 *)
 (*                   f : T -> option S.                                       *)
 (******************************************************************************)
 
@@ -222,11 +222,11 @@ Definition emptym : {fmap T -> S} :=
 Definition mkfmap (kvs : seq (T * S)) : {fmap T -> S} :=
   foldr (fun kv m => setm m kv.1 kv.2) emptym kvs.
 
-Definition mkfmapf (f : T -> S) (ks : seq T) : {fmap T -> S} :=
-  mkfmap [seq (k, f k) | k <- ks].
+Definition mkfmapf (f : T -> S) (X : {fset T}) : {fmap T -> S} :=
+  mkfmap [seq (k, f k) | k <- X].
 
-Definition mkfmapfp (f : T -> option S) (ks : seq T) : {fmap T -> S} :=
-  mkfmap (pmap (fun k => omap (pair k) (f k)) ks).
+Definition mkfmapfp (f : T -> option S) (X : {fset T}) : {fmap T -> S} :=
+  mkfmap (pmap (fun k => omap (pair k) (f k)) X).
 
 Definition domm m := fset (unzip1 m).
 
@@ -271,7 +271,7 @@ Variables (T : ordType) (S : Type).
 Local Open Scope ord_scope.
 Local Open Scope fset_scope.
 
-Implicit Type (m : {fmap T -> S}) (k : T) (v : S).
+Implicit Type (m : {fmap T -> S}) (k : T) (v : S) (X : {fset T}).
 
 Lemma eq_fmap m1 m2 : m1 =1 m2 <-> m1 = m2.
 Proof.
@@ -481,35 +481,35 @@ Proof.
 by move=> k; elim: kvs=> [|p kvs IH] //=; rewrite setmE IH.
 Qed.
 
-Lemma mkfmapfE (f : T -> S) (ks : seq T) k :
-  mkfmapf f ks k = if k \in ks then Some (f k) else None.
+Lemma mkfmapfE (f : T -> S) X k :
+  mkfmapf f X k = if k \in X then Some (f k) else None.
 Proof.
-rewrite /mkfmapf; elim: ks => [|k' ks IH] //=.
+rewrite /mkfmapf -[k \in X]/(k \in (X : seq _)) /=.
+elim: (val X) => [|k' ks IH] //=.
 by rewrite setmE inE {}IH; have [<-|?] := altP (k =P k').
 Qed.
 
-Lemma mkfmapfpE (f : T -> option S) (ks : seq T) k :
-  mkfmapfp f ks k = if k \in ks then f k else None.
+Lemma mkfmapfpE (f : T -> option S) X k :
+  mkfmapfp f X k = if k \in X then f k else None.
 Proof.
-rewrite /mkfmapfp; elim: ks => [|k' ks IH] //=.
+rewrite /mkfmapfp -[k \in X]/(k \in (X : seq _)) /=.
+elim: (val X) => [|k' ks IH] //=.
 case e: (f k') => [v|] //=.
   by rewrite setmE inE {}IH; have [->|? //] := altP (k =P k'); rewrite e.
 rewrite inE {}IH; have [->|?] //= := altP (k =P k'); rewrite e.
 by case: ifP.
 Qed.
 
-Lemma domm_mkfmapf (f : T -> S) (ks : seq T) :
-  domm (mkfmapf f ks) = fset ks.
+Lemma domm_mkfmapf (f : T -> S) X : domm (mkfmapf f X) = X.
 Proof.
-apply/eq_fset=> k; rewrite mem_domm mkfmapfE in_fset.
-by case: (k \in ks).
+apply/eq_fset=> k; rewrite mem_domm mkfmapfE; by case: (k \in X).
 Qed.
 
-Lemma domm_mkfmapfp (f : T -> option S) (ks : seq T) :
-  domm (mkfmapfp f ks) = fset [seq k <- ks | f k].
+Lemma domm_mkfmapfp (f : T -> option S) X :
+  domm (mkfmapfp f X) = fset_filter f X.
 Proof.
 apply/eq_fset=> k; rewrite mem_domm mkfmapfpE in_fset mem_filter andbC.
-by case: (k \in ks).
+by case: (k \in X).
 Qed.
 
 Lemma setm_union m1 m2 k v :
@@ -1043,12 +1043,12 @@ Section OfSeq.
 Variable (T : Type).
 
 Definition fmap_of_seq (xs : seq T) : {fmap nat -> T} :=
-  mkfmapfp (nth None [seq Some x | x <- xs]) (iota 0 (size xs)).
+  mkfmapfp (nth None [seq Some x | x <- xs]) (fset (iota 0 (size xs))).
 
 Lemma fmap_of_seqE xs n :
   fmap_of_seq xs n = nth None [seq Some x | x <- xs] n.
 Proof.
-rewrite /fmap_of_seq mkfmapfpE mem_iota leq0n /= add0n.
+rewrite /fmap_of_seq mkfmapfpE in_fset mem_iota leq0n /= add0n.
 case: ltnP=> [l|g] //.
 by rewrite nth_default // size_map.
 Qed.
