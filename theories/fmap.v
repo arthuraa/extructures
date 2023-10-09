@@ -317,6 +317,16 @@ case: m => [s Ps] /=; rewrite /getm /=.
 by elim: s {Ps} => [|p s IH] //=; rewrite inE IH; case: (k == p.1).
 Qed.
 
+Variant getm_spec m k : option S -> bool -> Type :=
+| InDomm v of k \in domm m & m k = Some v : getm_spec m k (Some v) true
+| NotinDomm of k \notin domm m & m k = None : getm_spec m k None false.
+
+Lemma getmP m k : getm_spec m k (m k) (k \in domm m).
+Proof.
+by rewrite mem_domm; case mk: (m k) => [v|]; constructor;
+rewrite // mem_domm mk.
+Qed.
+
 Lemma dommP m k : reflect (exists v, m k = Some v) (k \in domm m).
 Proof.
 by rewrite mem_domm; case: (m k) => /=; constructor; eauto; case.
@@ -329,6 +339,17 @@ Qed.
 
 Arguments dommP {_ _}.
 Arguments dommPn {_ _}.
+
+Lemma eq_in_fmap m1 m2 :
+  domm m1 = domm m2 ->
+  (forall k, k \in domm m1 -> k \in domm m2 -> m1 k = m2 k) ->
+  m1 = m2.
+Proof.
+move=> edom evals; apply/eq_fmap => k.
+case: (getmP m2 k) => [v|] kdom2 m2k.
+- by rewrite -m2k; apply: evals; rewrite // edom.
+- by apply/dommPn; rewrite edom.
+Qed.
 
 Lemma setmE m k v k' :
   setm m k v k' =
@@ -845,7 +866,7 @@ Section EqType.
 Variables (T : ordType) (S : eqType).
 Implicit Types (m : {fmap T -> S}) (k : T) (v : S).
 
-Lemma getmP m k v : reflect (m k = Some v) ((k, v) \in m).
+Lemma in_fmapP m k v : reflect (m k = Some v) ((k, v) \in m).
 Proof.
 case: m => [s Ps] /=; apply/(iffP idP); rewrite /getm /= inE /=.
   elim: s Ps => [|[k' v'] s IH] //= sorted_s.
@@ -878,7 +899,7 @@ Lemma injectivemP m : reflect {in domm m, injective m} (injectivem m).
 Proof.
 apply/(iffP idP).
   move=> inj_m k1; rewrite mem_domm; case m_k1: (m k1) => [v|] // _.
-  move/getmP in m_k1; move=> k2 /esym/getmP.
+  move/in_fmapP in m_k1; move=> k2 /esym/in_fmapP.
   move: inj_m m_k1; rewrite /injectivem.
   have: uniq (unzip1 m).
     apply (sorted_uniq (@Ord.lt_trans T) (@Ord.ltxx T)).
@@ -905,7 +926,7 @@ rewrite /injectivem map_inj_in_uniq.
   apply: (@map_uniq _ _ (@fst T S)).
   apply: (sorted_uniq (@Ord.lt_trans T) (@Ord.ltxx T)).
   exact: (valP m).
-move=> [k1 v] [k2 v'] /= /getmP k1_in_m /getmP k2_in_m ?; subst v'.
+move=> [k1 v] [k2 v'] /= /in_fmapP k1_in_m /in_fmapP k2_in_m ?; subst v'.
 move: (inj_m k1); rewrite mem_domm k1_in_m => /(_ erefl k2 (esym k2_in_m)).
 congruence.
 Qed.
@@ -944,7 +965,7 @@ Open Scope fset_scope.
 
 Lemma getm_inv m k k' : invm m k = Some k' -> m k' = Some k.
 Proof.
-rewrite /invm =>/mkfmap_Some/mapP [[h h'] /getmP get_k /= [??]].
+rewrite /invm =>/mkfmap_Some/mapP [[h h'] /in_fmapP get_k /= [??]].
 by subst h h'.
 Qed.
 
@@ -953,7 +974,7 @@ Proof.
 rewrite /codomm; apply/(iffP idP).
   rewrite mem_domm; case im_k: (invm m k) => [k'|] //= _.
   by rewrite -(getm_inv im_k); eauto.
-move=> [k' /getmP m_k'].
+move=> [k' /in_fmapP m_k'].
 rewrite /invm domm_mkfmap; apply/mapP; exists (k, k') => //.
 by apply/mapP; exists (k', k).
 Qed.
@@ -982,7 +1003,7 @@ Lemma invmE m k : obind m (invm m k) = if invm m k then Some k else None.
 Proof.
 case get_k: (invm m k) => [k'|] //=.
 rewrite /invm in get_k; move/mkfmap_Some/mapP in get_k.
-by case: get_k => [[h h'] /getmP get_k [??]]; subst k k'.
+by case: get_k => [[h h'] /in_fmapP get_k [??]]; subst k k'.
 Qed.
 
 End Cancel.
