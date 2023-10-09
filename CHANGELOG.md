@@ -2,12 +2,17 @@
 
 ## Added
 
-- Lemmas: `fset_eqP` `fset_eq0E` `domm_filter_eq` `fperm1V`
+- Lemmas: `fset_eqP` `fset_eq0E` `domm_filter_eq` `fperm1V` `eq_in_fmap`
+
+- A new specification lemma for `getm` dubbed `getmP` (which used to refer to
+  what is now known as `in_fmapP`).
 
 ## Changed
 
 - The functions `mkfmapfp` and `mkfmapf` now take a set as an argument, rather
   than a key-value list.
+
+- Renamed `getmP` to `in_fmapP`.
 
 ## Deprecated
 
