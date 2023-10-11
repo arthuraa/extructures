@@ -509,9 +509,6 @@ Qed.
 Lemma fdisjointSr s1 s2 s3 : s1 :<=: s2 -> s3 :#: s2 -> s3 :#: s1.
 Proof. rewrite ![s3 :#: _]fdisjointC; exact: fdisjointSl. Qed.
 
-#[deprecated(since="extructures 0.5.0",note="Use fdisjointSl")]
-Notation fdisjoint_trans := fdisjointSl.
-
 Lemma fdisjoint0s s : fset0 :#: s.
 Proof. by rewrite /fdisjoint fset0I. Qed.
 
@@ -893,6 +890,9 @@ Qed.
 End General.
 
 Arguments bigcupP {_ _ _ _ _ _}.
+
+#[deprecated(since="extructures 0.5.0",note="Use fdisjointSl")]
+Notation fdisjoint_trans := fdisjointSl.
 
 Section Finite.
 
