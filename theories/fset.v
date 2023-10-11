@@ -501,10 +501,16 @@ move=> dis; apply/eq_fset=> x; rewrite in_fset0 in_fsetI.
 by have [h|//] := boolP (x \in s1); rewrite (negbTE (dis _ h)).
 Qed.
 
-Lemma fdisjoint_trans s1 s2 s3 : s1 :<=: s2 -> s2 :#: s3 -> s1 :#: s3.
+Lemma fdisjointSl s1 s2 s3 : s1 :<=: s2 -> s2 :#: s3 -> s1 :#: s3.
 Proof.
 by move=> /fsubsetP sub /fdisjointP dis; apply/fdisjointP=> x /sub; eauto.
 Qed.
+
+Lemma fdisjointSr s1 s2 s3 : s1 :<=: s2 -> s3 :#: s2 -> s3 :#: s1.
+Proof. rewrite ![s3 :#: _]fdisjointC; exact: fdisjointSl. Qed.
+
+#[deprecated(since="extructures 0.5.0",note="Use fdisjointSl")]
+Notation fdisjoint_trans := fdisjointSl.
 
 Lemma fdisjoint0s s : fset0 :#: s.
 Proof. by rewrite /fdisjoint fset0I. Qed.

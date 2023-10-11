@@ -3,6 +3,7 @@
 ## Added
 
 - Lemmas: `fset_eqP` `fset_eq0E` `domm_filter_eq` `fperm1V` `eq_in_fmap`
+  `fdisjointSr`
 
 - A new specification lemma for `getm` dubbed `getmP` (which used to refer to
   what is now known as `in_fmapP`).
@@ -14,7 +15,11 @@
 
 - Renamed `getmP` to `in_fmapP`.
 
+- Renamed `fdisjoint_trans` to `fdisjointSl`.
+
 ## Deprecated
+
+- `fdisjoint_trans` in favor of `fdisjointSl`.
 
 ## Fixed
 
