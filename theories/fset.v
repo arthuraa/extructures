@@ -814,6 +814,9 @@ Arguments fsetUidPl {T s1 s2}.
 Arguments fsetUidPr {T s1 s2}.
 Arguments fsetDidPl {T s1 s2}.
 
+#[deprecated(since="extructures 0.5.0",note="Use fdisjointSl")]
+Notation fdisjoint_trans := fdisjointSl (only parsing).
+
 Section setOpsAlgebra.
 
 Import Monoid.
@@ -890,9 +893,6 @@ Qed.
 End General.
 
 Arguments bigcupP {_ _ _ _ _ _}.
-
-#[deprecated(since="extructures 0.5.0",note="Use fdisjointSl")]
-Notation fdisjoint_trans := fdisjointSl.
 
 Section Finite.
 
@@ -1330,4 +1330,3 @@ Lemma bigcup1 (T : ordType) (s : seq T) : \bigcup_(x <- s) fset1 x = fset s.
 Proof. by rewrite bigcup1_cond filter_predT. Qed.
 
 End BigOpUnion.
-
