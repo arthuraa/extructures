@@ -2,6 +2,18 @@
 
 ## Added
 
+## Changed
+
+## Deprecated
+
+## Fixed
+
+## Removed
+
+# 0.5.0 (2024/12/09)
+
+## Added
+
 - Lemmas: `fset_eqP` `fset_eq0E` `domm_filter_eq` `fperm1V` `eq_in_fmap`
   `fdisjointSr`
 
@@ -20,10 +32,6 @@
 ## Deprecated
 
 - `fdisjoint_trans` in favor of `fdisjointSl`.
-
-## Fixed
-
-## Removed
 
 # 0.4.0 (2023/09/25)
 
