@@ -64,6 +64,28 @@ jobs:
     docker:
     - image: coqorg/coq:8.18
 
+  coq-8-19:
+    <<: *defaults
+    steps:
+    - startup
+    - prepare:
+        mathcomp-version: 2.2.0
+        deriving-version: 0.2.0
+    - build
+    docker:
+    - image: coqorg/coq:8.19
+
+  coq-8-20:
+    <<: *defaults
+    steps:
+    - startup
+    - prepare:
+        mathcomp-version: 2.3.0
+        deriving-version: 0.2.1
+    - build
+    docker:
+    - image: coqorg/coq:8.20
+
   coq-dev:
     <<: *defaults
     steps:
@@ -81,4 +103,6 @@ workflows:
     jobs:
     - coq-8-17
     - coq-8-18
+    - coq-8-19
+    - coq-8-20
     - coq-dev
