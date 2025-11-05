@@ -1,14 +1,24 @@
 # Unreleased
 
-## Added
+## Renamed
 
-- Finmap-style notations `` `|`, `&`, `\` ``, etc.
+| Old      | New         |
+|----------|-------------|
+| `:&:`    | `` `&` ``   |
+| `:|:`    | `` `|` ``   |
+| `|:`     | `` |` ``    |
+| `:\:`    | `` `\` ``   |
+| `:\`     | `` `\ ``    |
+| `:<=:`   | `` `<=` ``  |
+| `:#:`    | `` `#` ``   |
+| `@:`     | `` @` ``    |
+| `*supp*` | `*finsupp*` |
+
+## Added
 
 ## Changed
 
 ## Deprecated
-
-- Colon notations `:|:, :&:, :\:`, etc.
 
 ## Fixed
 
