@@ -390,12 +390,12 @@ elim: m1 => [|p m1 IH] //=.
 by rewrite setmE {}IH; case: (_ == _).
 Qed.
 
-Lemma domm_union m1 m2 : domm (unionm m1 m2) = domm m1 :|: domm m2.
+Lemma domm_union m1 m2 : domm (unionm m1 m2) = domm m1 `|` domm m2.
 Proof.
 by apply/eq_fset=> k; rewrite in_fsetU !mem_domm unionmE; case: (m1 k).
 Qed.
 
-Lemma domm_set m k v : domm (setm m k v) = k |: domm m.
+Lemma domm_set m k v : domm (setm m k v) = k |` domm m.
 Proof.
 apply/eq_fset=> k'; apply/(sameP dommP)/(iffP idP);
 rewrite setmE in_fsetU1.
@@ -480,7 +480,7 @@ apply/eq_fmap=> x'; have [yes|no] := boolP (a x y).
 by rewrite remmE !filtermE setmE; case: eqP no=> //= -> /negbTE ->.
 Qed.
 
-Lemma domm_rem m k : domm (remm m k) = domm m :\ k.
+Lemma domm_rem m k : domm (remm m k) = domm m `\ k.
 Proof.
 by apply/eq_fset=> k'; rewrite in_fsetD1 !mem_domm remmE; case: eqP.
 Qed.
@@ -573,7 +573,7 @@ case: (m k) => [v|] //=.
 by rewrite e.
 Qed.
 
-Lemma domm_filter p m : domm (filterm p m) :<=: domm m.
+Lemma domm_filter p m : domm (filterm p m) `<=` domm m.
 Proof.
 apply/fsubsetP=> k; rewrite !mem_domm filtermE.
 by case: (m k).
@@ -738,7 +738,7 @@ by case: (val m)=> [|[x y] m'] //= /path_sorted /mkfmapK ->.
 Qed.
 
 Lemma dommES m :
-  domm m = if splitm m is Some (x, _, m) then x |: domm m
+  domm m = if splitm m is Some (x, _, m) then x |` domm m
            else fset0.
 Proof.
 rewrite /domm /splitm /=.
@@ -837,7 +837,7 @@ by rewrite (inj_eq f_inj) [in RHS]fun_if IH.
 Qed.
 
 Lemma domm_map2 T T' S S' (f : T -> T') (g : S -> S') m :
-  domm (mapm2 f g m) = f @: domm m.
+  domm (mapm2 f g m) = f @` domm m.
 Proof.
 apply/eq_fset=> x; rewrite /mapm2 domm_mkfmap /unzip1 -map_comp /comp /=.
 by rewrite /domm imfset_fset in_fset -map_comp.
@@ -993,7 +993,7 @@ Arguments codommPn {_ _}.
 Lemma codomm0 : codomm (@emptym T S) = fset0.
 Proof. by rewrite /codomm /domm fset0E. Qed.
 
-Lemma codomm_rem m k : codomm (remm m k) :<=: codomm m.
+Lemma codomm_rem m k : codomm (remm m k) `<=` codomm m.
 Proof.
 apply/fsubsetP=> v /codommP [k']; rewrite remmE.
 by case: eqP=> // _ Pv; apply/codommP; eauto.
@@ -1086,14 +1086,14 @@ Local Open Scope fset_scope.
 
 Definition currym m :=
   mkfmapf (fun x => mkfmapfp (fun y => m (x, y))
-                                   (@snd _ _ @: domm m))
-             (@fst _ _ @: domm m).
+                                   (@snd _ _ @` domm m))
+             (@fst _ _ @` domm m).
 
 Definition uncurrym n : {fmap T * S -> R} :=
   mkfmapfp (fun p : T * S => if n p.1 is Some n' then n' p.2
                              else None)
               (\bigcup_(x <- domm n)
-                  if n x is Some n' then pair x @: domm n'
+                  if n x is Some n' then pair x @` domm n'
                   else fset0).
 
 Lemma currymP m x y v :
@@ -1106,7 +1106,7 @@ split.
   move=> [<-] {n}; rewrite mkfmapfpE.
   by case: ifP.
 move=> get_xy.
-exists (mkfmapfp (fun y' => m (x, y')) (@snd _ _ @: domm m)).
+exists (mkfmapfp (fun y' => m (x, y')) (@snd _ _ @` domm m)).
   rewrite /currym mkfmapfE -{1}[x]/(x, y).1 mem_imfset //.
   by rewrite mem_domm get_xy.
 by rewrite mkfmapfpE -{1}[y]/(x, y).2 mem_imfset // mem_domm get_xy.
@@ -1126,7 +1126,7 @@ suff: False by [].
 by apply: h; exists (x, y)=> //; rewrite mem_domm get_xy.
 Qed.
 
-Lemma domm_curry m : domm (currym m) = @fst _ _ @: (domm m).
+Lemma domm_curry m : domm (currym m) = @fst _ _ @` (domm m).
 Proof.
 by apply/eq_fset=> x; rewrite /currym mem_domm mkfmapfE; case: ifP.
 Qed.
@@ -1135,7 +1135,7 @@ Lemma uncurrymP n x y v :
   (exists2 n', n x = Some n' & n' y = Some v) <->
   uncurrym n (x, y) = Some v.
 Proof.
-pose f x' := if n x' is Some n'' then pair x' @: domm n'' else fset0.
+pose f x' := if n x' is Some n'' then pair x' @` domm n'' else fset0.
 split.
   move=> [n' get_x get_y].
   rewrite /uncurrym mkfmapfpE /= get_x get_y.

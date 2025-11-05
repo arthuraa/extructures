@@ -157,20 +157,20 @@ Notation "s1 `#` s2" := (fdisjoint s1 s2) : fset_scope.
 Notation "[ 'fset' a1 ; .. ; an ]" := (fsetU (fset1 a1) .. (fsetU (fset1 an) fset0) .. )
   (at level 0, format "[ 'fset'  a1 ;  .. ;  an ]") : fset_scope.
 
-#[deprecated(since="0.6.0", note="Use `|` instead")]
+#[deprecated(since="extructures 0.6.0", note="Use `|` instead")]
 Notation "s1 :|: s2" := (fsetU s1 s2) (only parsing) : fset_scope.
-#[deprecated(since="0.6.0", note="Use |` instead")]
+#[deprecated(since="extructures 0.6.0", note="Use |` instead")]
 Notation "x |: s" := (fsetU (fset1 x) s) (only parsing) : fset_scope.
-#[deprecated(since="0.6.0", note="Use `&` instead")]
+#[deprecated(since="extructures 0.6.0", note="Use `&` instead")]
 Notation "s1 :&: s2" := (fsetI s1 s2) (only parsing) : fset_scope.
-#[deprecated(since="0.6.0", note="Use `|` instead")]
+#[deprecated(since="extructures 0.6.0", note="Use `|` instead")]
 Notation "s1 :\: s2" := (fsetD s1 s2) (only parsing) : fset_scope.
-#[deprecated(since="0.6.0", note="Use `| instead")]
+#[deprecated(since="extructures 0.6.0", note="Use `| instead")]
 Notation "s :\ x" := (fsetD s (fset1 x)) (only parsing) : fset_scope.
-#[deprecated(since="0.6.0", note="Use `<=` instead")]
+#[deprecated(since="extructures 0.6.0", note="Use `<=` instead")]
 Notation "s1 :<=: s2" := (fsubset s1 s2)
   (at level 55, no associativity, only parsing) : fset_scope.
-#[deprecated(since="0.6.0", note="Use `#` instead")]
+#[deprecated(since="extructures 0.6.0", note="Use `#` instead")]
 Notation "s1 :#: s2" := (fdisjoint s1 s2)
   (at level 55, no associativity, only parsing) : fset_scope.
 
@@ -950,10 +950,10 @@ Local Open Scope fset_scope.
 
 Definition imfset (f : T -> S) s := fset (map f s).
 
-Local Notation "f @: s" := (imfset f s) (at level 24).
+Local Notation "f @` s" := (imfset f s) (at level 24).
 
 Lemma imfsetP f s x :
-  reflect (exists2 y, y \in s & x = f y) (x \in f @: s).
+  reflect (exists2 y, y \in s & x = f y) (x \in f @` s).
 Proof.
 apply/(iffP idP).
   rewrite /imfset in_fset=> /mapP [y Py ->].
@@ -970,7 +970,7 @@ by apply/(sameP idP)/(iffP idP)=> /imfsetP [y Py ->]; apply/imfsetP;
 eexists; eauto.
 Qed.
 
-Lemma eq_in_imfset f1 f2 s : {in s, f1 =1 f2} -> f1 @: s = f2 @: s.
+Lemma eq_in_imfset f1 f2 s : {in s, f1 =1 f2} -> f1 @` s = f2 @` s.
 Proof.
 move=> h_f; apply/eq_fset=> x.
 apply/(sameP idP)/(iffP idP)=> /imfsetP [y Py ->]; apply/imfsetP;
@@ -978,16 +978,16 @@ eexists; eauto.
 by apply/esym/h_f.
 Qed.
 
-Lemma mem_imfset f x s : x \in s -> f x \in f @: s.
+Lemma mem_imfset f x s : x \in s -> f x \in f @` s.
 Proof. by move=> Px; apply/imfsetP; eauto. Qed.
 
-Lemma imfset0 f : f @: fset0 = fset0.
+Lemma imfset0 f : f @` fset0 = fset0.
 Proof. by rewrite /imfset [fset]unlock /=; apply/val_inj. Qed.
 
-Lemma imfset1 f x : f @: fset1 x = fset1 (f x).
+Lemma imfset1 f x : f @` fset1 x = fset1 (f x).
 Proof. by apply/eq_fset=> y; rewrite in_fset1 /imfset in_fset /= inE. Qed.
 
-Lemma imfsetU f s1 s2 : f @: (s1 `|` s2) = f @: s1 `|` f @: s2.
+Lemma imfsetU f s1 s2 : f @` (s1 `|` s2) = f @` s1 `|` f @` s2.
 Proof.
 apply/eq_fset=> y; apply/(sameP idP)/(iffP idP)=> [/fsetUP|/imfsetP].
   move=> [|] => /imfsetP [x' x'_in_s ->{y}]; apply/imfsetP;
@@ -996,11 +996,11 @@ by move=> [y' /fsetUP [?|?] -> {y}]; apply/fsetUP; [left|right]; apply/imfsetP;
 eauto.
 Qed.
 
-Lemma imfsetU1 f x s : f @: (x |` s) = f x |` f @: s.
+Lemma imfsetU1 f x s : f @` (x |` s) = f x |` f @` s.
 Proof. by rewrite imfsetU imfset1. Qed.
 
 Lemma imfsetI f s1 s2 :
-  {in s1 & s2, injective f} -> f @: (s1 `&` s2) = f @: s1 `&` f @: s2.
+  {in s1 & s2, injective f} -> f @` (s1 `&` s2) = f @` s1 `&` f @` s2.
 Proof.
 move=> inj; apply/eq_fset=> x; apply/imfsetP/fsetIP.
   case=> [{}x x_in ->]; case/fsetIP: x_in=> [x_in1 x_in2].
@@ -1009,7 +1009,7 @@ case=> [/imfsetP [y1 y1_in ->] /imfsetP [y2 y2_in]] e.
 by exists y1; rewrite // in_fsetI y1_in /= (inj _ _ y1_in y2_in e).
 Qed.
 
-Lemma imfset_fset f xs : f @: fset xs = fset [seq f x | x <- xs].
+Lemma imfset_fset f xs : f @` fset xs = fset [seq f x | x <- xs].
 Proof.
 apply/eq_fset=> x; rewrite in_fset.
 apply/(sameP imfsetP)/(iffP mapP).
@@ -1017,7 +1017,7 @@ apply/(sameP imfsetP)/(iffP mapP).
 - by case=> {}x xin ->; exists x; rewrite -1?in_fset.
 Qed.
 
-Lemma imfset_eq0 f X : (f @: X == fset0) = (X == fset0).
+Lemma imfset_eq0 f X : (f @` X == fset0) = (X == fset0).
 Proof.
 apply/(sameP idP)/(iffP idP)=> [/eqP ->|]; first by rewrite imfset0.
 apply: contraTT; case/fset0Pn=> x xX; apply/fset0Pn; exists (f x).
@@ -1030,7 +1030,9 @@ Definition pimfset (f : T -> option S) X : {fset S} :=
 
 End Image.
 
-Notation "f @: s" := (imfset f s) (at level 24) : fset_scope.
+Notation "f @` s" := (imfset f s) (at level 24) : fset_scope.
+#[deprecated(since="extructures 0.6.0", note="use @` instead")]
+Notation "f @: s" := (imfset f s) (at level 24, only parsing) : fset_scope.
 
 Prenex Implicits imfset.
 Arguments imfsetP {_ _ _ _ _}.
@@ -1043,14 +1045,14 @@ Variables T S R : ordType.
 
 Implicit Types (s : {fset T}) (f : T -> S) (g : S -> R).
 
-Lemma imfset_id s : id @: s = s.
+Lemma imfset_id s : id @` s = s.
 Proof.
 apply/eq_fset=> x; apply/(sameP idP)/(iffP idP).
   by move=> x_in; apply/imfsetP; eauto.
 by case/imfsetP=> [/= ? ? ->].
 Qed.
 
-Lemma imfset_comp f g s : (g \o f) @: s = g @: (f @: s).
+Lemma imfset_comp f g s : (g \o f) @` s = g @` (f @` s).
 Proof.
 apply/eq_fset=> x; apply/(sameP idP)/(iffP idP).
   case/imfsetP=> [y /imfsetP [z Pz ->] ->].
@@ -1075,14 +1077,14 @@ move=> f_inj s1 s2 e; apply/eq_fset=> x; apply/(sameP idP)/(iffP idP).
 by move=> /(mem_imfset f); rewrite {}e=> /imfsetP [y Py /f_inj ->].
 Qed.
 
-Lemma imfsetS f s1 s2 : s1 `<=` s2 -> f @: s1 `<=` f @: s2.
+Lemma imfsetS f s1 s2 : s1 `<=` s2 -> f @` s1 `<=` f @` s2.
 Proof.
 move/fsubsetP=> h_sub; apply/fsubsetP=> x /imfsetP [y /h_sub Py ->].
 by apply: mem_imfset.
 Qed.
 
 Lemma mem_imfset_can f f_inv x s :
-  cancel f f_inv -> cancel f_inv f -> (x \in f @: s) = (f_inv x \in s).
+  cancel f f_inv -> cancel f_inv f -> (x \in f @` s) = (f_inv x \in s).
 Proof.
 move=> fK fKV; apply/(sameP idP)/(iffP idP).
   by move=> h_x; apply/imfsetP; eexists; eauto.
@@ -1090,19 +1092,19 @@ by case/imfsetP=> [y Py ->]; rewrite fK.
 Qed.
 
 Lemma mem_imfset_inj f y s :
-  injective f -> (f y \in f @: s) = (y \in s).
+  injective f -> (f y \in f @` s) = (y \in s).
 Proof.
 move=> f_inj; apply/(sameP imfsetP)/(iffP idP); first by eauto.
 by move=> [y' Py' /f_inj ->].
 Qed.
 
-Lemma size_imfset f s : size (f @: s) <= size s.
+Lemma size_imfset f s : size (f @` s) <= size s.
 Proof.
 by rewrite /imfset (leq_trans (size_fset (map f s))) // size_map.
 Qed.
 
 Lemma imfset_injP f s :
-  reflect {in s &, injective f} (size (f @: s) == size s).
+  reflect {in s &, injective f} (size (f @` s) == size s).
 Proof.
 elim/fset_rect: s => [|x s Px IH]; first by rewrite imfset0 eqxx; constructor.
 rewrite imfsetU1 !sizesU1 Px add1n /=; apply/(iffP idP).
@@ -1115,13 +1117,13 @@ rewrite imfsetU1 !sizesU1 Px add1n /=; apply/(iffP idP).
   by move=> hfx; rewrite -hfx (mem_imfset f hy1) in hnin.
 move=> hinj; have /IH/eqP ->: {in s &, injective f}.
   by move=> y1 y2 hy1 hy2 /=; apply:hinj; apply/fsetU1P; auto.
-suff ->: f x \notin f @: s by [].
+suff ->: f x \notin f @` s by [].
 apply: contra Px=> /imfsetP [x' Px' hfx']; suff -> : x = x' by [].
 by apply: hinj _ _ hfx'; apply/fsetU1P; auto.
 Qed.
 
 Lemma in_pimfset (f : T -> option S) (X : {fset T}) y :
-  y \in (pimfset f X) = (Some y \in f @: X).
+  y \in (pimfset f X) = (Some y \in f @` X).
 Proof.
 rewrite /pimfset in_fset mem_pmap.
 by apply/(sameP mapP)/(iffP imfsetP).
@@ -1287,7 +1289,7 @@ Variables (I J : ordType).
 Variables (F : I -> R) (G : J -> I).
 
 Lemma big_idem_imfset s :
-  \big[*%M/1]_(i <- G @: s) F i
+  \big[*%M/1]_(i <- G @` s) F i
   = \big[*%M/1]_(i <- s) F (G i).
 Proof.
 elim/fset_ind: s => [|j s _ IH]; first by rewrite imfset0 2!big_nil.

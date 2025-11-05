@@ -130,14 +130,14 @@ apply/eq_fset=> x; rewrite mem_supp in_fset mem_filter mkffunE.
 by rewrite andbC; case: ifP=> //; rewrite eqxx.
 Qed.
 
-Lemma supp_mkffun_sub fb (X : {fset T}) : supp (mkffun fb X) :<=: X.
+Lemma supp_mkffun_sub fb (X : {fset T}) : supp (mkffun fb X) `<=` X.
 Proof.
 by apply/fsubsetP => x; rewrite supp_mkffun in_fset mem_filter; case/andP.
 Qed.
 
 Definition updfm f (xs : {fmap T -> S}) : ffun :=
   mkffun (fun v => if xs v is Some x then x else f v)
-         (supp f :|: domm xs).
+         (supp f `|` domm xs).
 
 Lemma updfmE f xs x :
   updfm f xs x = if xs x is Some y then y else f x.

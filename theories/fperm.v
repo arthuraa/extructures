@@ -36,7 +36,7 @@ Variables (T : ordType).
 Local Open Scope ord_scope.
 Local Open Scope fset_scope.
 
-Definition axiom (f : ffun (@id T)) := f @: supp f == supp f.
+Definition axiom (f : ffun (@id T)) := f @` supp f == supp f.
 
 Record fperm_type := FPerm {
   fpval : ffun id;
@@ -90,10 +90,10 @@ Proof.
 split; last congruence; by move=> /eq_ffun /val_inj.
 Qed.
 
-Lemma imfset_supp s : s @: supp s = supp s.
+Lemma imfset_supp s : s @` supp s = supp s.
 Proof. exact/eqP/(valP s). Qed.
 
-Lemma imfset_suppS s X : supp s :<=: X -> s @: X = X.
+Lemma imfset_suppS s X : supp s `<=` X -> s @` X = X.
 Proof.
 move=> subX; rewrite -(fsetID X (supp s)) imfsetU.
 rewrite (fsetIidPr subX) imfset_supp; congr fsetU.
@@ -104,7 +104,7 @@ Qed.
 Lemma fperm_inj s : injective s.
 Proof.
 move=> x y.
-have inj : {in x |: (y |: supp s) &, injective s}.
+have inj : {in x |` (y |` supp s) &, injective s}.
   apply/imfset_injP; rewrite imfset_suppS //.
   by rewrite fsubsetU // fsubsetU ?fsubsetxx orbT.
 by apply: inj; rewrite ?in_fsetU1 ?eqxx // ?orbT.
@@ -132,7 +132,7 @@ Lemma mem_suppN s x : (x \notin supp s) = (s x == x).
 Proof. by rewrite mem_supp negbK. Qed.
 
 
-Lemma imfset_supp_sub s X : supp s :<=: X -> s @: X = X.
+Lemma imfset_supp_sub s X : supp s `<=` X -> s @` X = X.
 Proof.
 move=> h_sub; apply/eq_fset=> x; have h_im_sub := imfsetS s h_sub.
 have [in_supp|nin_supp] := boolP (x \in supp s).
@@ -161,7 +161,7 @@ Section Build.
 
 Implicit Types (f : T -> T).
 
-Lemma fperm_def_aux f X : f @: X = X -> FPerm.axiom (mkffun f X).
+Lemma fperm_def_aux f X : f @` X = X -> FPerm.axiom (mkffun f X).
 Proof.
 move=> fP; apply/eqP/eq_fset => x; apply/(sameP idP)/(iffP idP).
 - rewrite {1}supp_mkffun in_fset mem_filter; case/andP => fx_x x_X.
@@ -178,25 +178,25 @@ move=> fP; apply/eqP/eq_fset => x; apply/(sameP idP)/(iffP idP).
 Qed.
 
 Definition fperm_def f X x :=
-  let Y1 := f @: X :\: X in
-  let Y2 := X :\: f @: X in
+  let Y1 := f @` X `\` X in
+  let Y2 := X `\` f @` X in
   if x \in Y1 then nth x Y2 (index x Y1) else f x.
 
 Definition fperm f X :=
-  odflt 1 (insub (mkffun (fperm_def f X) (X :|: f @: X))).
+  odflt 1 (insub (mkffun (fperm_def f X) (X `|` f @` X))).
 
 Lemma fpermE f X : {in X &, injective f} -> {in X, fperm f X =1 f}.
 Proof.
 move=> /imfset_injP inj x x_X; rewrite /fperm insubT /=; last first.
   by move=> _; rewrite mkffunE in_fsetU /fperm_def /= in_fsetD x_X.
 apply/fperm_def_aux; rewrite /fperm_def {x x_X}.
-set Y1 := f @: X :\: X; set Y2 := X :\: f @: X.
+set Y1 := f @` X `\` X; set Y2 := X `\` f @` X.
 set g := fun x => if _ then _ else _.
 pose h x := if x \in Y2 then nth x Y1 (index x Y2)
             else odflt x (fpick (fun y => f y == x) Y1).
-set D := X :|: f @: X.
+set D := X `|` f @` X.
 have sY12 : size Y1 = size Y2.
-  apply: (@addnI (size (f @: X :&: X))).
+  apply: (@addnI (size (f @` X `&` X))).
   rewrite -sizesD fsetIC -sizesD; exact/eqP.
 have nY1_X x : x \in D -> x \notin Y1 -> x \in X.
   case/fsetUP=> //; by rewrite in_fsetD => ->; rewrite andbT negbK.
@@ -221,13 +221,13 @@ rewrite /g; case: ifPn => x_Y1; last first.
 by case/fsetDP: (nth_Y2 _ x_X x_Y1) => ? ?; apply/fsetUP; left.
 Qed.
 
-Lemma supp_fperm f X : supp (fperm f X) :<=: X :|: f @: X.
+Lemma supp_fperm f X : supp (fperm f X) `<=` X `|` f @` X.
 Proof.
 rewrite /fperm; case: insubP => /= [g _ ->|_]; first exact: supp_mkffun_sub.
 by rewrite supp0 fsub0set.
 Qed.
 
-Lemma fpermEst f X x : f @: X = X -> fperm f X x = if x \in X then f x else x.
+Lemma fpermEst f X x : f @` X = X -> fperm f X x = if x \in X then f x else x.
 Proof.
 move=> st; case: ifPn=> /= [|x_nin].
   by apply/fpermE/imfset_injP/eqP; rewrite st.
@@ -242,10 +242,10 @@ Section Renaming.
 (* FIXME: find a better name for this *)
 Lemma find_fperm (X Y : {fset T}) :
   size X = size Y ->
-  exists2 s : {fperm T}, supp s :<=: X :|: Y & s @: X = Y.
+  exists2 s : {fperm T}, supp s `<=` X `|` Y & s @` X = Y.
 Proof.
 move=> size_X.
-suff [f f_inj im_f]: exists2 f, {in X &, injective f} & f @: X = Y.
+suff [f f_inj im_f]: exists2 f, {in X &, injective f} & f @` X = Y.
   rewrite -im_f.
   exists (fperm f X); first by rewrite supp_fperm.
   by apply: eq_in_imfset; apply: fpermE.
@@ -279,7 +279,7 @@ Variable s : {fperm T}.
 
 Local Notation inv_def := (fun x => odflt x (fpick (pred1 x \o s) (supp s))).
 
-Lemma fperm_inv_subproof : inv_def @: supp s = supp s.
+Lemma fperm_inv_subproof : inv_def @` supp s = supp s.
 Proof.
 apply/eq_fset=> x; apply/(sameP idP)/(iffP idP).
   move=> x_in_supp; apply/imfsetP; exists (s x).
@@ -323,12 +323,12 @@ Proof. by rewrite -{1}supp_inv fperm_supp supp_inv. Qed.
 End Inverse.
 
 Lemma fperm_mul_subproof s1 s2 :
-  (s1 \o s2) @: (supp s1 :|: supp s2) = supp s1 :|: supp s2.
+  (s1 \o s2) @` (supp s1 `|` supp s2) = supp s1 `|` supp s2.
 Proof.
 by rewrite imfset_comp !imfset_supp_sub // ?fsubsetUr // fsubsetUl.
 Qed.
 
-Definition fperm_mul s1 s2 := locked (fperm (s1 \o s2) (supp s1 :|: supp s2)).
+Definition fperm_mul s1 s2 := locked (fperm (s1 \o s2) (supp s1 `|` supp s2)).
 
 Infix "*" := fperm_mul.
 Notation "x ^-1" := (fperm_inv x).
@@ -341,14 +341,14 @@ rewrite in_fsetU negb_or !mem_supp !negbK in nin_supp.
 by case/andP: nin_supp=> [/eqP h1 /eqP ->]; rewrite h1.
 Qed.
 
-Lemma supp_mul s1 s2 : supp (s1 * s2) :<=: supp s1 :|: supp s2.
+Lemma supp_mul s1 s2 : supp (s1 * s2) `<=` supp s1 `|` supp s2.
 Proof.
 apply/fsubsetP=> x; rewrite in_fsetU !mem_supp fpermM /=.
 have [-> -> //|] := altP (s2 x =P x).
 by rewrite orbT.
 Qed.
 
-Lemma suppJ s1 s2 : supp (s1 * s2 * s1^-1) = s1 @: supp s2.
+Lemma suppJ s1 s2 : supp (s1 * s2 * s1^-1) = s1 @` supp s2.
 Proof.
 apply/eq_fset=> x; apply/esym/imfsetP; rewrite mem_supp fpermM /= fpermM /=.
 rewrite (can2_eq (fpermK s1) (fpermKV s1)).
@@ -431,7 +431,7 @@ Qed.
 Notation fperm2_def x y := [fun z => z with x |-> y, y |-> x].
 
 Lemma fperm2_subproof x y :
-   fperm2_def x y @: [fset x; y] = [fset x; y].
+   fperm2_def x y @` [fset x; y] = [fset x; y].
 Proof.
 apply/eq_fset=> z; apply/(sameP idP)/(iffP idP).
   case/fset2P=> [->|->] /=; apply/imfsetP;
@@ -497,7 +497,7 @@ case: fperm2P => [->|->|]; [rewrite eq_sym| |]; rewrite ?ne ?eqxx ?orbT //.
 by move=> /eqP/negbTE-> /eqP/negbTE->.
 Qed.
 
-Lemma fsubset_supp_fperm2 x y : supp (fperm2 x y) :<=: [fset x; y].
+Lemma fsubset_supp_fperm2 x y : supp (fperm2 x y) `<=` [fset x; y].
 Proof.
 by rewrite supp_fperm2 fun_if if_arg fsub0set fsubsetxx; case: (_ == _).
 Qed.
@@ -529,7 +529,7 @@ Definition enum_fperm X : {fset {fperm T}} :=
   fset (pmap (obind (insub : ffun _ -> option {fperm T}) \o insub)
           (enum_fmap X X)).
 
-Lemma enum_fpermE X s : supp s :<=: X = (s \in enum_fperm X).
+Lemma enum_fpermE X s : supp s `<=` X = (s \in enum_fperm X).
 Proof.
 rewrite /enum_fperm in_fset mem_pmap; apply/idP/mapP.
   move=> supp_s; exists (val (val s)); last by rewrite /= !valK /= valK.
