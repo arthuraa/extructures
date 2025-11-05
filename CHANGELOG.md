@@ -2,9 +2,13 @@
 
 ## Added
 
+- Finmap-style notations `` `|`, `&`, `\` ``, etc.
+
 ## Changed
 
 ## Deprecated
+
+- Colon notations `:|:, :&:, :\:`, etc.
 
 ## Fixed
 
