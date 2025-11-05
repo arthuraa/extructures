@@ -107,7 +107,7 @@ move=> x y.
 have inj : {in x |` (y |` finsupp s) &, injective s}.
   apply/imfset_injP; rewrite imfset_finsuppS //.
   by rewrite fsubsetU // fsubsetU ?fsubsetxx orbT.
-by apply: inj; rewrite ?in_fsetU1 ?eqxx // ?orbT.
+by apply: inj; rewrite ?in_fset1U ?eqxx // ?orbT.
 Qed.
 
 Lemma fperm_finsupp s x : (s x \in finsupp s) = (x \in finsupp s).
@@ -249,11 +249,11 @@ elim/fset_ind: X Y size_X => [|x X x_nin_X IH] Y.
   rewrite /=; move/esym/eqP; rewrite sizes_eq0=> /eqP ->.
   exists id; first by move=> x; rewrite in_fset0.
   by rewrite imfset0.
-rewrite sizesU1 x_nin_X add1n.
+rewrite sizes1U x_nin_X add1n.
 elim/fset_ind: Y => [|y Y y_nin_Y _]; first by rewrite sizes0.
-rewrite sizesU1 y_nin_Y /= add1n=> - [/IH [f Pf PXY]].
+rewrite sizes1U y_nin_Y /= add1n=> - [/IH [f Pf PXY]].
 exists (fun x' => if x' == x then y else f x').
-  move=> x1 x2 /=; rewrite !in_fsetU1.
+  move=> x1 x2 /=; rewrite !in_fset1U.
   have [-> _|ne1] /= := altP (x1 =P x).
     have [-> _|ne2] //= := altP (x2 =P x).
     move=> x2_in_X ey; move: y_nin_Y; rewrite {}ey -PXY.
@@ -262,7 +262,7 @@ exists (fun x' => if x' == x then y else f x').
   have [-> _|ne2] /= := altP (x2 =P x).
     by move=> ey; move: y_nin_Y; rewrite -{}ey -PXY mem_imfset.
   by move: x1_in_X; apply: Pf.
-rewrite imfsetU1 eqxx -{}PXY; congr fsetU.
+rewrite imfset1U eqxx -{}PXY; congr fsetU.
 apply/eq_in_imfset=> x' x'_in_X.
 by move: x'_in_X x_nin_X; have [->|//] := altP eqP=> ->.
 Qed.
@@ -508,17 +508,17 @@ move=> P1 PM s; move: {2}(size _) (leqnn (size (finsupp s)))=> n.
 elim: n s=> [|n IH] s; first by rewrite leqn0 sizes_eq0 finsupp_eq0=> /eqP ->.
 case e: (finsupp s) / fsetP=>[|x X Px].
   by move/eqP: e; rewrite finsupp_eq0=> /eqP ->.
-rewrite sizesU1 Px ltnS -(fperm_mulKs (fperm2 x (s x)) s) fperm2V=> es.
+rewrite sizes1U Px ltnS -(fperm_mulKs (fperm2 x (s x)) s) fperm2V=> es.
 apply: PM; first by apply/finsuppPn; rewrite fpermM /= fperm2R.
-  by rewrite -{1}fperm2V fperm_mulKs fperm_finsupp e in_fsetU1 eqxx.
+  by rewrite -{1}fperm2V fperm_mulKs fperm_finsupp e in_fset1U eqxx.
 apply: IH; rewrite (leq_trans _ es) // {es}; apply/fsubset_leq_size/fsubsetP.
 move=> y; rewrite mem_finsupp fpermM /=; case: fperm2P.
 - move=> ex ny; have: y \in finsupp s.
     by have [//|/finsuppPn ey] := boolP (y \in _); rewrite -ex !ey eqxx in ny.
-  by rewrite e; case/fsetU1P=> [ey|//]; rewrite -ey ex ey eqxx in ny.
+  by rewrite e; case/fset1UP=> [ey|//]; rewrite -ey ex ey eqxx in ny.
 - by move/fperm_inj=> ->; rewrite eqxx.
 move=> _ /eqP; rewrite (inj_eq (@fperm_inj _))=> e2.
-by rewrite -mem_finsupp e in_fsetU1 (negbTE e2).
+by rewrite -mem_finsupp e in_fset1U (negbTE e2).
 Qed.
 
 Definition enum_fperm X : {fset {fperm T}} :=

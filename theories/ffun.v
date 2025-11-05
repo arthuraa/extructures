@@ -99,7 +99,7 @@ rewrite /upd_def; apply/allP=> x'.
 case: (altP eqP)=> [e|ne].
 - rewrite domm_rem; case/fsetD1P=> ne /(allP (valP f)).
   by rewrite remmE (negbTE ne).
-- rewrite domm_set in_fsetU1 setmE.
+- rewrite domm_set in_fset1U setmE.
   by case: eqP=> [-> _|_ /(allP (valP f))]; rewrite // eq_sym.
 Qed.
 

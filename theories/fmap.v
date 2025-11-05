@@ -398,7 +398,7 @@ Qed.
 Lemma domm_set m k v : domm (setm m k v) = k |` domm m.
 Proof.
 apply/eq_fset=> k'; apply/(sameP dommP)/(iffP idP);
-rewrite setmE in_fsetU1.
+rewrite setmE in_fset1U.
   case/orP=> [->|]; first by eauto.
   by move=> /dommP [v' ->]; case: eq_op; eauto.
 by have [-> //|] := altP eqP => _ /= [v']; rewrite mem_domm => ->.
@@ -637,13 +637,13 @@ Proof.
 move=> H0 H1 m; move e: (domm m)=> X.
 elim/fset_rect: X m e=> [|x X x_X IH] m e.
   by move/eqP/emptymP: e=> ->.
-have : x \in domm m by rewrite e in_fsetU1 eqxx.
+have : x \in domm m by rewrite e in_fset1U eqxx.
 rewrite mem_domm; case yP: (m x)=> [y|] // _.
 set m' := remm m x; have em : m = setm m' x y.
   apply/eq_fmap=> x'; rewrite /m' setmE remmE.
   by case: eqP => [->|].
 have {}e : domm m' = X.
-  apply/eq_fset=> x'; rewrite /m' domm_rem e in_fsetD1 in_fsetU1.
+  apply/eq_fset=> x'; rewrite /m' domm_rem e in_fsetD1 in_fset1U.
   by case: eqP=> // -> /=; rewrite (negbTE x_X).
 rewrite {}em; apply: H1; first by exact: IH.
 by rewrite e.
@@ -1192,7 +1192,7 @@ rewrite mem_cat.
 apply/(iffP orP) => [[/IHx [subx suby] | /allpairsP h] | [subx suby]].
 - by split=> // x' x'_in; rewrite inE; apply/orP; right; apply: subx.
 - move: m h => m' [[m y] /= [/IHx [subx suby] h ->]] {m'}; split.
-    rewrite domm_set=> x' /fsetU1P [->|/subx]; rewrite inE ?eqxx //.
+    rewrite domm_set=> x' /fset1UP [->|/subx]; rewrite inE ?eqxx //.
     by move=> ->; rewrite orbT.
   move=> y' /codommP [x']; rewrite setmE.
   case: eqP=> [_ [<-] //| _ m_x']; apply: suby.
