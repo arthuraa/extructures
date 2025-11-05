@@ -607,7 +607,7 @@ move=> m1 m2 m3; apply/eq_fmap=> k; rewrite !unionmE.
 by case: (m1 k).
 Qed.
 
-Lemma unionmI : idempotent (@unionm T S).
+Lemma unionmI : idempotent_op (@unionm T S).
 Proof.
 move=> m; apply/eq_fmap=> k; rewrite !unionmE.
 by case: (m k).

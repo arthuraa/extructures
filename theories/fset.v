@@ -322,7 +322,7 @@ Proof. by move=> s; apply/eq_fset=> x; rewrite in_fsetU in_fset0. Qed.
 Lemma fsetU0 : right_id fset0 (@fsetU T).
 Proof. by move=> s; rewrite fsetUC fset0U. Qed.
 
-Lemma fsetUid : idempotent (@fsetU T).
+Lemma fsetUid : idempotent_op (@fsetU T).
 Proof. by move=> s; apply/eq_fset=> x; rewrite in_fsetU orbb. Qed.
 
 Lemma fset_eq0E xs : (fset xs == fset0) = (xs == [::]).
@@ -424,7 +424,7 @@ Proof. by move=> s1 s2; apply/eq_fset=> x; rewrite !in_fsetI andbC. Qed.
 Lemma fsetIA : associative (@fsetI T).
 Proof. by move=> s1 s2 s3; apply/eq_fset=> x; rewrite !in_fsetI andbA. Qed.
 
-Lemma fsetIid : idempotent (@fsetI T).
+Lemma fsetIid : idempotent_op (@fsetI T).
 Proof. by move=> s; apply/eq_fset=> x; rewrite !in_fsetI andbb. Qed.
 
 Lemma fset0I : left_zero (@fset0 T) fsetI.
@@ -1248,7 +1248,7 @@ Variable op : Monoid.com_law 1.
 Local Notation "*%M" := op (at level 0).
 Local Notation "x * y" := (op x y).
 
-Hypothesis opxx : idempotent op.
+Hypothesis opxx : idempotent_op op.
 
 Local Open Scope fset_scope.
 
