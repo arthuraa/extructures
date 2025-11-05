@@ -635,7 +635,7 @@ Lemma fmap_rect (P : {fmap T -> S} -> Type) :
   forall m, P m.
 Proof.
 move=> H0 H1 m; move e: (domm m)=> X.
-elim/fset_rect: X m e=> [|x X x_X IH] m e.
+elim/fset1U_rect: X m e=> [|x X x_X IH] m e.
   by move/eqP/emptymP: e=> ->.
 have : x \in domm m by rewrite e in_fset1U eqxx.
 rewrite mem_domm; case yP: (m x)=> [y|] // _.

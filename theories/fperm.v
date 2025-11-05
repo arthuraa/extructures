@@ -245,12 +245,12 @@ suff [f f_inj im_f]: exists2 f, {in X &, injective f} & f @` X = Y.
   rewrite -im_f.
   exists (fperm f X); first by rewrite finsupp_fperm.
   by apply: eq_in_imfset; apply: fpermE.
-elim/fset_ind: X Y size_X => [|x X x_nin_X IH] Y.
+elim/fset1U_ind: X Y size_X => [|x X x_nin_X IH] Y.
   rewrite /=; move/esym/eqP; rewrite sizes_eq0=> /eqP ->.
   exists id; first by move=> x; rewrite in_fset0.
   by rewrite imfset0.
 rewrite sizes1U x_nin_X add1n.
-elim/fset_ind: Y => [|y Y y_nin_Y _]; first by rewrite sizes0.
+elim/fset1U_ind: Y => [|y Y y_nin_Y _]; first by rewrite sizes0.
 rewrite sizes1U y_nin_Y /= add1n=> - [/IH [f Pf PXY]].
 exists (fun x' => if x' == x then y else f x').
   move=> x1 x2 /=; rewrite !in_fset1U.

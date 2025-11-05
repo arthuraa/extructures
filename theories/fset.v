@@ -282,7 +282,7 @@ suff ->: s = x |` s' by apply: FSetSpecS.
 by apply/eq_fset=> x'; rewrite in_fset1U !inE.
 Qed.
 
-Lemma fset_rect (P : {fset T} -> Type) :
+Lemma fset1U_rect (P : {fset T} -> Type) :
   P fset0 ->
   (forall x s, x \notin s -> P s -> P (x |` s)) ->
   forall s, P s.
@@ -297,10 +297,10 @@ suff ->: s' = x |` s by eauto.
 by apply/eq_fset=> x'; rewrite in_fset1U !inE.
 Qed.
 
-Definition fset_ind (P : {fset T} -> Prop) :
+Definition fset1U_ind (P : {fset T} -> Prop) :
   P fset0 ->
   (forall x s, x \notin s -> P s -> P (x |` s)) ->
-  forall s, P s := @fset_rect P.
+  forall s, P s := @fset1U_rect P.
 
 Lemma fset1UP x y s : reflect (x = y \/ x \in s) (x \in y |` s).
 Proof. by rewrite in_fset1U; apply/predU1P. Qed.
@@ -710,7 +710,7 @@ Proof. exact: (uniq_size_uniq (uniq_fset _) (fun x => in_fset xs x)). Qed.
 
 Lemma fsubset_leq_size s1 s2 : s1 `<=` s2 -> size s1 <= size s2.
 Proof.
-elim/fset_ind: s1 s2 => [|x s1 Px IH] s2; first by rewrite leq0n.
+elim/fset1U_ind: s1 s2 => [|x s1 Px IH] s2; first by rewrite leq0n.
 rewrite fsub1Uset sizes1U (sizesD1 x s2) Px add1n.
 case/andP=> [-> ]; rewrite ltnS=> /fsubsetP hs1s2.
 apply: IH; apply/fsubsetP=> x' Hx'; rewrite in_fsetD1 hs1s2 // andbT.
@@ -733,7 +733,7 @@ Qed.
 Lemma fsubset_sizeP s1 s2 :
   size s1 = size s2 -> reflect (s1 = s2) (s1 `<=` s2).
 Proof.
-elim/fset_rect: s1 s2=> [|x s1 Px IH] s2.
+elim/fset1U_rect: s1 s2=> [|x s1 Px IH] s2.
   rewrite sizes0 => /esym/eqP; rewrite sizes_eq0=> /eqP ->.
   by rewrite fsubsetxx; constructor.
 rewrite sizes1U Px add1n fsub1Uset => h_size.
@@ -1106,7 +1106,7 @@ Qed.
 Lemma imfset_injP f s :
   reflect {in s &, injective f} (size (f @` s) == size s).
 Proof.
-elim/fset_rect: s => [|x s Px IH]; first by rewrite imfset0 eqxx; constructor.
+elim/fset1U_rect: s => [|x s Px IH]; first by rewrite imfset0 eqxx; constructor.
 rewrite imfset1U !sizes1U Px add1n /=; apply/(iffP idP).
   have [hin|hnin] /= := boolP (f x \in _).
     by rewrite add0n=> /eqP him; move: (size_imfset f s); rewrite him ltnn.
@@ -1228,7 +1228,7 @@ Lemma big_fsetU X Y P :
   (\big[*%M/1]_(x <- X | P x) F x) *
   (\big[*%M/1]_(x <- Y | P x) F x).
 Proof.
-elim/fset_ind: X=> [|x X x_X IH].
+elim/fset1U_ind: X=> [|x X x_X IH].
   by rewrite fset0U big_nil Monoid.mul1m.
 rewrite fdisjointUl fdisjoint1s; case/andP=> x_Y dis.
 rewrite -fsetUA !big_fset1U ?in_fsetU ?negb_or ?x_X ?IH //.
@@ -1269,7 +1269,7 @@ Lemma big_idem_fsetU s1 s2 :
   \big[*%M/1]_(i <- s1 `|` s2) F i =
   (\big[*%M/1]_(i <- s1) F i) * (\big[*%M/1]_(i <- s2) F i).
 Proof.
-elim/fset_ind: s1 => [|i s1 _ IH]; first by rewrite big_nil 2!Monoid.mul1m.
+elim/fset1U_ind: s1 => [|i s1 _ IH]; first by rewrite big_nil 2!Monoid.mul1m.
 by rewrite -fsetUA !big_idem_fset1U // IH Monoid.mulmA.
 Qed.
 
@@ -1292,7 +1292,7 @@ Lemma big_idem_imfset s :
   \big[*%M/1]_(i <- G @` s) F i
   = \big[*%M/1]_(i <- s) F (G i).
 Proof.
-elim/fset_ind: s => [|j s _ IH]; first by rewrite imfset0 2!big_nil.
+elim/fset1U_ind: s => [|j s _ IH]; first by rewrite imfset0 2!big_nil.
 by rewrite imfset1U 2!big_idem_fset1U IH.
 Qed.
 
@@ -1372,3 +1372,7 @@ Notation bigcup_fsetU1 := bigcup_fset1U (only parsing).
 Notation fsubU1set := fsub1Uset (only parsing).
 #[deprecated(since="extructures 0.6.0", note="use sizes1U instead")]
 Notation sizesU1 := sizes1U (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use fset1U_rect instead")]
+Notation fset_rect := fset1U_rect (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use fset1U_ind instead")]
+Notation fset_ind := fset1U_ind (only parsing).
