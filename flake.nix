@@ -1,5 +1,5 @@
 {
-  description = "Description for the project";
+  description = "Functions and sets with extensional reasoning";
 
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
