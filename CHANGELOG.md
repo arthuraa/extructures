@@ -16,6 +16,7 @@
 | `*U1*`  (e.g. `in_fsetU1`) | `*1U*` (e.g. `in_fset1U`) |
 | `fset_rect`                | `fset1U_rect`             |
 | `fset_ind`                 | `fset1U_ind`              |
+| `fsubsetxx`                | `fsubset_refl`            |
 
 ## Added
 

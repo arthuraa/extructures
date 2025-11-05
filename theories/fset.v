@@ -339,7 +339,7 @@ have [/hs1s2|//] //= := boolP (x \in s1).
 Qed.
 Arguments fsubsetP {_ _}.
 
-Lemma fsubsetxx s : s `<=` s.
+Lemma fsubset_refl s : s `<=` s.
 Proof. by apply/fsubsetP. Qed.
 
 Lemma fsubset_trans : transitive (@fsubset T).
@@ -735,7 +735,7 @@ Lemma fsubset_sizeP s1 s2 :
 Proof.
 elim/fset1U_rect: s1 s2=> [|x s1 Px IH] s2.
   rewrite sizes0 => /esym/eqP; rewrite sizes_eq0=> /eqP ->.
-  by rewrite fsubsetxx; constructor.
+  by rewrite fsubset_refl; constructor.
 rewrite sizes1U Px add1n fsub1Uset => h_size.
 apply/(iffP idP)=> [/andP [x_in_s2 hs1s2]|].
   have ->: s2 = x |` s2 `\ x.
@@ -751,7 +751,7 @@ Qed.
 
 Lemma eqEfsubset s1 s2 : (s1 == s2) = (s1 `<=` s2) && (s2 `<=` s1).
 Proof.
-apply/(sameP idP)/(iffP idP)=> [|/eqP ->]; last by rewrite fsubsetxx.
+apply/(sameP idP)/(iffP idP)=> [|/eqP ->]; last by rewrite fsubset_refl.
 case/andP=> [/fsubsetP s1s2 /fsubsetP s2s1]; apply/eqP/eq_fset=> x.
 by apply/(sameP idP)/(iffP idP); eauto.
 Qed.
@@ -759,7 +759,7 @@ Qed.
 Lemma eqEfsize s1 s2 : (s1 == s2) = (s1 `<=` s2) && (size s2 <= size s1).
 Proof.
 apply/(sameP idP)/(iffP idP)=> [/andP [hsub hsize]|/eqP ->]; last first.
-  by rewrite fsubsetxx leqnn.
+  by rewrite fsubset_refl leqnn.
 apply/eqP/fsubset_sizeP=> //; apply/eqP; rewrite eqn_leq hsize andbT.
 by apply: fsubset_leq_size.
 Qed.
@@ -1165,7 +1165,7 @@ Lemma powersetS s1 s2 : powerset s1 `<=` powerset s2 = (s1 `<=` s2).
 Proof.
 apply/(sameP fsubsetP)/(iffP idP).
 - move=> s1s2 s3; rewrite !powersetE => sub'; exact: fsubset_trans s1s2.
-- move/(_ s1); rewrite !powersetE; apply; exact: fsubsetxx.
+- move/(_ s1); rewrite !powersetE; apply; exact: fsubset_refl.
 Qed.
 
 Lemma powerset0 : powerset fset0 = fset1 fset0.
@@ -1376,3 +1376,5 @@ Notation sizesU1 := sizes1U (only parsing).
 Notation fset_rect := fset1U_rect (only parsing).
 #[deprecated(since="extructures 0.6.0", note="use fset1U_ind instead")]
 Notation fset_ind := fset1U_ind (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use fsubset_refl instead")]
+Notation fsubsetxx := fsubset_refl (only parsing).

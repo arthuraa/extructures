@@ -106,7 +106,7 @@ Proof.
 move=> x y.
 have inj : {in x |` (y |` finsupp s) &, injective s}.
   apply/imfset_injP; rewrite imfset_finsuppS //.
-  by rewrite fsubsetU // fsubsetU ?fsubsetxx orbT.
+  by rewrite fsubsetU // fsubsetU ?fsubset_refl orbT.
 by apply: inj; rewrite ?in_fset1U ?eqxx // ?orbT.
 Qed.
 
@@ -495,7 +495,7 @@ Qed.
 
 Lemma fsubset_finsupp_fperm2 x y : finsupp (fperm2 x y) `<=` [fset x; y].
 Proof.
-by rewrite finsupp_fperm2 fun_if if_arg fsub0set fsubsetxx; case: (_ == _).
+by rewrite finsupp_fperm2 fun_if if_arg fsub0set fsubset_refl; case: (_ == _).
 Qed.
 
 Lemma fperm2_rect (P : {fperm T} -> Type) :
