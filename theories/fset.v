@@ -1146,13 +1146,13 @@ Local Open Scope fset_scope.
 Variable T : ordType.
 Implicit Types (x : T) (s : {fset T}).
 
-Definition powerset s :=
+Definition fpowerset s :=
   fset [seq fset (mask (val m) s) |
         m : (size s).-tuple bool <- enum predT].
 
-Lemma powersetE s1 s2 : (s1 \in powerset s2) = (s1 `<=` s2).
+Lemma fpowersetE s1 s2 : (s1 \in fpowerset s2) = (s1 `<=` s2).
 Proof.
-rewrite /powerset in_fset; apply/(sameP mapP)/(iffP idP).
+rewrite /fpowerset in_fset; apply/(sameP mapP)/(iffP idP).
   move=> /fsubsetP s12.
   exists [tuple of [seq x \in s1 | x <- in_tuple s2]].
     by rewrite mem_enum.
@@ -1161,21 +1161,21 @@ rewrite /powerset in_fset; apply/(sameP mapP)/(iffP idP).
 case=> m _ -> {s1}; apply/fsubsetP => x; rewrite in_fset; exact: mem_mask.
 Qed.
 
-Lemma powersetS s1 s2 : powerset s1 `<=` powerset s2 = (s1 `<=` s2).
+Lemma fpowersetS s1 s2 : fpowerset s1 `<=` fpowerset s2 = (s1 `<=` s2).
 Proof.
 apply/(sameP fsubsetP)/(iffP idP).
-- move=> s1s2 s3; rewrite !powersetE => sub'; exact: fsubset_trans s1s2.
-- move/(_ s1); rewrite !powersetE; apply; exact: fsubset_refl.
+- move=> s1s2 s3; rewrite !fpowersetE => sub'; exact: fsubset_trans s1s2.
+- move/(_ s1); rewrite !fpowersetE; apply; exact: fsubset_refl.
 Qed.
 
-Lemma powerset0 : powerset fset0 = fset1 fset0.
+Lemma fpowerset0 : fpowerset fset0 = fset1 fset0.
 Proof.
-by apply/eq_fset=> s; rewrite powersetE fsubset0 in_fset1.
+by apply/eq_fset=> s; rewrite fpowersetE fsubset0 in_fset1.
 Qed.
 
-Lemma powerset1 x : powerset (fset1 x) = [fset fset1 x; fset0].
+Lemma fpowerset1 x : fpowerset (fset1 x) = [fset fset1 x; fset0].
 Proof.
-by apply/eq_fset=> s; rewrite in_fset2 powersetE fsubset1.
+by apply/eq_fset=> s; rewrite in_fset2 fpowersetE fsubset1.
 Qed.
 
 End Powerset.
@@ -1380,3 +1380,13 @@ Notation fset_ind := fset1U_ind (only parsing).
 Notation fsubsetxx := fsubset_refl (only parsing).
 #[deprecated(since="extructures 0.6.0", note="use fdisjoint_sym instead")]
 Notation fdisjointC := fdisjoint_sym (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use fpowerset instead")]
+Notation powerset := fpowerset (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use fpowersetE instead")]
+Notation powersetE := fpowersetE (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use fpowersetS instead")]
+Notation powersetS := fpowersetS (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use fpowerset0 instead")]
+Notation powerset0 := fpowerset0 (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use fpowerset1 instead")]
+Notation powerset1 := fpowerset1 (only parsing).

@@ -18,6 +18,11 @@
 | `fset_ind`                 | `fset1U_ind`              |
 | `fsubsetxx`                | `fsubset_refl`            |
 | `fdisjointC`               | `fdisjoint_sym`           |
+| `powerset`                 | `fpowerset`               |
+| `powersetE`                | `fpowersetE`              |
+| `powersetS`                | `fpowersetS`              |
+| `powerset0`                | `fpowerset0`              |
+| `powerset1`                | `fpowerset1`              |
 
 ## Added
 

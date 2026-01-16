@@ -261,11 +261,11 @@ notations, even though they are not notations in the Rocq sense.)
 | `imfset_injP`                 | Lemma    | No         | `card_imfset`        |
 | `in_pimfset`                  | Lemma    | No         | ?                    |
 | `pimfsetP`                    | Lemma    | No         | ?                    |
-| `powerset`                    | Function | Close      | `fpowerset`          |
-| `powersetE`                   | Lemma    | Close      | `fpowersetE`         |
-| `powersetS`                   | Lemma    | Close      | `fpowersetS`         |
-| `powerset0`                   | Lemma    | Close      | `fpowerset0`         |
-| `powerset1`                   | Lemma    | Close      | `fpowerset1`         |
+| `fpowerset`                   | Function | Yes        |                      |
+| `fpowersetE`                  | Lemma    | Yes        |                      |
+| `fpowersetS`                  | Lemma    | Yes        |                      |
+| `fpowerset0`                  | Lemma    | Yes        |                      |
+| `fpowerset1`                  | Lemma    | Yes        |                      |
 | `splits`                      | Function | No         | ?                    |
 | `big_fset1U`                  | Lemma    | Close      | `big_fsetU1`         |
 | `big_fsetU`                   | Lemma    | No         | ?                    |
