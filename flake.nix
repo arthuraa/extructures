@@ -33,6 +33,9 @@
 
         # Equivalent to  inputs'.nixpkgs.legacyPackages.hello;
         packages.default = pkgs.coqPackages.extructures;
+
+        checks.default = self'.packages.default;
+
       };
       flake = {
         # The usual flake attributes can be defined here, including system-
@@ -40,7 +43,9 @@
         # those are more easily expressed in perSystem.
 
         githubActions = nix-github-actions.lib.mkGithubMatrix {
-          checks = self.packages;
+          checks = inputs.nixpkgs.lib.getAttrs
+            [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ]
+            self.checks;
         };
 
         overlays.default = final: prev: {
