@@ -18,8 +18,9 @@ Most container types in Extructures require types to be instances of the
 
 In Extructures, `fset` is one of the main functions for building new sets.  In
 Finmap, we instead use the more general `imfset`, which computes the image of a
-finite predicate under any function.  As a result, several lemmas stated for
-`fset` do not have direct analogues in Finmap.
+finite predicate under any function.  (There is a `set_fset` function with this
+type, but it's not meant to be used directly.) As a result, several lemmas
+stated for `fset` do not have direct analogues in Finmap.
 
 - `all_fset, has_fset`.  If `A : {fset T}`, consider writing `[forall x : A, P
   (val x)]` instead of `all P x`.
@@ -62,6 +63,9 @@ Finmap.  We consider four possibilities (cf. the "In finmap?" column):
   cases by composing several other definitions or lemmas.  (A "?" indicates that
   there is probably a canonical way of doing so, but we haven't found one yet.)
 
+- **No+Boot** Same thing, but we should also consider adding it to
+  `mathcomp-boot`.
+
 - **Mismatch** The name or notation exists in Finmap, but it means something
   else.
   
@@ -74,7 +78,7 @@ notations, even though they are not notations in the Rocq sense.)
 |-------------------------------|----------|------------|----------------------|
 | `{fset T}`                    | Type     | Yes        |                      |
 | `fset`                        | Function | Close      | `[fset x in xs]`     |
-| `pred_of_fset`                | Function | Close      | `x \in A`            |
+| `pred_of_fset`                | Function | Close      | `[in A]`             |
 | `x \in A`                     | Notation | Yes        |                      |
 | `in_fset`                     | Lemma    | Close      | `inE`, `in_fsetE`    |
 | `fset0`                       | Function | Yes        |                      |
@@ -106,13 +110,13 @@ notations, even though they are not notations in the Rocq sense.)
 | `fset1_inj`                   | Lemma    | Yes        |                      |
 | `in_fsetU`                    | Lemma    | Yes        |                      |
 | `in_fset1U`                   | Lemma    | Yes        |                      |
-| `fset_cat`                    | Lemma    | No         | ?                    |
+| `fset_cat`                    | Lemma    | Close      | `fset_cat`           |
 | `all_fsetU`                   | Lemma    | No         | ?                    |
 | `in_fset2`                    | Lemma    | Yes        |                      |
 | `fset21`                      | Lemma    | Yes        |                      |
 | `fset22`                      | Lemma    | Yes        |                      |
 | `fset2P`                      | Lemma    | Yes        |                      |
-| `fsetP`                       | Lemma    | No         | ?                    |
+| `fsetP`                       | Lemma    | No+Boot    | `fset_0Vmem`         |
 | `fset1U_rect`                 | Lemma    | Yes        |                      |
 | `fset1U_ind`                  | Lemma    | No         | `fset1U_rect`        |
 | `fset1UP`                     | Lemma    | Yes        |                      |
@@ -136,7 +140,7 @@ notations, even though they are not notations in the Rocq sense.)
 | `fsub1set`                    | Lemma    | Yes        |                      |
 | `fset_cons`                   | Lemma    | Yes        |                      |
 | `uniq_fset`                   | Lemma    | Close      | `fset_uniq`          |
-| `in_fset_filter`              | Lemma    | No         | ?                    |
+| `in_fset_filter`              | Lemma    | Close      | `inE`, `in_fsetE`    |
 | `in_fsetI`                    | Lemma    | Yes        |                      |
 | `fsetIP`                      | Lemma    | Yes        |                      |
 | `fsetIC`                      | Lemma    | Yes        |                      |
@@ -159,7 +163,7 @@ notations, even though they are not notations in the Rocq sense.)
 | `fsetIidPr`                   | Lemma    | Yes        |                      |
 | `fsetUidPl`                   | Lemma    | Yes        |                      |
 | `fsetUidPr`                   | Lemma    | Yes        |                      |
-| `fset1I`                      | Lemma    | No         | ?                    |
+| `fset1I`                      | Lemma    | No+Boot    | ?                    |
 | `fdisjoint_sym`               | Lemma    | Yes        |                      |
 | `fdisjointP`                  | Lemma    | Yes        |                      |
 | `fdisjointSl`                 | Lemma    | Close      | `fdisjointWl`        |
@@ -277,6 +281,10 @@ notations, even though they are not notations in the Rocq sense.)
 | `bigcup1_cond`                | Lemma    | No         | ?                    |
 | `bigcup1`                     | Lemma    | No         |                      |
 
+#### Notes
+
+- `fsetP`: We should rename this to `fset_0VmemP` and create analog lemmas in
+  Finmap and MathComp boot.
 
 ### `fmap`
 
