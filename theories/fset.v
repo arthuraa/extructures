@@ -984,7 +984,7 @@ Proof. by move=> Px; apply/imfsetP; eauto. Qed.
 Lemma imfset0 f : f @` fset0 = fset0.
 Proof. by rewrite /imfset [fset]unlock /=; apply/val_inj. Qed.
 
-Lemma imfset1 f x : f @` fset1 x = fset1 (f x).
+Lemma imfset_fset1 f x : f @` fset1 x = fset1 (f x).
 Proof. by apply/eq_fset=> y; rewrite in_fset1 /imfset in_fset /= inE. Qed.
 
 Lemma imfsetU f s1 s2 : f @` (s1 `|` s2) = f @` s1 `|` f @` s2.
@@ -996,8 +996,8 @@ by move=> [y' /fsetUP [?|?] -> {y}]; apply/fsetUP; [left|right]; apply/imfsetP;
 eauto.
 Qed.
 
-Lemma imfset1U f x s : f @` (x |` s) = f x |` f @` s.
-Proof. by rewrite imfsetU imfset1. Qed.
+Lemma imfsetU1 f x s : f @` (x |` s) = f x |` f @` s.
+Proof. by rewrite imfsetU imfset_fset1. Qed.
 
 Lemma imfsetI f s1 s2 :
   {in s1 & s2, injective f} -> f @` (s1 `&` s2) = f @` s1 `&` f @` s2.
@@ -1107,7 +1107,7 @@ Lemma imfset_injP f s :
   reflect {in s &, injective f} (size (f @` s) == size s).
 Proof.
 elim/fset1U_rect: s => [|x s Px IH]; first by rewrite imfset0 eqxx; constructor.
-rewrite imfset1U !sizes1U Px add1n /=; apply/(iffP idP).
+rewrite imfsetU1 !sizes1U Px add1n /=; apply/(iffP idP).
   have [hin|hnin] /= := boolP (f x \in _).
     by rewrite add0n=> /eqP him; move: (size_imfset f s); rewrite him ltnn.
   rewrite add1n eqSS
@@ -1293,7 +1293,7 @@ Lemma big_idem_imfset s :
   = \big[*%M/1]_(i <- s) F (G i).
 Proof.
 elim/fset1U_ind: s => [|j s _ IH]; first by rewrite imfset0 2!big_nil.
-by rewrite imfset1U 2!big_idem_fset1U IH.
+by rewrite imfsetU1 2!big_idem_fset1U IH.
 Qed.
 
 End Image.
@@ -1360,8 +1360,8 @@ End BigOpUnion.
 Notation in_fsetU1 := in_fset1U (only parsing).
 #[deprecated(since="extructures 0.6.0", note="use fset1UP instead")]
 Notation fsetU1P := fset1UP (only parsing).
-#[deprecated(since="extructures 0.6.0", note="use imfset1U instead")]
-Notation imfsetU1 := imfset1U (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use imfset_fset1 instead")]
+Notation imfset1 := imfset_fset1 (only parsing).
 #[deprecated(since="extructures 0.6.0", note="use big_fset1U instead")]
 Notation big_fsetU1 := big_fset1U (only parsing).
 #[deprecated(since="extructures 0.6.0", note="use big_idem_fset1U instead")]

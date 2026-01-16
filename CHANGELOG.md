@@ -2,27 +2,27 @@
 
 ## Renamed
 
-| Old                        | New                       |
-|----------------------------|---------------------------|
-| `:&:`                      | `` `&` ``                 |
-| `:|:`                      | `` `|` ``                 |
-| `|:`                       | `` |` ``                  |
-| `:\:`                      | `` `\` ``                 |
-| `:\`                       | `` `\ ``                  |
-| `:<=:`                     | `` `<=` ``                |
-| `:#:`                      | `` `#` ``                 |
-| `@:`                       | `` @` ``                  |
-| `*supp*`                   | `*finsupp*`               |
-| `*U1*`  (e.g. `in_fsetU1`) | `*1U*` (e.g. `in_fset1U`) |
-| `fset_rect`                | `fset1U_rect`             |
-| `fset_ind`                 | `fset1U_ind`              |
-| `fsubsetxx`                | `fsubset_refl`            |
-| `fdisjointC`               | `fdisjoint_sym`           |
-| `powerset`                 | `fpowerset`               |
-| `powersetE`                | `fpowersetE`              |
-| `powersetS`                | `fpowersetS`              |
-| `powerset0`                | `fpowerset0`              |
-| `powerset1`                | `fpowerset1`              |
+| Old                                         | New                       |
+|---------------------------------------------|---------------------------|
+| `:&:`                                       | `` `&` ``                 |
+| `:|:`                                       | `` `|` ``                 |
+| `|:`                                        | `` |` ``                  |
+| `:\:`                                       | `` `\` ``                 |
+| `:\`                                        | `` `\ ``                  |
+| `:<=:`                                      | `` `<=` ``                |
+| `:#:`                                       | `` `#` ``                 |
+| `@:`                                        | `` @` ``                  |
+| `*supp*`                                    | `*finsupp*`               |
+| `*U1*` (many occurrences, e.g. `in_fsetU1`) | `*1U*` (e.g. `in_fset1U`) |
+| `fset_rect`                                 | `fset1U_rect`             |
+| `fset_ind`                                  | `fset1U_ind`              |
+| `fsubsetxx`                                 | `fsubset_refl`            |
+| `fdisjointC`                                | `fdisjoint_sym`           |
+| `powerset`                                  | `fpowerset`               |
+| `powersetE`                                 | `fpowersetE`              |
+| `powersetS`                                 | `fpowersetS`              |
+| `powerset0`                                 | `fpowerset0`              |
+| `powerset1`                                 | `fpowerset1`              |
 
 ## Added
 

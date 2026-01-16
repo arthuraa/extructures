@@ -262,7 +262,7 @@ exists (fun x' => if x' == x then y else f x').
   have [-> _|ne2] /= := altP (x2 =P x).
     by move=> ey; move: y_nin_Y; rewrite -{}ey -PXY mem_imfset.
   by move: x1_in_X; apply: Pf.
-rewrite imfset1U eqxx -{}PXY; congr fsetU.
+rewrite imfsetU1 eqxx -{}PXY; congr fsetU.
 apply/eq_in_imfset=> x' x'_in_X.
 by move: x'_in_X x_nin_X; have [->|//] := altP eqP=> ->.
 Qed.

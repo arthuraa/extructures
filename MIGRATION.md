@@ -242,9 +242,9 @@ notations, even though they are not notations in the Rocq sense.)
 | `eq_in_imfset`                | Lemma    | Close      | `eq_in_imfset`       |
 | `mem_imfset`                  | Lemma    | Mismatch   | ?                    |
 | `imfset0`                     | Lemma    | Yes        |                      |
-| `imfset1`                     | Lemma    | Close      | `imfset_fset1`       |
+| `imfset_fset1`                | Lemma    | Yes        |                      |
 | `imfsetU`                     | Lemma    | Yes        |                      |
-| `imfset1U`                    | Lemma    | Close      | `imfsetU1`           |
+| `imfsetU1`                    | Lemma    | Yes        |                      |
 | `imfsetI`                     | Lemma    | Yes        |                      |
 | `imfset_fset`                 | Lemma    | No         | ?                    |
 | `imfset_eq0`                  | Lemma    | No         | ?                    |
