@@ -160,7 +160,7 @@ notations, even though they are not notations in the Rocq sense.)
 | `fsetUidPl`                   | Lemma    | Yes        |                      |
 | `fsetUidPr`                   | Lemma    | Yes        |                      |
 | `fset1I`                      | Lemma    | No         | ?                    |
-| `fdisjointC`                  | Lemma    | Close      | `fdisjoint_sym`      |
+| `fdisjoint_sym`               | Lemma    | Yes        |                      |
 | `fdisjointP`                  | Lemma    | Yes        |                      |
 | `fdisjointSl`                 | Lemma    | Close      | `fdisjointWl`        |
 | `fdisjointSr`                 | Lemma    | Close      | `fdisjointWr`        |

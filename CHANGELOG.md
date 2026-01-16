@@ -17,6 +17,7 @@
 | `fset_rect`                | `fset1U_rect`             |
 | `fset_ind`                 | `fset1U_ind`              |
 | `fsubsetxx`                | `fsubset_refl`            |
+| `fdisjointC`               | `fdisjoint_sym`           |
 
 ## Added
 

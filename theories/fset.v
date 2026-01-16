@@ -511,7 +511,7 @@ apply/eq_fset=> x'; rewrite 2!fun_if in_fsetI in_fset1.
 by case: eqP=> [->|]; case: ifP=> //=.
 Qed.
 
-Lemma fdisjointC : commutative (@fdisjoint T).
+Lemma fdisjoint_sym : symmetric (@fdisjoint T).
 Proof. by move=> s1 s2; rewrite /fdisjoint fsetIC. Qed.
 
 Lemma fdisjointP s1 s2 : reflect (forall x, x \in s1 -> x \notin s2)
@@ -530,13 +530,13 @@ by move=> /fsubsetP sub /fdisjointP dis; apply/fdisjointP=> x /sub; eauto.
 Qed.
 
 Lemma fdisjointSr s1 s2 s3 : s1 `<=` s2 -> s3 `#` s2 -> s3 `#` s1.
-Proof. rewrite ![s3 `#` _]fdisjointC; exact: fdisjointSl. Qed.
+Proof. rewrite ![s3 `#` _]fdisjoint_sym; exact: fdisjointSl. Qed.
 
 Lemma fdisjoint0s s : fset0 `#` s.
 Proof. by rewrite /fdisjoint fset0I. Qed.
 
 Lemma fdisjoints0 s : s `#` fset0.
-Proof. by rewrite fdisjointC fdisjoint0s. Qed.
+Proof. by rewrite fdisjoint_sym fdisjoint0s. Qed.
 
 Lemma fdisjoints1 s x : s `#` fset1 x = (x \notin s).
 Proof.
@@ -546,7 +546,7 @@ by move=> x' ins'; apply: contra nins=> /fset1P <-.
 Qed.
 
 Lemma fdisjoint1s s x : fset1 x `#` s = (x \notin s).
-Proof. by rewrite fdisjointC fdisjoints1. Qed.
+Proof. by rewrite fdisjoint_sym fdisjoints1. Qed.
 
 Lemma in_fsetD x s1 s2 : (x \in s1 `\` s2) = (x \notin s2) && (x \in s1).
 Proof. by rewrite in_fset_filter. Qed.
@@ -681,7 +681,7 @@ Lemma sizes1U x s : size (x |` s) = (x \notin s) + size s.
 Proof.
 have [|x_nin] := boolP (x \in s).
   by rewrite -fsub1set => /fsetUidPr ->.
-by rewrite sizesU // fdisjointC fdisjoints1.
+by rewrite sizesU // fdisjoint_sym fdisjoints1.
 Qed.
 
 Lemma sizesD1 x s : size s = (x \in s) + size (s `\ x).
@@ -1378,3 +1378,5 @@ Notation fset_rect := fset1U_rect (only parsing).
 Notation fset_ind := fset1U_ind (only parsing).
 #[deprecated(since="extructures 0.6.0", note="use fsubset_refl instead")]
 Notation fsubsetxx := fsubset_refl (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use fdisjoint_sym instead")]
+Notation fdisjointC := fdisjoint_sym (only parsing).
