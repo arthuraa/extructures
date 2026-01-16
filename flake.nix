@@ -31,6 +31,15 @@
           config = { };
         };
 
+        devShells.default = pkgs.mkShell {
+          propagatedBuildInputs = [
+            pkgs.coqPackages.coq-lsp
+          ];
+          inputsFrom = [
+            self'.packages.default
+          ];
+        };
+
         # Equivalent to  inputs'.nixpkgs.legacyPackages.hello;
         packages.default = pkgs.coqPackages.extructures;
 
