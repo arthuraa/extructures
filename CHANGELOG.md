@@ -32,6 +32,8 @@
 
 ## Fixed
 
+- Adapt to https://github.com/math-comp/math-comp/pull/1545.
+
 ## Removed
 
 # 0.5.0 (2024/12/09)

@@ -1,5 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype choice seq.
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 
 From extructures Require Import ord fset fmap.
 

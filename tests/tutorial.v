@@ -10,6 +10,7 @@ as sets rather than lists. First, we import the main libraries.
 Require Import Coq.Strings.String. (* For atomic formulas *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect.
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 From deriving Require Import deriving.
 From extructures Require Import ord fset fmap.
 
