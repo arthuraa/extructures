@@ -54,7 +54,8 @@ Affected lemmas: `val_fset_filter`.
 The following table maps definitions in Extructures to their counterparts in
 Finmap.  We consider four possibilities (cf. the "In finmap?" column):
 
-- **Yes** The definition already exists in Finmap with the same name.
+- **Yes** The definition already exists in Finmap with the same name, maybe with
+  a more general statement.
 
 - **Close** The definition does not exist in Finmap, but it has a very close
   analogue.
@@ -110,7 +111,7 @@ notations, even though they are not notations in the Rocq sense.)
 | `fset1_inj`                   | Lemma    | Yes        |                      |
 | `in_fsetU`                    | Lemma    | Yes        |                      |
 | `in_fset1U`                   | Lemma    | Yes        |                      |
-| `fset_cat`                    | Lemma    | Close      | `fset_cat`           |
+| `fset_cat`                    | Lemma    | Yes        |                      |
 | `all_fsetU`                   | Lemma    | No         | ?                    |
 | `in_fset2`                    | Lemma    | Yes        |                      |
 | `fset21`                      | Lemma    | Yes        |                      |
