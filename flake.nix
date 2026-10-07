@@ -8,7 +8,15 @@
     nix-github-actions.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = inputs@{ self, flake-parts, nix-github-actions, ... }:
+  outputs = inputs@{ self, flake-parts, nixpkgs, nix-github-actions, ... }:
+    let
+      coqVersions = [
+        "9_2"
+        "9_1"
+        "9_0"
+      ];
+      defaultVersion = builtins.head coqVersions;
+    in
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
         # To import a flake module
@@ -41,9 +49,21 @@
         };
 
         # Equivalent to  inputs'.nixpkgs.legacyPackages.hello;
-        packages.default = pkgs.coqPackages.extructures;
+        packages =
+          let packagesByVersion =
+                nixpkgs.lib.listToAttrs
+                  (map (coqVersion: {
+                    name = coqVersion;
+                    value = pkgs."coqPackages_${coqVersion}".extructures;
+                  }) coqVersions);
+          in
+            packagesByVersion // {
+              default = packagesByVersion.${defaultVersion};
+            };
 
-        checks.default = self'.packages.default;
+        checks = builtins.mapAttrs (set: package:
+          package.overrideAttrs { doCheck = true; })
+          self'.packages;
 
       };
       flake = {
@@ -52,20 +72,41 @@
         # those are more easily expressed in perSystem.
 
         githubActions = nix-github-actions.lib.mkGithubMatrix {
-          checks = inputs.nixpkgs.lib.getAttrs
-            [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ]
-            self.checks;
+          checks =
+            # Drop the "default" check — it is an alias for one of
+            # the versioned checks, and including it would build
+            # the same derivation twice in CI.
+            builtins.mapAttrs
+              (_: checks: builtins.removeAttrs checks [ "default" ])
+              (nixpkgs.lib.getAttrs
+                [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ]
+                self.checks);
         };
 
-        overlays.default = final: prev: {
-          coqPackages = prev.coqPackages.overrideScope (final: prev: {
-            extructures = prev.lib.overrideCoqDerivation {
-              defaultVersion = "dev";
-              release.dev.src = ./.;
-            } prev.extructures;
-          });
-        };
+        overlays.default = final: prev:
+          let
+            overrideLibraryDerivation = f: drv:
+              drv.override (args:
+                if args ? mkRocqDerivation then {
+                  mkRocqDerivation = a:
+                    (args.mkRocqDerivation a).override f;
+                } else {
+                  mkCoqDerivation = a:
+                    (args.mkCoqDerivation a).override f;
+                });
 
+            overrideExtructures = coqPackages:
+              coqPackages.overrideScope (final': prev': {
+                extructures = overrideLibraryDerivation {
+                  version = ./.;
+                } prev'.extructures;
+              });
+          in
+            nixpkgs.lib.listToAttrs
+              (map (coqVersion:
+                { name = "coqPackages_${coqVersion}";
+                  value = overrideExtructures prev."coqPackages_${coqVersion}";})
+                coqVersions);
       };
     };
 }

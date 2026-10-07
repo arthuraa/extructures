@@ -1,10 +1,10 @@
 TESTVFILES=$(wildcard tests/*.v)
 TESTVOFILES=$(TESTVFILES:.v=.vo)
 
-test: $(TESTVOFILES)
-.PHONY: test
+check: $(TESTVOFILES)
+.PHONY: check
 
-.CoqMakefile.test.d: $(TESTVFILES)
+.Coqmakefile.test.d: $(TESTVFILES)
 	$(SHOW)'COQDEP TESTVFILES'
 	$(HIDE)$(COQDEP) -vos -dyndep var $(COQMF_COQLIBS_NOML) $^ $(redir_if_ok)
 -include .CoqMakefile.test.d
