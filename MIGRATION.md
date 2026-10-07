@@ -12,7 +12,10 @@ and notations in Extructures and a mapping to their closest analogue in Finmap.
 
 Most container types in Extructures require types to be instances of the
 `ordType` interface.  In Finmap, instead, they are required to be instances of
-`choiceType`.
+`choiceType`, so the `ordType` instances of your own types can simply be
+dropped.  Finmap also does not provide the `ordType` instances that Extructures
+ships for `prod`, `sum`, `option`, `seq`, `tuple`, `GenTree.tree`, `sigT`,
+`ascii`, `string`, `positive`, `N` and `Z`, since it does not need them.
 
 ### Results that rely on `fset : seq T -> {fset T}`
 
@@ -43,16 +46,23 @@ Affected lemmas: `val_fset_filter`.
 
 - A notation `fset xs` to turn a list into a set.
 
-- An equivalent of the current `fsetP`.
+- An equivalent of the current `fsetP` (it can be emulated with Finmap's
+  `fset_0Vmem` and `fsetD1K`).
 
 - Change the canonicalization function so that singletons are preserved.
 
-- `fsub1Uset`.
+- `fsubU1set`.
+
+- `fsubD1set` with the statement it has in Extructures (`s1 `\ x `<=` s2 = (s1
+  `<=` x |` s2)`); Finmap uses this name for `A `\ x `<=` A`.
+
+- The `big_idem_*` lemmas, which describe big operators over unions without
+  disjointness side conditions.
 
 ## Equivalence table
 
 The following table maps definitions in Extructures to their counterparts in
-Finmap.  We consider four possibilities (cf. the "In finmap?" column):
+Finmap.  We consider five possibilities (cf. the "In finmap?" column):
 
 - **Yes** The definition already exists in Finmap with the same name, maybe with
   a more general statement.
@@ -75,214 +85,225 @@ notations, even though they are not notations in the Rocq sense.)
 
 ### `fset`
 
-| Extructures Name              | What?    | In finmap? | Closest analogue     |
-|-------------------------------|----------|------------|----------------------|
-| `{fset T}`                    | Type     | Yes        |                      |
-| `fset`                        | Function | Close      | `[fset x in xs]`     |
-| `pred_of_fset`                | Function | Close      | `[in A]`             |
-| `x \in A`                     | Notation | Yes        |                      |
-| `in_fset`                     | Lemma    | Close      | `inE`, `in_fsetE`    |
-| `fset0`                       | Function | Yes        |                      |
-| `fset1`                       | Function | Yes        |                      |
-| `fsetU`                       | Function | Yes        |                      |
-| `fset_filter`                 | Function | No         | `[fset x in A |\ P]` |
-| `fsetI`                       | Function | Yes        |                      |
-| `fsetD`                       | Function | Yes        |                      |
-| `fsubset`                     | Function | Yes        |                      |
-| `fdisjoint`                   | Function | Yes        |                      |
-| ``s1 `\|` s2``                | Notation | Yes        |                      |
-| ``x   \|` s``                 | Notation | Yes        |                      |
-| ``s1 `&` s2``                 | Notation | Yes        |                      |
-| ``s1 `\` s2``                 | Notation | Yes        |                      |
-| ``s `\ x``                    | Notation | Yes        |                      |
-| ``s1 `<=` s2``                | Notation | Yes        |                      |
-| ``s1 `#` s2``                 | Notation | No         | `[disjoint A & B]`   |
-| `[fset a1; .. ; an]`          | Notation | Yes        |                      |
-| `all_fset`                    | Lemma    | No         | ?                    |
-| `has_fset`                    | Lemma    | No         | ?                    |
-| `eq_fset`                     | Lemma    | Close      | `fsetP`              |
-| `fset_eqP`                    | Lemma    | Close      | `fset_eqP`           |
-| `fsvalK`                      | Lemma    | No         |                      |
-| `fset0E`                      | Lemma    | No         | ?                    |
-| `fset1E`                      | Lemma    | No         | ?                    |
-| `in_fset0`                    | Lemma    | Yes        |                      |
-| `in_fset1`                    | Lemma    | Yes        |                      |
-| `fset1P`                      | Lemma    | Yes        |                      |
-| `fset1_inj`                   | Lemma    | Yes        |                      |
-| `in_fsetU`                    | Lemma    | Yes        |                      |
-| `in_fset1U`                   | Lemma    | Yes        |                      |
-| `fset_cat`                    | Lemma    | Yes        |                      |
-| `all_fsetU`                   | Lemma    | No         | ?                    |
-| `in_fset2`                    | Lemma    | Yes        |                      |
-| `fset21`                      | Lemma    | Yes        |                      |
-| `fset22`                      | Lemma    | Yes        |                      |
-| `fset2P`                      | Lemma    | Yes        |                      |
-| `fsetP`                       | Lemma    | No+Boot    | `fset_0Vmem`         |
-| `fset1U_rect`                 | Lemma    | Yes        |                      |
-| `fset1U_ind`                  | Lemma    | No         | `fset1U_rect`        |
-| `fset1UP`                     | Lemma    | Yes        |                      |
-| `fsetUP`                      | Lemma    | Yes        |                      |
-| `fsetUC`                      | Lemma    | Yes        |                      |
-| `fsetUA`                      | Lemma    | Yes        |                      |
-| `fset0U`                      | Lemma    | Yes        |                      |
-| `fsetU0`                      | Lemma    | Yes        |                      |
-| `fsetUid`                     | Lemma    | Yes        |                      |
-| `fset_eq0E`                   | Lemma    | No         | ?                    |
-| `fsubsetP`                    | Lemma    | Yes        |                      |
-| `fsubset_refl`                | Lemma    | Yes        |                      |
-| `fsubset_trans`               | Lemma    | Yes        |                      |
-| `fsubsetUl`                   | Lemma    | Yes        |                      |
-| `fsubsetUr`                   | Lemma    | Yes        |                      |
-| `fsub1Uset`                   | Lemma    | No         |                      |
-| `fsubUset`                    | Lemma    | Yes        |                      |
-| `fsetUS`                      | Lemma    | Yes        |                      |
-| `fsetSU`                      | Lemma    | Yes        |                      |
-| `fsetUSS`                     | Lemma    | Yes        |                      |
-| `fsub1set`                    | Lemma    | Yes        |                      |
-| `fset_cons`                   | Lemma    | Yes        |                      |
-| `uniq_fset`                   | Lemma    | Close      | `fset_uniq`          |
-| `in_fset_filter`              | Lemma    | Close      | `inE`, `in_fsetE`    |
-| `in_fsetI`                    | Lemma    | Yes        |                      |
-| `fsetIP`                      | Lemma    | Yes        |                      |
-| `fsetIC`                      | Lemma    | Yes        |                      |
-| `fsetIA`                      | Lemma    | Yes        |                      |
-| `fsetIid`                     | Lemma    | Yes        |                      |
-| `fset0I`                      | Lemma    | Yes        |                      |
-| `fsetI0`                      | Lemma    | Yes        |                      |
-| `fsetUIl`                     | Lemma    | Yes        |                      |
-| `fsetUIr`                     | Lemma    | Yes        |                      |
-| `fsetIUl`                     | Lemma    | Yes        |                      |
-| `fsetIUr`                     | Lemma    | Yes        |                      |
-| `fsubsetIl`                   | Lemma    | Yes        |                      |
-| `fsubsetIr`                   | Lemma    | Yes        |                      |
-| `fsubsetI`                    | Lemma    | Yes        |                      |
-| `fsubIset`                    | Lemma    | Yes        |                      |
-| `fsetIS`                      | Lemma    | Yes        |                      |
-| `fsetSI`                      | Lemma    | Yes        |                      |
-| `fsetISS`                     | Lemma    | Yes        |                      |
-| `fsetIidPl`                   | Lemma    | Yes        |                      |
-| `fsetIidPr`                   | Lemma    | Yes        |                      |
-| `fsetUidPl`                   | Lemma    | Yes        |                      |
-| `fsetUidPr`                   | Lemma    | Yes        |                      |
-| `fset1I`                      | Lemma    | No+Boot    | ?                    |
-| `fdisjoint_sym`               | Lemma    | Yes        |                      |
-| `fdisjointP`                  | Lemma    | Yes        |                      |
-| `fdisjointSl`                 | Lemma    | Close      | `fdisjointWl`        |
-| `fdisjointSr`                 | Lemma    | Close      | `fdisjointWr`        |
-| `fdisjoint0s`                 | Lemma    | Close      | `fdisjoint0X`        |
-| `fdisjoints0`                 | Lemma    | Close      | `fdisjointX0`        |
-| `fdisjoints1`                 | Lemma    | Close      | `fdisjointX1`        |
-| `fdisjoint1s`                 | Lemma    | Close      | `fdisjoint1X`        |
-| `in_fsetD`                    | Lemma    | Yes        |                      |
-| `in_fsetD1`                   | Lemma    | Yes        |                      |
-| `fsetDP`                      | Lemma    | Yes        |                      |
-| `fsetD1P`                     | Lemma    | No         | ?                    |
-| `fsubDset`                    | Lemma    | Yes        |                      |
-| `fsubD1set`                   | Lemma    | No         | ?                    |
-| `fsetID`                      | Lemma    | Yes        |                      |
-| `fsetDUl`                     | Lemma    | Yes        |                      |
-| `fsetDUr`                     | Lemma    | Yes        |                      |
-| `fsetUDr`                     | Lemma    | Mismatch   | `fsetUDl`            |
-| `fsetDIl`                     | Lemma    | Yes        |                      |
-| `fsetIDA`                     | Lemma    | Yes        |                      |
-| `fsetIDAC`                    | Lemma    | Yes        |                      |
-| `fsetDIr`                     | Lemma    | Yes        |                      |
-| `fsetDDl`                     | Lemma    | Yes        |                      |
-| `fsetDDr`                     | Lemma    | Yes        |                      |
-| `fsetSD`                      | Lemma    | Yes        |                      |
-| `fsetDS`                      | Lemma    | Yes        |                      |
-| `fdisjoint_fsetI0`            | Lemma    | No         | ?                    |
-| `fpick`                       | Function | No         | ?                    |
-| `fpickP`                      | Lemma    | No         |                      |
-| `sizes0`                      | Lemma    | Close      | `cardfs0`            |
-| `sizes1`                      | Lemma    | Close      | `cardfs1`            |
-| `sizesU`                      | Lemma    | No         | ?                    |
-| `sizes1U`                     | Lemma    | Close      | `cardfsU1`           |
-| `sizesD1`                     | Lemma    | Close      | `cardfsD1`           |
-| `sizesD`                      | Lemma    | Close      | `cardfsD`            |
-| `size_fset`                   | Lemma    | No         | `card_fseq`          |
-| `uniq_size_fset`              | Lemma    | No         | ?                    |
-| `fsubset_leq_size`            | Lemma    | Close      | `fsubset_leq_card`   |
-| `sizes_eq0`                   | Lemma    | Close      | `cardfs_eq0`         |
-| `fset0Pn`                     | Lemma    | Yes        |                      |
-| `fsubset_sizeP`               | Lemma    | Close      | `fsubset_cardP`      |
-| `eqEfsubset`                  | Lemma    | Yes        |                      |
-| `eqEfsize`                    | Lemma    | Close      | `eqEfcard`           |
-| `fsub0set`                    | Lemma    | Yes        |                      |
-| `fsubset0`                    | Lemma    | Yes        |                      |
-| `fsubset1`                    | Lemma    | Yes        |                      |
-| `fsetU_eq0`                   | Lemma    | Yes        |                      |
-| `fdisjointUl`                 | Lemma    | Close      | `fdisjointUX`        |
-| `fdisjointUr`                 | Lemma    | Close      | `fdisjointXU`        |
-| `fset0D`                      | Lemma    | Yes        |                      |
-| `fsetD0`                      | Lemma    | Yes        |                      |
-| `fsetDv`                      | Lemma    | Yes        |                      |
-| `fsetDidPl`                   | Lemma    | Yes        |                      |
-| `val_fset_filter`             | Lemma    | No         | ?                    |
-| `fset_filter_subset`          | Lemma    | No         | ?                    |
-| `fdisjoint_trans`             | Lemma    | Yes        |                      |
-| `\bigcup_(i <- r \| P) F`     | Notation | Yes        |                      |
-| `\bigcup_(i <- r) F`          | Notation | Yes        |                      |
-| `\bigcup_(m <= i < n \| P) F` | Notation | No         |                      |
-| `\bigcup_(m <= i < n) F`      | Notation | No         |                      |
-| `\bigcup_(i \| P) F`          | Notation | Yes        |                      |
-| `\bigcup_i F`                 | Notation | No         |                      |
-| `\bigcup_(i : t \| P) F`      | Notation | No         |                      |
-| `\bigcup_(i : t) F`           | Notation | No         |                      |
-| `\bigcup_(i < n \| P) F`      | Notation | No         |                      |
-| `\bigcup_(i < n) F`           | Notation | No         |                      |
-| `\bigcup_(i in A \| P) F`     | Notation | Yes        |                      |
-| `\bigcup_(i in A) F`          | Notation | Yes        |                      |
-| `bigcup_sup`                  | Lemma    | Close      | `bigfcup_sup`        |
-| `bigcupP`                     | Lemma    | Close      | `bigfcupP`           |
-| `bigcup_fin_sup`              | Lemma    | No         | `bigfcup_sup`        |
-| `bigcup_finP`                 | Lemma    | No         | `bigfcupP`           |
-| `imfset`                      | Function | Yes        |                      |
-| `imfsetP`                     | Lemma    | Yes        |                      |
-| `eq_imfset`                   | Lemma    | Close      | `eq_imfset`          |
-| `eq_in_imfset`                | Lemma    | Close      | `eq_in_imfset`       |
-| `mem_imfset`                  | Lemma    | Mismatch   | ?                    |
-| `imfset0`                     | Lemma    | Yes        |                      |
-| `imfset_fset1`                | Lemma    | Yes        |                      |
-| `imfsetU`                     | Lemma    | Yes        |                      |
-| `imfsetU1`                    | Lemma    | Yes        |                      |
-| `imfsetI`                     | Lemma    | Yes        |                      |
-| `imfset_fset`                 | Lemma    | No         | ?                    |
-| `imfset_eq0`                  | Lemma    | No         | ?                    |
-| `pimfset`                     | Function | No         | ?                    |
-| `` f @` X ``                  | Notation | Yes        |                      |
-| `imfset_id`                   | Lemma    | Yes        |                      |
-| `imfset_comp`                 | Lemma    | Yes        |                      |
-| `imfsetK`                     | Lemma    | No         | ?                    |
-| `imfset_inj`                  | Lemma    | No         | ?                    |
-| `imfsetS`                     | Lemma    | No         | ?                    |
-| `mem_imfset_can`              | Lemma    | No         | ?                    |
-| `mem_imfset_inj`              | Lemma    | Close      | `mem_imfset`         |
-| `size_imfset`                 | Lemma    | No         | ?                    |
-| `imfset_injP`                 | Lemma    | No         | `card_imfset`        |
-| `in_pimfset`                  | Lemma    | No         | ?                    |
-| `pimfsetP`                    | Lemma    | No         | ?                    |
-| `fpowerset`                   | Function | Yes        |                      |
-| `fpowersetE`                  | Lemma    | Yes        |                      |
-| `fpowersetS`                  | Lemma    | Yes        |                      |
-| `fpowerset0`                  | Lemma    | Yes        |                      |
-| `fpowerset1`                  | Lemma    | Yes        |                      |
-| `splits`                      | Function | No         | ?                    |
-| `big_fset1U`                  | Lemma    | Close      | `big_fsetU1`         |
-| `big_fsetU`                   | Lemma    | No         | ?                    |
-| `big_idem_fset1U`             | Lemma    | No         | ?                    |
-| `big_idem_fsetU`              | Lemma    | No         | ?                    |
-| `big_idem_bigcup`             | Lemma    | No         | ?                    |
-| `big_idem_imfset`             | Lemma    | No         | ?                    |
-| `bigcup_fset1U`               | Lemma    | Close      | `big_fsetU1`         |
-| `bigcup_fsetU`                | Lemma    | No         | ?                    |
-| `bigcup_bigcup`               | Lemma    | No         | ?                    |
-| `bigcupS`                     | Lemma    | No         | ?                    |
-| `in_bigcup`                   | Lemma    | No         | ?                    |
-| `bigcup1_cond`                | Lemma    | No         | ?                    |
-| `bigcup1`                     | Lemma    | No         |                      |
+| Extructures Name              | What?    | In finmap? | Closest analogue            |
+|-------------------------------|----------|------------|-----------------------------|
+| `{fset T}`                    | Type     | Yes        |                             |
+| `fset`                        | Function | Close      | `[fset x in xs]`            |
+| `pred_of_fset`                | Function | Close      | `[in A]`                    |
+| `x \in A`                     | Notation | Yes        |                             |
+| `in_fset`                     | Lemma    | Close      | `in_fset`, `in_fsetE`       |
+| `fset0`                       | Function | Yes        |                             |
+| `fset1`                       | Function | Yes        |                             |
+| `fsetU`                       | Function | Yes        |                             |
+| `fset_filter`                 | Function | Close      | `[fset x in A \| P x]`      |
+| `fsetI`                       | Function | Yes        |                             |
+| `fsetD`                       | Function | Yes        |                             |
+| `fsubset`                     | Function | Yes        |                             |
+| `fdisjoint`                   | Function | Yes        |                             |
+| ``s1 `\|` s2``                | Notation | Yes        |                             |
+| ``x   \|` s``                 | Notation | Yes        |                             |
+| ``s1 `&` s2``                 | Notation | Yes        |                             |
+| ``s1 `\` s2``                 | Notation | Yes        |                             |
+| ``s `\ x``                    | Notation | Yes        |                             |
+| ``s1 `<=` s2``                | Notation | Yes        |                             |
+| ``s1 `#` s2``                 | Notation | No         | `[disjoint A & B]`          |
+| `[fset a1; .. ; an]`          | Notation | Yes        |                             |
+| `all_fset`                    | Lemma    | No         | ?                           |
+| `has_fset`                    | Lemma    | No         | ?                           |
+| `eq_fset`                     | Lemma    | Close      | `fsetP`                     |
+| `fset_eqP`                    | Lemma    | Close      | `fset_eqP`                  |
+| `fsvalK`                      | Lemma    | No         |                             |
+| `fset0E`                      | Lemma    | No         | ?                           |
+| `fset1E`                      | Lemma    | No         | ?                           |
+| `in_fset0`                    | Lemma    | Yes        |                             |
+| `in_fset1`                    | Lemma    | Yes        |                             |
+| `fset1P`                      | Lemma    | Yes        |                             |
+| `fset1_inj`                   | Lemma    | Yes        |                             |
+| `in_fsetU`                    | Lemma    | Yes        |                             |
+| `in_fset1U`                   | Lemma    | Yes        |                             |
+| `fset_cat`                    | Lemma    | Yes        |                             |
+| `all_fsetU`                   | Lemma    | No         | ?                           |
+| `in_fset2`                    | Lemma    | Yes        |                             |
+| `fset21`                      | Lemma    | Yes        |                             |
+| `fset22`                      | Lemma    | Yes        |                             |
+| `fset2P`                      | Lemma    | Yes        |                             |
+| `fsetP`                       | Lemma    | No+Boot    | `fset_0Vmem`                |
+| `fset1U_rect`                 | Lemma    | Yes        |                             |
+| `fset1U_ind`                  | Lemma    | No         | `fset1U_rect`               |
+| `fset1UP`                     | Lemma    | Yes        |                             |
+| `fsetUP`                      | Lemma    | Yes        |                             |
+| `fsetUC`                      | Lemma    | Yes        |                             |
+| `fsetUA`                      | Lemma    | Yes        |                             |
+| `fset0U`                      | Lemma    | Yes        |                             |
+| `fsetU0`                      | Lemma    | Yes        |                             |
+| `fsetUid`                     | Lemma    | Yes        |                             |
+| `fset_eq0E`                   | Lemma    | No         | ?                           |
+| `fsubsetP`                    | Lemma    | Yes        |                             |
+| `fsubset_refl`                | Lemma    | Yes        |                             |
+| `fsubset_trans`               | Lemma    | Yes        |                             |
+| `fsubsetUl`                   | Lemma    | Yes        |                             |
+| `fsubsetUr`                   | Lemma    | Yes        |                             |
+| `fsubsetU`                    | Lemma    | Yes        |                             |
+| `fsubU1set`                   | Lemma    | No         |                             |
+| `fsubUset`                    | Lemma    | Yes        |                             |
+| `fsetUS`                      | Lemma    | Yes        |                             |
+| `fsetSU`                      | Lemma    | Yes        |                             |
+| `fsetUSS`                     | Lemma    | Yes        |                             |
+| `fsub1set`                    | Lemma    | Yes        |                             |
+| `fset_cons`                   | Lemma    | Yes        |                             |
+| `uniq_fset`                   | Lemma    | Close      | `fset_uniq`                 |
+| `in_fset_filter`              | Lemma    | Close      | `inE`, `in_fsetE`           |
+| `in_fsetI`                    | Lemma    | Yes        |                             |
+| `fsetIP`                      | Lemma    | Yes        |                             |
+| `fsetIC`                      | Lemma    | Yes        |                             |
+| `fsetIA`                      | Lemma    | Yes        |                             |
+| `fsetIid`                     | Lemma    | Yes        |                             |
+| `fset0I`                      | Lemma    | Yes        |                             |
+| `fsetI0`                      | Lemma    | Yes        |                             |
+| `fsetUIl`                     | Lemma    | Yes        |                             |
+| `fsetUIr`                     | Lemma    | Yes        |                             |
+| `fsetIUl`                     | Lemma    | Yes        |                             |
+| `fsetIUr`                     | Lemma    | Yes        |                             |
+| `fsubsetIl`                   | Lemma    | Yes        |                             |
+| `fsubsetIr`                   | Lemma    | Yes        |                             |
+| `fsubsetI`                    | Lemma    | Yes        |                             |
+| `fsubIset`                    | Lemma    | Yes        |                             |
+| `fsetIS`                      | Lemma    | Yes        |                             |
+| `fsetSI`                      | Lemma    | Yes        |                             |
+| `fsetISS`                     | Lemma    | Yes        |                             |
+| `fsetIidPl`                   | Lemma    | Yes        |                             |
+| `fsetIidPr`                   | Lemma    | Yes        |                             |
+| `fsetUidPl`                   | Lemma    | Yes        |                             |
+| `fsetUidPr`                   | Lemma    | Yes        |                             |
+| `fset1I`                      | Lemma    | No+Boot    | `fsetI1` (mirrored)         |
+| `fdisjoint_sym`               | Lemma    | Yes        |                             |
+| `fdisjointP`                  | Lemma    | Yes        |                             |
+| `fdisjointSl`                 | Lemma    | Close      | `fdisjointWl`               |
+| `fdisjointSr`                 | Lemma    | Close      | `fdisjointWr`               |
+| `fdisjoint0s`                 | Lemma    | Close      | `fdisjoint0X`               |
+| `fdisjoints0`                 | Lemma    | Close      | `fdisjointX0`               |
+| `fdisjoints1`                 | Lemma    | Close      | `fdisjointX1`               |
+| `fdisjoint1s`                 | Lemma    | Close      | `fdisjoint1X`               |
+| `in_fsetD`                    | Lemma    | Yes        |                             |
+| `in_fsetD1`                   | Lemma    | Yes        |                             |
+| `fsetDP`                      | Lemma    | Yes        |                             |
+| `fsetD1P`                     | Lemma    | Yes        |                             |
+| `fsubDset`                    | Lemma    | Yes        |                             |
+| `fsubD1set`                   | Lemma    | Mismatch   | `fsubDset`                  |
+| `fsetID`                      | Lemma    | Yes        |                             |
+| `fsetDUl`                     | Lemma    | Yes        |                             |
+| `fsetDUr`                     | Lemma    | Yes        |                             |
+| `fsetUDr`                     | Lemma    | Mismatch   | `fsetUDl`                   |
+| `fsetDIl`                     | Lemma    | Yes        |                             |
+| `fsetIDA`                     | Lemma    | Yes        |                             |
+| `fsetIDAC`                    | Lemma    | Yes        |                             |
+| `fsetDIr`                     | Lemma    | Yes        |                             |
+| `fsetDDl`                     | Lemma    | Yes        |                             |
+| `fsetDDr`                     | Lemma    | Yes        |                             |
+| `fsetSD`                      | Lemma    | Yes        |                             |
+| `fsetDS`                      | Lemma    | Yes        |                             |
+| `fdisjoint_fsetI0`            | Lemma    | Close      | `fsetI_eq0`                 |
+| `fpick`                       | Function | No         | `[pick x : A \| P (val x)]` |
+| `fpickP`                      | Lemma    | No         |                             |
+| `sizes0`                      | Lemma    | Close      | `cardfs0`                   |
+| `sizes1`                      | Lemma    | Close      | `cardfs1`                   |
+| `sizesU`                      | Lemma    | Close      | `cardfsUI`                  |
+| `sizesU1`                     | Lemma    | Close      | `cardfsU1`                  |
+| `sizesD1`                     | Lemma    | Close      | `cardfsD1`                  |
+| `sizesD`                      | Lemma    | Close      | `cardfsID`                  |
+| `size_fset`                   | Lemma    | No         | `card_fseq`                 |
+| `uniq_size_fset`              | Lemma    | No         | ?                           |
+| `fsubset_leq_size`            | Lemma    | Close      | `fsubset_leq_card`          |
+| `sizes_eq0`                   | Lemma    | Close      | `cardfs_eq0`                |
+| `fset0Pn`                     | Lemma    | Yes        |                             |
+| `fsubset_sizeP`               | Lemma    | Close      | `fsubset_cardP`             |
+| `eqEfsubset`                  | Lemma    | Yes        |                             |
+| `eqEfsize`                    | Lemma    | Close      | `eqEfcard`                  |
+| `fsub0set`                    | Lemma    | Yes        |                             |
+| `fsubset0`                    | Lemma    | Yes        |                             |
+| `fsubset1`                    | Lemma    | Yes        |                             |
+| `fsetU_eq0`                   | Lemma    | Yes        |                             |
+| `fdisjointUl`                 | Lemma    | Close      | `fdisjointUX`               |
+| `fdisjointUr`                 | Lemma    | Close      | `fdisjointXU`               |
+| `fset0D`                      | Lemma    | Yes        |                             |
+| `fsetD0`                      | Lemma    | Yes        |                             |
+| `fsetDv`                      | Lemma    | Yes        |                             |
+| `fsetDidPl`                   | Lemma    | Yes        |                             |
+| `val_fset_filter`             | Lemma    | No         | ?                           |
+| `fset_filter_subset`          | Lemma    | Close      | `fset_sub`                  |
+| `fdisjoint_trans`             | Lemma    | Yes        |                             |
+| `\bigcup_(i <- r \| P) F`     | Notation | Yes        |                             |
+| `\bigcup_(i <- r) F`          | Notation | Yes        |                             |
+| `\bigcup_(m <= i < n \| P) F` | Notation | No         |                             |
+| `\bigcup_(m <= i < n) F`      | Notation | No         |                             |
+| `\bigcup_(i \| P) F`          | Notation | Yes        |                             |
+| `\bigcup_i F`                 | Notation | No         |                             |
+| `\bigcup_(i : t \| P) F`      | Notation | No         |                             |
+| `\bigcup_(i : t) F`           | Notation | No         |                             |
+| `\bigcup_(i < n \| P) F`      | Notation | No         |                             |
+| `\bigcup_(i < n) F`           | Notation | No         |                             |
+| `\bigcup_(i in A \| P) F`     | Notation | Yes        |                             |
+| `\bigcup_(i in A) F`          | Notation | Yes        |                             |
+| `bigcup_sup`                  | Lemma    | Close      | `bigfcup_sup`               |
+| `bigcupP`                     | Lemma    | Close      | `bigfcupP`                  |
+| `bigcup_fin_sup`              | Lemma    | No         | `bigfcup_sup`               |
+| `bigcup_finP`                 | Lemma    | No         | `bigfcupP`                  |
+| `imfset`                      | Function | Yes        |                             |
+| `imfsetP`                     | Lemma    | Yes        |                             |
+| `eq_imfset`                   | Lemma    | Close      | `eq_imfset`                 |
+| `eq_in_imfset`                | Lemma    | Close      | `eq_in_imfset`              |
+| `mem_imfset`                  | Lemma    | Mismatch   | `in_imfset`                 |
+| `imfset0`                     | Lemma    | Yes        |                             |
+| `imfset_fset1`                | Lemma    | Yes        |                             |
+| `imfsetU`                     | Lemma    | Yes        |                             |
+| `imfsetU1`                    | Lemma    | Yes        |                             |
+| `imfsetI`                     | Lemma    | Yes        |                             |
+| `imfset_fset`                 | Lemma    | No         | ?                           |
+| `imfset_eq0`                  | Lemma    | No         | ?                           |
+| `pimfset`                     | Function | No         | ?                           |
+| `` f @` X ``                  | Notation | Yes        |                             |
+| `imfset_id`                   | Lemma    | Yes        |                             |
+| `imfset_comp`                 | Lemma    | Yes        |                             |
+| `imfsetK`                     | Lemma    | No         | ?                           |
+| `imfset_inj`                  | Lemma    | No         | ?                           |
+| `imfsetS`                     | Lemma    | Close      | `subset_imfset`             |
+| `mem_imfset_can`              | Lemma    | No         | ?                           |
+| `mem_imfset_inj`              | Lemma    | Close      | `mem_imfset`                |
+| `size_imfset`                 | Lemma    | Close      | `leq_imfset_card`           |
+| `imfset_injP`                 | Lemma    | Close      | `card_in_imfsetP`           |
+| `in_pimfset`                  | Lemma    | No         | ?                           |
+| `pimfsetP`                    | Lemma    | No         | ?                           |
+| `fpowerset`                   | Function | Yes        |                             |
+| `fpowersetE`                  | Lemma    | Yes        |                             |
+| `fpowersetS`                  | Lemma    | Yes        |                             |
+| `fpowerset0`                  | Lemma    | Yes        |                             |
+| `fpowerset1`                  | Lemma    | Yes        |                             |
+| `splits`                      | Function | No         | ?                           |
+| `big_fsetU1`                  | Lemma    | Close      | `big_fsetU1` (no predicate) |
+| `big_fsetU`                   | Lemma    | No         | ?                           |
+| `big_idem_fsetU1`             | Lemma    | No         | ?                           |
+| `big_idem_fsetU`              | Lemma    | No         | ?                           |
+| `big_idem_bigcup`             | Lemma    | No         | ?                           |
+| `big_idem_imfset`             | Lemma    | No         | ?                           |
+| `bigcup_fsetU1`               | Lemma    | Close      | `big_fsetU1`                |
+| `bigcup_fsetU`                | Lemma    | No         | ?                           |
+| `bigcup_bigcup`               | Lemma    | No         | ?                           |
+| `bigcupS`                     | Lemma    | Close      | `bigfcupsP`                 |
+| `in_bigcup`                   | Lemma    | No         | ?                           |
+| `bigcup1_cond`                | Lemma    | No         | ?                           |
+| `bigcup1`                     | Lemma    | Close      | `bigfcup_imfset1`           |
 
 #### Notes
+
+- Naming of lemmas about `x |` s`: MathComp's `finset` consistently uses `U1`
+  for `x |: A` (`in_setU1`, `setU1P`, `setU11`, `setU1r`, `cardsU1`,
+  `big_setU1`, ...) and `1U` for `A :|: [set x]` (`set1Ul`, `set1Ur`).  Finmap
+  is inconsistent: it uses `1U` in `in_fset1U`, `fset1UP`, `fset1U1`,
+  `fset1Ur`, `mem_fset1U` and `fset1U_rect`, but `U1` in `fsetU1K`,
+  `fsubsetU1`, `cardfsU1`, `imfsetU1`, `big_fsetU1` and `fdisjointU1X`, and it
+  uses `U1` for `A `|` [fset x]` in `fsetU1l` and `fsetU1r` (the reverse of
+  `finset`).  Extructures follows Finmap's current names; if Finmap is brought
+  in line with `finset`, these names might change again.
 
 - `fsetP`: We should rename this to `fset_0VmemP` and create analog lemmas in
   Finmap and MathComp boot.
@@ -312,10 +333,10 @@ notations, even though they are not notations in the Rocq sense.)
 | `mem_fmap`         | Function | No         | `m.[? x] == Some v`              |
 | `(x,v) \in m`      | Notation | No         | `m.[? x] == Some v`              |
 | `eq_fmap`          | Lemma    | Close      | `fmapP`                          |
-| `mem_domm`         | Lemma    | No         | `case: fndP`                     |
+| `mem_domm`         | Lemma    | Close      | `fndSome`                        |
 | `getmP`            | Lemma    | Close      | `fndP`                           |
-| `dommP`            | Lemma    | No         | `fndP`                           |
-| `dommPn`           | Lemma    | No         | `fndP`                           |
+| `dommP`            | Lemma    | No         | `fndP`, `fndSome`                |
+| `dommPn`           | Lemma    | No         | `fndP`, `fndSome`                |
 | `eq_in_fmap`       | Lemma    | Close      | `getfP`                          |
 | `setmE`            | Lemma    | Close      | `fnd_set`                        |
 | `setmC`            | Lemma    | Close      | `setfC`                          |
@@ -327,7 +348,7 @@ notations, even though they are not notations in the Rocq sense.)
 | `domm_set`         | Lemma    | Close      | `dom_setf`                       |
 | `emptymE`          | Lemma    | Close      | `fnd_fmap0`                      |
 | `domm0`            | Lemma    | Close      | `domf0`                          |
-| `emptymP`          | Lemma    | No         | ?                                |
+| `emptymP`          | Lemma    | Close      | `fmap_nil`                       |
 | `mapimE`           | Lemma    | Close      | `rewrite /= ffunE`               |
 | `mapmE`            | Lemma    | Close      | `rewrite /= ffunE`               |
 | `filtermE`         | Lemma    | Close      | `fnd_filterf`                    |
@@ -358,8 +379,8 @@ notations, even though they are not notations in the Rocq sense.)
 | `unionmI`          | Lemma    | No         | ?                                |
 | `unionmC`          | Lemma    | Close      | `disjoint_catfC`                 |
 | `unionmK`          | Lemma    | Close      | `restrictf_cat_domr`             |
-| `fmap_rect`        | Lemma    | No         |                                  |
-| `fmap_ind`         | Lemma    | No         |                                  |
+| `fmap_rect`        | Lemma    | Yes        |                                  |
+| `fmap_ind`         | Lemma    | Close      | `fmap_rect`                      |
 | `val_domm`         | Lemma    | No         | ?                                |
 | `fmvalK`           | Lemma    | No         | ?                                |
 | `mkfmapK`          | Lemma    | No         | ?                                |
@@ -440,6 +461,72 @@ notations, even though they are not notations in the Rocq sense.)
 | `mapf`               | Function | Close      | `[fsfun x in finsupp f => g (f x)]` |
 | `mapfE`              | Lemma    | No         |                                     |
 | `val_mapf`           | Lemma    | No         |                                     |
+
+
+### `fperm`
+
+Finmap 2.2 includes a port of this file (`finperm.v`), and Extructures now
+uses the same names.  The main remaining difference is that `fperm` takes the
+set before the function.
+
+| Extructures Name         | What?    | In finmap? | Closest analogue                    |
+|--------------------------|----------|------------|-------------------------------------|
+| `{fperm T}`              | Type     | Yes        |                                     |
+| `s x`                    | Notation | Yes        |                                     |
+| `fpermP`                 | Lemma    | Yes        |                                     |
+| `imfset_finsuppfp`       | Lemma    | Yes        |                                     |
+| `imfset_finsuppfpS`      | Lemma    | Yes        |                                     |
+| `fperm_inj`              | Lemma    | Yes        |                                     |
+| `fperm_finsupp`          | Lemma    | Yes        |                                     |
+| `fperm_one`, `1`         | Function | Yes        |                                     |
+| `fperm1`                 | Lemma    | Yes        |                                     |
+| `finsupp1`               | Lemma    | Yes        |                                     |
+| `finsuppfp_eq0`          | Lemma    | Yes        |                                     |
+| `fperm f X`              | Function | Mismatch   | `fperm X f` (arguments swapped)     |
+| `fpermE`                 | Lemma    | Close      | `fpermE` (arguments swapped)        |
+| `finsupp_fperm`          | Lemma    | Close      | `finsupp_fperm` (arguments swapped) |
+| `fpermEst`               | Lemma    | Close      | `fpermEst` (arguments swapped)      |
+| `find_fperm`             | Lemma    | Close      | `fperm_rename`, `fperm_renameP`     |
+| `fperm_inv`, `s^-1`      | Function | Yes        |                                     |
+| `fpermK`                 | Lemma    | Yes        |                                     |
+| `fpermKV`                | Lemma    | Yes        |                                     |
+| `finsupp_inv`            | Lemma    | Yes        |                                     |
+| `fperm_finsuppV`         | Lemma    | Yes        |                                     |
+| `fperm_mul`, `s1 * s2`   | Function | Yes        |                                     |
+| `fpermM`                 | Lemma    | Yes        |                                     |
+| `finsupp_mul`            | Lemma    | Yes        |                                     |
+| `finsuppJ`               | Lemma    | Yes        |                                     |
+| `fperm_mulC`             | Lemma    | Yes        |                                     |
+| `fperm_mul1s`            | Lemma    | Yes        |                                     |
+| `fperm_muls1`            | Lemma    | Yes        |                                     |
+| `fperm_mulsV`            | Lemma    | Yes        |                                     |
+| `fperm_mulVs`            | Lemma    | Yes        |                                     |
+| `fperm_mulA`             | Lemma    | Yes        |                                     |
+| `fperm_inv_mul`          | Lemma    | Yes        |                                     |
+| `fperm_mulsK`            | Lemma    | Yes        |                                     |
+| `fperm_mulKs`            | Lemma    | Yes        |                                     |
+| `fperm_mulsI`            | Lemma    | Yes        |                                     |
+| `fperm_mulIs`            | Lemma    | Yes        |                                     |
+| `fperm_invK`             | Lemma    | Yes        |                                     |
+| `fperm_mulsKV`           | Lemma    | Yes        |                                     |
+| `fperm_mulKVs`           | Lemma    | Yes        |                                     |
+| `fperm1V`                | Lemma    | Yes        |                                     |
+| `fperm2`                 | Function | Yes        |                                     |
+| `fperm2E`                | Lemma    | Yes        |                                     |
+| `fperm2P`                | Lemma    | Yes        |                                     |
+| `fperm2L`                | Lemma    | Yes        |                                     |
+| `fperm2R`                | Lemma    | Yes        |                                     |
+| `fperm2D`                | Lemma    | Yes        |                                     |
+| `fperm2C`                | Lemma    | Yes        |                                     |
+| `fperm2V`                | Lemma    | Yes        |                                     |
+| `fperm2xx`               | Lemma    | Yes        |                                     |
+| `finsupp_fperm2`         | Lemma    | Yes        |                                     |
+| `fsubset_finsupp_fperm2` | Lemma    | Yes        |                                     |
+| `fperm2_rect`            | Lemma    | Yes        |                                     |
+| `fperm_on`               | Function | Yes        |                                     |
+| `in_fperm_on`            | Lemma    | Close      | `in_fperm_on` (sides swapped)       |
+| `inj_fperm2`             | Lemma    | Yes        |                                     |
+| `fperm2J`                | Lemma    | Yes        |                                     |
 
 
   [finmap]: https://github.com/math-comp/finmap

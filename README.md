@@ -53,7 +53,7 @@ Extensional reasoning is provided by the following lemmas:
     eq_fmap  : forall T S (f g : {fmap T -> S}), f =1 g <-> f = g
     eq_ffun  : forall T S (def : T -> S) (f g : ffun def),
                                                  f =1 g <-> f = g
-    eq_fperm : forall T   (f g : {fperm T}),     f =1 g <-> f = g
+    fpermP   : forall T   (f g : {fperm T}),     f =1 g <-> f = g
 
 Documentation for the libraries is currently scarce, but will be progressively
 added as comments in the headers of the files.  Once the package is installed,
