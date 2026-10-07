@@ -14,10 +14,6 @@
         "9_2"
         "9_1"
         "9_0"
-        "8_20"
-        "8_19"
-        "8_18"
-        "8_17"
       ];
       defaultVersion = builtins.head coqVersions;
     in
