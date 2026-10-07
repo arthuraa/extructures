@@ -37,7 +37,8 @@ for now.
   | Old                                         | New                       |
   |---------------------------------------------|---------------------------|
   | `*supp*` (`ffun`, `fperm`)                  | `*finsupp*`               |
-  | `*U1*` (many occurrences, e.g. `in_fsetU1`) | `*1U*` (e.g. `in_fset1U`) |
+  | `in_fsetU1`                                 | `in_fset1U`               |
+  | `fsetU1P`                                   | `fset1UP`                 |
   | `imfset1`                                   | `imfset_fset1`            |
   | `fset_rect`                                 | `fset1U_rect`             |
   | `fset_ind`                                  | `fset1U_ind`              |
@@ -49,9 +50,24 @@ for now.
   | `powerset0`                                 | `fpowerset0`              |
   | `powerset1`                                 | `fpowerset1`              |
 
-  The `*U1*` to `*1U*` rename affects `in_fsetU1`, `fsetU1P`, `fsubU1set`,
-  `sizesU1`, `big_fsetU1`, `big_idem_fsetU1` and `bigcup_fsetU1`.  As in
-  finmap, `imfsetU1` keeps its name.
+  Following finmap, the other lemmas about `x |` s` (`fsubU1set`, `sizesU1`,
+  `imfsetU1`, `big_fsetU1`, `big_idem_fsetU1`, `bigcup_fsetU1`) keep their
+  `U1` names.
+
+- Lemmas and definitions about permutations renamed to match finmap's
+  `finperm.v`:
+
+  | Old                  | New                  |
+  |----------------------|----------------------|
+  | `eq_fperm`           | `fpermP`             |
+  | `imfset_finsupp`     | `imfset_finsuppfp`   |
+  | `imfset_finsuppS`    | `imfset_finsuppfpS`  |
+  | `finsupp_eq0`        | `finsuppfp_eq0`      |
+  | `enum_fperm`         | `fperm_on`           |
+  | `enum_fpermE`        | `in_fperm_on`        |
+
+- `imfset_finsupp_sub`, which duplicated `imfset_finsuppS`, is now a deprecated
+  alias of `imfset_finsuppfpS`.
 
 - `fdisjoint_sym` is stated in terms of `symmetric` rather than `commutative`.
 
