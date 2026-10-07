@@ -1,40 +1,83 @@
 # Unreleased
 
-## Renamed
-
-| Old                                         | New                       |
-|---------------------------------------------|---------------------------|
-| `:&:`                                       | `` `&` ``                 |
-| `:|:`                                       | `` `|` ``                 |
-| `|:`                                        | `` |` ``                  |
-| `:\:`                                       | `` `\` ``                 |
-| `:\`                                        | `` `\ ``                  |
-| `:<=:`                                      | `` `<=` ``                |
-| `:#:`                                       | `` `#` ``                 |
-| `@:`                                        | `` @` ``                  |
-| `*supp*`                                    | `*finsupp*`               |
-| `*U1*` (many occurrences, e.g. `in_fsetU1`) | `*1U*` (e.g. `in_fset1U`) |
-| `fset_rect`                                 | `fset1U_rect`             |
-| `fset_ind`                                  | `fset1U_ind`              |
-| `fsubsetxx`                                 | `fsubset_refl`            |
-| `fdisjointC`                                | `fdisjoint_sym`           |
-| `powerset`                                  | `fpowerset`               |
-| `powersetE`                                 | `fpowersetE`              |
-| `powersetS`                                 | `fpowersetS`              |
-| `powerset0`                                 | `fpowerset0`              |
-| `powerset1`                                 | `fpowerset1`              |
+This release aligns the names and notations of Extructures with those of
+[finmap](https://github.com/math-comp/finmap), in preparation for phasing out
+Extructures.  All renamed symbols are still available under their old names as
+deprecated aliases (see below), so existing developments should keep compiling
+for now.
 
 ## Added
 
+- A migration guide to finmap (`MIGRATION.md`), including a table that maps
+  every public symbol and notation of Extructures to its closest finmap
+  analogue.
+
+- Support for Rocq 9.0 -- 9.2 and MathComp 2.5 -- 2.6.
+
 ## Changed
+
+- Set notations now follow finmap:
+
+  | Old      | New        |
+  |----------|------------|
+  | `:&:`    | `` `&` ``  |
+  | `:|:`    | `` `|` ``  |
+  | `|:`     | `` |` ``   |
+  | `:\:`    | `` `\` ``  |
+  | `:\`     | `` `\ ``   |
+  | `:<=:`   | `` `<=` `` |
+  | `:#:`    | `` `#` ``  |
+  | `@:`     | `` @` ``   |
+
+  The notations `` `<=` `` and `` `#` `` are now parsed at level 70 instead of
+  55.
+
+- Lemmas and definitions renamed to match finmap:
+
+  | Old                                         | New                       |
+  |---------------------------------------------|---------------------------|
+  | `*supp*` (`ffun`, `fperm`)                  | `*finsupp*`               |
+  | `*U1*` (many occurrences, e.g. `in_fsetU1`) | `*1U*` (e.g. `in_fset1U`) |
+  | `imfset1`                                   | `imfset_fset1`            |
+  | `fset_rect`                                 | `fset1U_rect`             |
+  | `fset_ind`                                  | `fset1U_ind`              |
+  | `fsubsetxx`                                 | `fsubset_refl`            |
+  | `fdisjointC`                                | `fdisjoint_sym`           |
+  | `powerset`                                  | `fpowerset`               |
+  | `powersetE`                                 | `fpowersetE`              |
+  | `powersetS`                                 | `fpowersetS`              |
+  | `powerset0`                                 | `fpowerset0`              |
+  | `powerset1`                                 | `fpowerset1`              |
+
+  The `*U1*` to `*1U*` rename affects `in_fsetU1`, `fsetU1P`, `fsubU1set`,
+  `sizesU1`, `big_fsetU1`, `big_idem_fsetU1` and `bigcup_fsetU1`.  As in
+  finmap, `imfsetU1` keeps its name.
+
+- `fdisjoint_sym` is stated in terms of `symmetric` rather than `commutative`.
+
+- The `fperm`-specific `mem_suppN` was removed; the general `ffun` lemma
+  `mem_finsuppN` (formerly `mem_suppN`) applies to permutations as well.
+
+- The Makefile target that compiles the examples in `tests/` was renamed from
+  `test` to `check`.
+
+- Continuous integration moved from CircleCI to GitHub Actions, driven by the
+  Nix flake.
 
 ## Deprecated
 
-## Fixed
-
-- Adapt to https://github.com/math-comp/math-comp/pull/1545.
+- All the old notations and names listed above remain available as parsing-only
+  deprecated aliases.  They will be removed in a future release.
 
 ## Removed
+
+- Support for Coq 8.17 -- 8.20, MathComp 2.0 -- 2.4 and deriving < 0.2.3.  The
+  package now requires Rocq >= 9.0, MathComp >= 2.5 and deriving >= 0.2.3.
+
+## Fixed
+
+- Adapt to the change in rewriting order introduced by
+  https://github.com/math-comp/math-comp/pull/1545.
 
 # 0.5.0 (2024/12/09)
 

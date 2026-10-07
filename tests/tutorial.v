@@ -207,7 +207,7 @@ Fixpoint atoms A : {fset atomic} :=
 Lemma in_eq_formula_den A ρ1 ρ2 :
   {in atoms A, ρ1 =1 ρ2} -> `F⟦A⟧^ρ1 = `F⟦A⟧^ρ2.
 Proof.
-move: {-1}(atoms A) (fsubsetxx (atoms A)) => Xs.
+move: {-1}(atoms A) (fsubset_refl (atoms A)) => Xs.
 by elim: A => /= [X|A IHA B IHB|A IHA B IHB|A IHA B IHB] AXs ρ12;
 do ?[move: AXs; rewrite fsubUset; case/andP => ??];
 rewrite ?ρ12 // ?IHA ?IHB // -fsub1set.
@@ -257,7 +257,7 @@ Definition ctx_atoms Γ : {fset string} :=
 Lemma in_eq_context_den Γ ρ1 ρ2 :
   {in ctx_atoms Γ, ρ1 =1 ρ2} -> `C⟦Γ⟧^ρ1 = `C⟦Γ⟧^ρ2.
 Proof.
-move: {-1}(ctx_atoms Γ) (fsubsetxx (ctx_atoms Γ)) => Xs.
+move: {-1}(ctx_atoms Γ) (fsubset_refl (ctx_atoms Γ)) => Xs.
 rewrite /ctx_atoms /context_den.
 elim: (val Γ) => //= A {}Γ IH; rewrite big_cons fsubUset.
 case/andP=> subA subΓ ρ12; rewrite IH //.
@@ -278,5 +278,5 @@ move=> ΓA ρ /context_denP; elim: Γ A / ΓA => //=; eauto.
 - by move=> ??? _ IH HΓ; case: IH.
 - by move=> ???? _ IHor _ IH1 _ IH2 HΓ; case: IHor; eauto.
 - move=> ??? _ IH HΓ HA; apply: IH.
-  move=> C /fsetU1P [-> //|]; exact: HΓ.
+  move=> C /fset1UP [-> //|]; exact: HΓ.
 Qed.

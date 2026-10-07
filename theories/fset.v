@@ -31,7 +31,7 @@ Require Import ord.
 (*      s1 `<=` s2 == s1 is a subset of s2.                                   *)
 (*          f @` s == the image of s by f: the set containing all elements of *)
 (*                    the form f x, where x \in s.                            *)
-(*      powerset s == set of all subsets of s.                                *)
+(*     fpowerset s == set of all subsets of s.                                *)
 (*                                                                            *)
 (*   We provide lemmas and notations for big versions of idempotent           *)
 (* operations (in the sense of the bigop library) indexed by sets, as well as *)
@@ -164,9 +164,9 @@ Notation "s1 :|: s2" := (fsetU s1 s2) (only parsing) : fset_scope.
 Notation "x |: s" := (fsetU (fset1 x) s) (only parsing) : fset_scope.
 #[deprecated(since="extructures 0.6.0", note="Use `&` instead")]
 Notation "s1 :&: s2" := (fsetI s1 s2) (only parsing) : fset_scope.
-#[deprecated(since="extructures 0.6.0", note="Use `|` instead")]
+#[deprecated(since="extructures 0.6.0", note="Use `\` instead")]
 Notation "s1 :\: s2" := (fsetD s1 s2) (only parsing) : fset_scope.
-#[deprecated(since="extructures 0.6.0", note="Use `| instead")]
+#[deprecated(since="extructures 0.6.0", note="Use `\ instead")]
 Notation "s :\ x" := (fsetD s (fset1 x)) (only parsing) : fset_scope.
 #[deprecated(since="extructures 0.6.0", note="Use `<=` instead")]
 Notation "s1 :<=: s2" := (fsubset s1 s2)
