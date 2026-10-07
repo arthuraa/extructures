@@ -65,7 +65,9 @@
               default = packagesByVersion.${defaultVersion};
             };
 
-        checks.default = self'.packages.default;
+        checks = builtins.mapAttrs (set: package:
+          package.overrideAttrs { doCheck = true; })
+          self'.packages;
 
       };
       flake = {
@@ -74,9 +76,15 @@
         # those are more easily expressed in perSystem.
 
         githubActions = nix-github-actions.lib.mkGithubMatrix {
-          checks = inputs.nixpkgs.lib.getAttrs
-            [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ]
-            self.checks;
+          checks =
+            # Drop the "default" check — it is an alias for one of
+            # the versioned checks, and including it would build
+            # the same derivation twice in CI.
+            builtins.mapAttrs
+              (_: checks: builtins.removeAttrs checks [ "default" ])
+              (nixpkgs.lib.getAttrs
+                [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ]
+                self.checks);
         };
 
         overlays.default = final: prev:

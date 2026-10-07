@@ -7,9 +7,9 @@ as sets rather than lists. First, we import the main libraries.
 
 *)
 
-Require Import Coq.Strings.String. (* For atomic formulas *)
+From Stdlib.Strings Require Import String. (* For atomic formulas *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect.
+From mathcomp Require Import boot order.
 Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 From deriving Require Import deriving.
 From extructures Require Import ord fset fmap.
@@ -61,10 +61,11 @@ Definition formula_hasDecEq := [derive hasDecEq for formula].
 HB.instance Definition _ := formula_hasDecEq.
 Definition formula_hasChoice := [derive hasChoice for formula].
 #[hnf] HB.instance Definition _ := formula_hasChoice.
-Definition formula_hasOrd := [derive hasOrd for formula].
-(* FIXME: This is taking way too long. *)
-#[hnf] HB.instance Definition _ := formula_hasOrd.
-
+(* FIXME: There is probably a bug in how ord instances are being derived:
+   removing this type annotation causes the instance declaration to diverge. *)
+Definition formula_hasOrd : hasOrd.axioms_ formula :=
+  [derive hasOrd for formula].
+HB.instance Definition _ := formula_hasOrd.
 
 Notation context := {fset formula}.
 
@@ -76,7 +77,7 @@ Implicit Types Γ Δ : context.
 
 Here is the definition of the entailment relation.  Γ ⊢ A means that the formula
 A holds assuming the hypotheses in Γ.  Note the use of the set insertion
-operation A |: Γ to extend the context in ImplI.
+operation A |` Γ to extend the context in ImplI.
 
 *)
 
@@ -115,7 +116,7 @@ Inductive entails : {fset formula} -> formula -> Prop :=
   Γ ⊢ C
 
 | ImplI Γ A B :
-  A |: Γ ⊢ B ->
+  A |` Γ ⊢ B ->
   Γ ⊢ A → B
 
 | ImplE Γ A B :
@@ -138,16 +139,16 @@ would need induction too.
 
 *)
 
-Lemma contraction Γ A : Γ :|: Γ ⊢ A -> Γ ⊢ A.
+Lemma contraction Γ A : Γ `|` Γ ⊢ A -> Γ ⊢ A.
 Proof. by rewrite fsetUid. Qed.
 
-Lemma exchange Γ Δ A : Γ :|: Δ ⊢ A -> Δ :|: Γ ⊢ A.
+Lemma exchange Γ Δ A : Γ `|` Δ ⊢ A -> Δ `|` Γ ⊢ A.
 Proof. by rewrite fsetUC. Qed.
 
-Lemma weakening Γ Δ A : Γ ⊢ A -> Γ :|: Δ ⊢ A.
+Lemma weakening Γ Δ A : Γ ⊢ A -> Γ `|` Δ ⊢ A.
 Proof.
 elim: Γ A /; eauto 2.
-- move=> Γ A Ain; have: A \in Γ :|: Δ by rewrite in_fsetU Ain.
+- move=> Γ A Ain; have: A \in Γ `|` Δ by rewrite in_fsetU Ain.
   by eauto.
 - by move=> Γ A B C; rewrite -!fsetUA; eauto.
 Qed.
@@ -197,9 +198,9 @@ this result a little bit.  However, the proof becomes more involved.
 Fixpoint atoms A : {fset atomic} :=
   match A with
   | Atom X => fset1 X
-  | A ∧ B => atoms A :|: atoms B
-  | A ∨ B => atoms A :|: atoms B
-  | A → B => atoms A :|: atoms B
+  | A ∧ B => atoms A `|` atoms B
+  | A ∨ B => atoms A `|` atoms B
+  | A → B => atoms A `|` atoms B
   end%form.
 
 Lemma in_eq_formula_den A ρ1 ρ2 :
