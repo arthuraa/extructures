@@ -9,7 +9,8 @@ as sets rather than lists. First, we import the main libraries.
 
 From Stdlib.Strings Require Import String. (* For atomic formulas *)
 From HB Require Import structures.
-From mathcomp Require Import boot order.
+From mathcomp Require Import ssreflect ssrfun ssrbool seq eqtype choice bigop.
+From mathcomp Require Import order.
 Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 From deriving Require Import deriving.
 From extructures Require Import ord fset fmap.
