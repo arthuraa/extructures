@@ -3,6 +3,7 @@ name: Nix Flake actions
 on:
   pull_request:
   push:
+    branches: [ master ]
 
 jobs:
   nix-matrix:
@@ -24,8 +25,21 @@ jobs:
     needs: nix-matrix
     runs-on: ${{ matrix.os }}
     strategy:
+      # Don't cancel sibling matrix jobs on the first failure — we want
+      # every platform to report independently and to upload its bench
+      # artifacts even if another one is broken.
+      fail-fast: false
       matrix: ${{fromJSON(needs.nix-matrix.outputs.matrix)}}
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v30
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-${{ matrix.system }}-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-${{ matrix.system }}-
+          gc-max-store-size-linux: 2000000000
+          gc-max-store-size-macos: 2000000000
+          purge: true
+          purge-created: 604800
+          purge-primary-key: never
       - run: nix build -L '.#${{ matrix.attr }}'
