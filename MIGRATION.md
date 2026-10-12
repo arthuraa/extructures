@@ -232,7 +232,6 @@ notations, even though they are not notations in the Rocq sense.)
 | `fsetDidPl`                   | Lemma    | Yes        |                             |
 | `val_fset_filter`             | Lemma    | No         | ?                           |
 | `fset_filter_subset`          | Lemma    | Close      | `fset_sub`                  |
-| `fdisjoint_trans`             | Lemma    | Yes        |                             |
 | `\bigcup_(i <- r \| P) F`     | Notation | Yes        |                             |
 | `\bigcup_(i <- r) F`          | Notation | Yes        |                             |
 | `\bigcup_(m <= i < n \| P) F` | Notation | No         |                             |
@@ -466,7 +465,7 @@ notations, even though they are not notations in the Rocq sense.)
 
 ### `fperm`
 
-Finmap 2.2 includes a port of this file (`finperm.v`), and Extructures now
+Finmap 2.2.4 includes a port of this file (`finperm.v`), and Extructures now
 uses the same names.  The main remaining difference is that `fperm` takes the
 set before the function.
 

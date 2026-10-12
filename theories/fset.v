@@ -838,9 +838,6 @@ Arguments fsetUidPl {T s1 s2}.
 Arguments fsetUidPr {T s1 s2}.
 Arguments fsetDidPl {T s1 s2}.
 
-#[deprecated(since="extructures 0.5.0",note="Use fdisjointSl")]
-Notation fdisjoint_trans := fdisjointSl (only parsing).
-
 Section setOpsAlgebra.
 
 Import Monoid.

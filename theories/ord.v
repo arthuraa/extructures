@@ -347,22 +347,6 @@ Notation "[ 'derive' 'lazy' 'hasOrd' 'for' T ]" :=
   (ltac:(derive_hasOrd T))
   (at level 0, format "[ 'derive'  'lazy'  'hasOrd'  'for'  T ]") : form_scope.
 
-#[deprecated(since="extructures 0.4.0",
-      note="Use [derive nored hasOrd for _] instead")]
-Notation "[ 'derive' 'nored' 'ordMixin' 'for' T ]" :=
-  ([derive nored hasOrd for T])
-  (at level 0) : form_scope.
-#[deprecated(since="extructures 0.4.0",
-      note="Use [derive hasOrd for _] instead")]
-Notation "[ 'derive' 'ordMixin' 'for' T ]" :=
-  ([derive hasOrd for T])
-  (at level 0) : form_scope.
-#[deprecated(since="extructures 0.4.0",
-      note="Use [derive lazy hasOrd for _] instead")]
-Notation "[ 'derive' 'lazy' 'ordMixin' 'for' T ]" :=
-  ([derive lazy hasOrd for T])
-  (at level 0) : form_scope.
-
 Section BasicInstances.
 
 Variables T S : ordType.
@@ -428,13 +412,6 @@ Definition CanHasOrd g (fK : cancel f g) : hasOrd (can_type fK) :=
 
 End TransferOrdType.
 
-#[deprecated(since="extructures 0.4.0", note="Use InjHasOrd")]
-Notation InjOrdMixin := InjHasOrd.
-#[deprecated(since="extructures 0.4.0", note="Use PcanHasOrd")]
-Notation PcanOrdMixin := PcanHasOrd.
-#[deprecated(since="extructures 0.4.0", note="Use CanHasOrd")]
-Notation CanOrdMixin := CanHasOrd.
-
 (* FIXME: This is not generating an instance for inj_type... *)
 HB.instance Definition _ (T : choiceType) (S : ordType) (f : T -> S)
   (f_inj : injective f) : hasOrd (inj_type f_inj) :=
@@ -450,9 +427,6 @@ HB.instance Definition _ (S : ordType) (P : pred S) (T : subType P) : hasOrd (su
 
 Notation "[ 'Ord' 'of' T 'by' <: ]" := (Ord.Ord.copy T%type (sub_type T%type))
   (at level 0, format "[ 'Ord'  'of'  T  'by'  <: ]") : form_scope.
-#[deprecated(since="extructures 0.4.0", note="Use [Ord of _ by <:] instead")]
-Notation "[ 'ordMixin' 'of' T 'by' <: ]" := [Ord of T by <:]
-  (at level 0, format "[ 'ordMixin'  'of'  T  'by'  <: ]") : form_scope.
 
 (* FIXME: Why is this generating an instance of eqtype? *)
 HB.instance Definition _ (T : ordType) (P : pred T) :=

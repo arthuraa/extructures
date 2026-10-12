@@ -99,6 +99,10 @@ for now.
 
 ## Removed
 
+- The aliases deprecated in 0.4.0 and 0.5.0: `InjOrdMixin`, `PcanOrdMixin`,
+  `CanOrdMixin`, `[ordMixin of T by <:]`, `[derive [<flag>] ordMixin for T]`
+  and `fdisjoint_trans`.
+
 - Support for Coq 8.17 -- 8.20, MathComp 2.0 -- 2.4 and deriving < 0.2.3.  The
   package now requires Rocq >= 9.0, MathComp >= 2.5 and deriving >= 0.2.3.
 
