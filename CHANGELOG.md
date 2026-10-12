@@ -1,5 +1,17 @@
 # Unreleased
 
+## Added
+
+## Changed
+
+## Deprecated
+
+## Removed
+
+## Fixed
+
+# 0.6.0 (2026/10/12)
+
 This release aligns the names and notations of Extructures with those of
 [finmap](https://github.com/math-comp/finmap), in preparation for phasing out
 Extructures.  All renamed symbols are still available under their old names as
@@ -50,9 +62,9 @@ for now.
   | `powerset0`                                 | `fpowerset0`              |
   | `powerset1`                                 | `fpowerset1`              |
 
-  Following finmap, the other lemmas about `x |` s` (`fsubU1set`, `sizesU1`,
-  `imfsetU1`, `big_fsetU1`, `big_idem_fsetU1`, `bigcup_fsetU1`) keep their
-  `U1` names.
+  Following finmap, the other lemmas about `` x |` s `` (`fsubU1set`, `sizesU1`,
+  `imfsetU1`, `big_fsetU1`, `big_idem_fsetU1`, `bigcup_fsetU1`) keep their `U1`
+  names.
 
 - Lemmas and definitions about permutations renamed to match finmap's
   `finperm.v`:

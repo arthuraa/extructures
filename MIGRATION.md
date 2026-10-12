@@ -1,10 +1,11 @@
 # Migration guide from Extructures to Finmap
 
-Extructures is being phased out in favor of [Finmap library available in
-Mathematical Components][finmap].  To smooth the transition between the two
-libraries, this document summarizes the main differences between them.  Near the
-end of the file, you will find a comprehensive list of all the public symbols
-and notations in Extructures and a mapping to their closest analogue in Finmap.
+Beginning with v0.6.0, Extructures is being phased out in favor of [Finmap
+library available in Mathematical Components][finmap].  To smooth the transition
+between the two libraries, this document summarizes the main differences between
+them.  Near the end of the file, you will find a comprehensive list of all the
+public symbols and notations in Extructures and a mapping to their closest
+analogue in Finmap.
 
 ## Things that do not exist in Finmap
 
@@ -469,64 +470,64 @@ Finmap 2.2 includes a port of this file (`finperm.v`), and Extructures now
 uses the same names.  The main remaining difference is that `fperm` takes the
 set before the function.
 
-| Extructures Name         | What?    | In finmap? | Closest analogue                    |
-|--------------------------|----------|------------|-------------------------------------|
-| `{fperm T}`              | Type     | Yes        |                                     |
-| `s x`                    | Notation | Yes        |                                     |
-| `fpermP`                 | Lemma    | Yes        |                                     |
-| `imfset_finsuppfp`       | Lemma    | Yes        |                                     |
-| `imfset_finsuppfpS`      | Lemma    | Yes        |                                     |
-| `fperm_inj`              | Lemma    | Yes        |                                     |
-| `fperm_finsupp`          | Lemma    | Yes        |                                     |
-| `fperm_one`, `1`         | Function | Yes        |                                     |
-| `fperm1`                 | Lemma    | Yes        |                                     |
-| `finsupp1`               | Lemma    | Yes        |                                     |
-| `finsuppfp_eq0`          | Lemma    | Yes        |                                     |
-| `fperm f X`              | Function | Mismatch   | `fperm X f` (arguments swapped)     |
-| `fpermE`                 | Lemma    | Close      | `fpermE` (arguments swapped)        |
-| `finsupp_fperm`          | Lemma    | Close      | `finsupp_fperm` (arguments swapped) |
-| `fpermEst`               | Lemma    | Close      | `fpermEst` (arguments swapped)      |
-| `find_fperm`             | Lemma    | Close      | `fperm_rename`, `fperm_renameP`     |
-| `fperm_inv`, `s^-1`      | Function | Yes        |                                     |
-| `fpermK`                 | Lemma    | Yes        |                                     |
-| `fpermKV`                | Lemma    | Yes        |                                     |
-| `finsupp_inv`            | Lemma    | Yes        |                                     |
-| `fperm_finsuppV`         | Lemma    | Yes        |                                     |
-| `fperm_mul`, `s1 * s2`   | Function | Yes        |                                     |
-| `fpermM`                 | Lemma    | Yes        |                                     |
-| `finsupp_mul`            | Lemma    | Yes        |                                     |
-| `finsuppJ`               | Lemma    | Yes        |                                     |
-| `fperm_mulC`             | Lemma    | Yes        |                                     |
-| `fperm_mul1s`            | Lemma    | Yes        |                                     |
-| `fperm_muls1`            | Lemma    | Yes        |                                     |
-| `fperm_mulsV`            | Lemma    | Yes        |                                     |
-| `fperm_mulVs`            | Lemma    | Yes        |                                     |
-| `fperm_mulA`             | Lemma    | Yes        |                                     |
-| `fperm_inv_mul`          | Lemma    | Yes        |                                     |
-| `fperm_mulsK`            | Lemma    | Yes        |                                     |
-| `fperm_mulKs`            | Lemma    | Yes        |                                     |
-| `fperm_mulsI`            | Lemma    | Yes        |                                     |
-| `fperm_mulIs`            | Lemma    | Yes        |                                     |
-| `fperm_invK`             | Lemma    | Yes        |                                     |
-| `fperm_mulsKV`           | Lemma    | Yes        |                                     |
-| `fperm_mulKVs`           | Lemma    | Yes        |                                     |
-| `fperm1V`                | Lemma    | Yes        |                                     |
-| `fperm2`                 | Function | Yes        |                                     |
-| `fperm2E`                | Lemma    | Yes        |                                     |
-| `fperm2P`                | Lemma    | Yes        |                                     |
-| `fperm2L`                | Lemma    | Yes        |                                     |
-| `fperm2R`                | Lemma    | Yes        |                                     |
-| `fperm2D`                | Lemma    | Yes        |                                     |
-| `fperm2C`                | Lemma    | Yes        |                                     |
-| `fperm2V`                | Lemma    | Yes        |                                     |
-| `fperm2xx`               | Lemma    | Yes        |                                     |
-| `finsupp_fperm2`         | Lemma    | Yes        |                                     |
-| `fsubset_finsupp_fperm2` | Lemma    | Yes        |                                     |
-| `fperm2_rect`            | Lemma    | Yes        |                                     |
-| `fperm_on`               | Function | Yes        |                                     |
-| `in_fperm_on`            | Lemma    | Close      | `in_fperm_on` (sides swapped)       |
-| `inj_fperm2`             | Lemma    | Yes        |                                     |
-| `fperm2J`                | Lemma    | Yes        |                                     |
+| Extructures Name         | What?    | In finmap? | Closest analogue                |
+|--------------------------|----------|------------|---------------------------------|
+| `{fperm T}`              | Type     | Yes        |                                 |
+| `s x`                    | Notation | Yes        |                                 |
+| `fpermP`                 | Lemma    | Yes        |                                 |
+| `imfset_finsuppfp`       | Lemma    | Yes        |                                 |
+| `imfset_finsuppfpS`      | Lemma    | Yes        |                                 |
+| `fperm_inj`              | Lemma    | Yes        |                                 |
+| `fperm_finsupp`          | Lemma    | Yes        |                                 |
+| `fperm_one`, `1`         | Function | Yes        |                                 |
+| `fperm1`                 | Lemma    | Yes        |                                 |
+| `finsupp1`               | Lemma    | Yes        |                                 |
+| `finsuppfp_eq0`          | Lemma    | Yes        |                                 |
+| `fperm f X`              | Function | Mismatch   | `fperm X f` (args swapped)      |
+| `fpermE`                 | Lemma    | Close      | `fpermE` (args swapped)         |
+| `finsupp_fperm`          | Lemma    | Close      | `finsupp_fperm` (args swapped)  |
+| `fpermEst`               | Lemma    | Close      | `fpermEst` (args swapped)       |
+| `find_fperm`             | Lemma    | Close      | `fperm_rename`, `fperm_renameP` |
+| `fperm_inv`, `s^-1`      | Function | Yes        |                                 |
+| `fpermK`                 | Lemma    | Yes        |                                 |
+| `fpermKV`                | Lemma    | Yes        |                                 |
+| `finsupp_inv`            | Lemma    | Yes        |                                 |
+| `fperm_finsuppV`         | Lemma    | Yes        |                                 |
+| `fperm_mul`, `s1 * s2`   | Function | Yes        |                                 |
+| `fpermM`                 | Lemma    | Yes        |                                 |
+| `finsupp_mul`            | Lemma    | Yes        |                                 |
+| `finsuppJ`               | Lemma    | Yes        |                                 |
+| `fperm_mulC`             | Lemma    | Yes        |                                 |
+| `fperm_mul1s`            | Lemma    | Yes        |                                 |
+| `fperm_muls1`            | Lemma    | Yes        |                                 |
+| `fperm_mulsV`            | Lemma    | Yes        |                                 |
+| `fperm_mulVs`            | Lemma    | Yes        |                                 |
+| `fperm_mulA`             | Lemma    | Yes        |                                 |
+| `fperm_inv_mul`          | Lemma    | Yes        |                                 |
+| `fperm_mulsK`            | Lemma    | Yes        |                                 |
+| `fperm_mulKs`            | Lemma    | Yes        |                                 |
+| `fperm_mulsI`            | Lemma    | Yes        |                                 |
+| `fperm_mulIs`            | Lemma    | Yes        |                                 |
+| `fperm_invK`             | Lemma    | Yes        |                                 |
+| `fperm_mulsKV`           | Lemma    | Yes        |                                 |
+| `fperm_mulKVs`           | Lemma    | Yes        |                                 |
+| `fperm1V`                | Lemma    | Yes        |                                 |
+| `fperm2`                 | Function | Yes        |                                 |
+| `fperm2E`                | Lemma    | Yes        |                                 |
+| `fperm2P`                | Lemma    | Yes        |                                 |
+| `fperm2L`                | Lemma    | Yes        |                                 |
+| `fperm2R`                | Lemma    | Yes        |                                 |
+| `fperm2D`                | Lemma    | Yes        |                                 |
+| `fperm2C`                | Lemma    | Yes        |                                 |
+| `fperm2V`                | Lemma    | Yes        |                                 |
+| `fperm2xx`               | Lemma    | Yes        |                                 |
+| `finsupp_fperm2`         | Lemma    | Yes        |                                 |
+| `fsubset_finsupp_fperm2` | Lemma    | Yes        |                                 |
+| `fperm2_rect`            | Lemma    | Yes        |                                 |
+| `fperm_on`               | Function | Yes        |                                 |
+| `in_fperm_on`            | Lemma    | Close      | `in_fperm_on` (sides swapped)   |
+| `inj_fperm2`             | Lemma    | Yes        |                                 |
+| `fperm2J`                | Lemma    | Yes        |                                 |
 
 
   [finmap]: https://github.com/math-comp/finmap
