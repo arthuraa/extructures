@@ -8,7 +8,7 @@ Require Import ord fset fmap ffun.
 (*   This file defines a type {fperm T} of finite permutations of an ordType  *)
 (* T.  By "finite", we mean that that there are only finitely many x such     *)
 (* that s x != x.  Permutations are a subtype of finite functions (cf. ffun)  *)
-(* and thus support extensional equality (cf. eq_fperm).                      *)
+(* and thus support extensional equality (cf. fpermP).                      *)
 (*                                                                            *)
 (*         fperm_one, 1 == Identity permutation.                              *)
 (*            finsupp s == The support of s (the set of elements that are not *)
@@ -20,7 +20,7 @@ Require Import ord fset fmap ffun.
 (*           fperm2 x y == Transposition of x and y (i.e. the permutation     *)
 (*                         that swaps these elements)                         *)
 (*          fperm2_rect == Induction on the number of transpositions          *)
-(*         enum_fperm X == The set of all permutations with support in X      *)
+(*         fperm_on X == The set of all permutations with support in X      *)
 (******************************************************************************)
 
 Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
@@ -86,18 +86,18 @@ Implicit Types (s : {fperm T}) (x : T) (X Y : {fset T}).
 
 Local Open Scope fset_scope.
 
-Lemma eq_fperm s1 s2 : s1 =1 s2 <-> s1 = s2.
+Lemma fpermP s1 s2 : s1 =1 s2 <-> s1 = s2.
 Proof.
 split; last congruence; by move=> /eq_ffun /val_inj.
 Qed.
 
-Lemma imfset_finsupp s : s @` finsupp s = finsupp s.
+Lemma imfset_finsuppfp s : s @` finsupp s = finsupp s.
 Proof. exact/eqP/(valP s). Qed.
 
-Lemma imfset_finsuppS s X : finsupp s `<=` X -> s @` X = X.
+Lemma imfset_finsuppfpS s X : finsupp s `<=` X -> s @` X = X.
 Proof.
 move=> subX; rewrite -(fsetID X (finsupp s)) imfsetU.
-rewrite (fsetIidPr subX) imfset_finsupp; congr fsetU.
+rewrite (fsetIidPr subX) imfset_finsuppfp; congr fsetU.
 under eq_in_imfset => x /fsetDP [] _ /finsuppPn -> do [].
 by rewrite imfset_id.
 Qed.
@@ -106,14 +106,14 @@ Lemma fperm_inj s : injective s.
 Proof.
 move=> x y.
 have inj : {in x |` (y |` finsupp s) &, injective s}.
-  apply/imfset_injP; rewrite imfset_finsuppS //.
+  apply/imfset_injP; rewrite imfset_finsuppfpS //.
   by rewrite fsubsetU // fsubsetU ?fsubset_refl orbT.
 by apply: inj; rewrite ?in_fset1U ?eqxx // ?orbT.
 Qed.
 
 Lemma fperm_finsupp s x : (s x \in finsupp s) = (x \in finsupp s).
 Proof.
-rewrite -{1}imfset_finsupp; apply/(sameP idP)/(iffP idP).
+rewrite -{1}imfset_finsuppfp; apply/(sameP idP)/(iffP idP).
   by apply: mem_imfset.
 by case/imfsetP=> x' hx' /fperm_inj ->.
 Qed.
@@ -128,29 +128,16 @@ Notation "1" := fperm_one.
 Lemma fperm1 x : 1 x = x.
 Proof. by []. Qed.
 
-
-Lemma imfset_finsupp_sub s X : finsupp s `<=` X -> s @` X = X.
-Proof.
-move=> h_sub; apply/eq_fset=> x; have h_im_sub := imfsetS s h_sub.
-have [in_finsupp|nin_finsupp] := boolP (x \in finsupp s).
-  rewrite (fsubsetP h_sub _ in_finsupp); move/fsubsetP: h_im_sub; apply.
-  by rewrite imfset_finsupp.
-move: nin_finsupp; rewrite mem_finsupp negbK =>/eqP ex.
-apply/(sameP idP)/(iffP idP); first by rewrite -{2}ex; apply: mem_imfset.
-case/imfsetP=> [y Py ey]; rewrite {2}ey in ex.
-by move/fperm_inj in ex; rewrite ex.
-Qed.
-
 Lemma finsupp1 : finsupp 1 = fset0.
 Proof.
 apply/eqP; rewrite -fsubset0; apply/fsubsetP=> x.
 by rewrite mem_finsupp fperm1 eqxx.
 Qed.
 
-Lemma finsupp_eq0 s : (finsupp s == fset0) = (s == 1).
+Lemma finsuppfp_eq0 s : (finsupp s == fset0) = (s == 1).
 Proof.
 apply/(sameP idP)/(iffP idP)=> [/eqP->|]; first by rewrite finsupp1.
-move=> /eqP e; apply/eqP/eq_fperm=> x; rewrite fperm1; apply/finsuppPn.
+move=> /eqP e; apply/eqP/fpermP=> x; rewrite fperm1; apply/finsuppPn.
 by rewrite e in_fset0.
 Qed.
 
@@ -250,9 +237,9 @@ elim/fset1U_ind: X Y size_X => [|x X x_nin_X IH] Y.
   rewrite /=; move/esym/eqP; rewrite sizes_eq0=> /eqP ->.
   exists id; first by move=> x; rewrite in_fset0.
   by rewrite imfset0.
-rewrite sizes1U x_nin_X add1n.
+rewrite sizesU1 x_nin_X add1n.
 elim/fset1U_ind: Y => [|y Y y_nin_Y _]; first by rewrite sizes0.
-rewrite sizes1U y_nin_Y /= add1n=> - [/IH [f Pf PXY]].
+rewrite sizesU1 y_nin_Y /= add1n=> - [/IH [f Pf PXY]].
 exists (fun x' => if x' == x then y else f x').
   move=> x1 x2 /=; rewrite !in_fset1U.
   have [-> _|ne1] /= := altP (x1 =P x).
@@ -280,7 +267,7 @@ Lemma fperm_inv_subproof : inv_def @` finsupp s = finsupp s.
 Proof.
 apply/eq_fset=> x; apply/(sameP idP)/(iffP idP).
   move=> x_in_finsupp; apply/imfsetP; exists (s x).
-    by rewrite -imfset_finsupp (mem_imfset _ x_in_finsupp).
+    by rewrite -imfset_finsuppfp (mem_imfset _ x_in_finsupp).
   case: fpickP=> [y' /= /eqP/esym e _|/(_ _ x_in_finsupp) /=].
     exact: fperm_inj e.
   by rewrite eqxx.
@@ -302,7 +289,7 @@ Proof.
 move=> x; rewrite /fperm_inv -lock fpermEst; last exact: fperm_inv_subproof.
 case: ifPn=> [x_in_finsupp|].
   case: fpickP=> [x' /= /eqP/esym -> //|/=].
-  rewrite -imfset_finsupp in x_in_finsupp; case/imfsetP: x_in_finsupp=> [x' Px' ->].
+  rewrite -imfset_finsuppfp in x_in_finsupp; case/imfsetP: x_in_finsupp=> [x' Px' ->].
   by move/(_ _ Px'); rewrite eqxx.
 by rewrite mem_finsupp negbK => /eqP.
 Qed.
@@ -322,7 +309,7 @@ End Inverse.
 Lemma fperm_mul_subproof s1 s2 :
   (s1 \o s2) @` (finsupp s1 `|` finsupp s2) = finsupp s1 `|` finsupp s2.
 Proof.
-by rewrite imfset_comp !imfset_finsupp_sub // ?fsubsetUr // fsubsetUl.
+by rewrite imfset_comp !imfset_finsuppfpS // ?fsubsetUr // fsubsetUl.
 Qed.
 
 Definition fperm_mul s1 s2 := locked (fperm (s1 \o s2) (finsupp s1 `|` finsupp s2)).
@@ -360,7 +347,7 @@ Lemma fperm_mulC s1 s2 :
   fdisjoint (finsupp s1) (finsupp s2) ->
   s1 * s2 = s2 * s1.
 Proof.
-move=> dis; apply/eq_fperm=> x; rewrite !fpermM /=.
+move=> dis; apply/fpermP=> x; rewrite !fpermM /=.
 have [ins1|nins1] := boolP (x \in finsupp s1).
   move: (ins1); rewrite -fperm_finsupp=> ins1'.
   move/fdisjointP in dis.
@@ -376,19 +363,19 @@ by rewrite nins1 nins2.
 Qed.
 
 Lemma fperm_mul1s : left_id 1 fperm_mul.
-Proof. by move=> s; apply/eq_fperm=> x; rewrite fpermM. Qed.
+Proof. by move=> s; apply/fpermP=> x; rewrite fpermM. Qed.
 
 Lemma fperm_muls1 : right_id 1 fperm_mul.
-Proof. by move=> s; apply/eq_fperm=> x; rewrite fpermM. Qed.
+Proof. by move=> s; apply/fpermP=> x; rewrite fpermM. Qed.
 
 Lemma fperm_mulsV : right_inverse 1 fperm_inv fperm_mul.
-Proof. by move=> s; apply/eq_fperm=> x; rewrite fpermM /= fpermKV. Qed.
+Proof. by move=> s; apply/fpermP=> x; rewrite fpermM /= fpermKV. Qed.
 
 Lemma fperm_mulVs : left_inverse 1 fperm_inv fperm_mul.
-Proof. by move=> s; apply/eq_fperm=> x; rewrite fpermM /= fpermK. Qed.
+Proof. by move=> s; apply/fpermP=> x; rewrite fpermM /= fpermK. Qed.
 
 Lemma fperm_mulA : associative fperm_mul.
-Proof. by move=> s1 s2 s3; apply/eq_fperm=> x; rewrite !fpermM /= !fpermM. Qed.
+Proof. by move=> s1 s2 s3; apply/fpermP=> x; rewrite !fpermM /= !fpermM. Qed.
 
 Lemma fperm_inv_mul : {morph fperm_inv : s1 s2 / s1 * s2 >-> s2 * s1}.
 Proof.
@@ -467,12 +454,12 @@ Lemma fperm2D x y z : z != x -> z != y -> fperm2 x y z = z.
 Proof. by rewrite fperm2E /= => /negbTE-> /negbTE->. Qed.
 
 Lemma fperm2C x y : fperm2 x y = fperm2 y x.
-Proof. apply/eq_fperm=> z; do 2?[case: fperm2P=> //]; congruence. Qed.
+Proof. apply/fpermP=> z; do 2?[case: fperm2P=> //]; congruence. Qed.
 
 Lemma fperm2V x y : (fperm2 x y)^-1 = fperm2 x y.
 Proof.
 rewrite -[in LHS](fperm_muls1 _^-1).
-apply/(canLR (fperm_mulKs (fperm2 x y)))/eq_fperm=> z.
+apply/(canLR (fperm_mulKs (fperm2 x y)))/fpermP=> z.
 rewrite fperm1 fpermM /= !fperm2E /=; have [->{z}|] := altP (z =P x).
   by rewrite eqxx; case: ifP=> // /eqP ->.
 have [->{z}|] := altP (z =P y); first by rewrite eqxx.
@@ -481,7 +468,7 @@ Qed.
 
 Lemma fperm2xx x : fperm2 x x = 1.
 Proof.
-apply/eq_fperm=> y; rewrite fperm2E fperm1 /=.
+apply/fpermP=> y; rewrite fperm2E fperm1 /=.
 by have [->|] := altP (y =P x).
 Qed.
 
@@ -506,10 +493,10 @@ Lemma fperm2_rect (P : {fperm T} -> Type) :
   forall s, P s.
 Proof.
 move=> P1 PM s; move: {2}(size _) (leqnn (size (finsupp s)))=> n.
-elim: n s=> [|n IH] s; first by rewrite leqn0 sizes_eq0 finsupp_eq0=> /eqP ->.
+elim: n s=> [|n IH] s; first by rewrite leqn0 sizes_eq0 finsuppfp_eq0=> /eqP ->.
 case e: (finsupp s) / fsetP=>[|x X Px].
-  by move/eqP: e; rewrite finsupp_eq0=> /eqP ->.
-rewrite sizes1U Px ltnS -(fperm_mulKs (fperm2 x (s x)) s) fperm2V=> es.
+  by move/eqP: e; rewrite finsuppfp_eq0=> /eqP ->.
+rewrite sizesU1 Px ltnS -(fperm_mulKs (fperm2 x (s x)) s) fperm2V=> es.
 apply: PM; first by apply/finsuppPn; rewrite fpermM /= fperm2R.
   by rewrite -{1}fperm2V fperm_mulKs fperm_finsupp e in_fset1U eqxx.
 apply: IH; rewrite (leq_trans _ es) // {es}; apply/fsubset_leq_size/fsubsetP.
@@ -522,13 +509,13 @@ move=> _ /eqP; rewrite (inj_eq (@fperm_inj _))=> e2.
 by rewrite -mem_finsupp e in_fset1U (negbTE e2).
 Qed.
 
-Definition enum_fperm X : {fset {fperm T}} :=
+Definition fperm_on X : {fset {fperm T}} :=
   fset (pmap (obind (insub : ffun _ -> option {fperm T}) \o insub)
           (enum_fmap X X)).
 
-Lemma enum_fpermE X s : finsupp s `<=` X = (s \in enum_fperm X).
+Lemma in_fperm_on X s : finsupp s `<=` X = (s \in fperm_on X).
 Proof.
-rewrite /enum_fperm in_fset mem_pmap; apply/idP/mapP.
+rewrite /fperm_on in_fset mem_pmap; apply/idP/mapP.
   move=> finsupp_s; exists (val (val s)); last by rewrite /= !valK /= valK.
   apply/enum_fmapP; split; first by move/fsubsetP: finsupp_s.
   move=> x /codommP [x' Px']; move/fsubsetP: finsupp_s; apply.
@@ -564,24 +551,24 @@ Qed.
 Lemma fperm2J (T : ordType) s (x y : T) :
   s * fperm2 x y * s^-1 = fperm2 (s x) (s y).
 Proof.
-apply/eq_fperm=> z; rewrite fpermM /= fpermM /= inj_fperm2 ?fpermKV //.
+apply/fpermP=> z; rewrite fpermM /= fpermM /= inj_fperm2 ?fpermKV //.
 exact: fperm_inj.
 Qed.
 
 End Trans.
 
-#[deprecated(since="extructures 0.6.0", note="use imfset_finsupp instead")]
-Notation imfset_supp := imfset_finsupp (only parsing).
-#[deprecated(since="extructures 0.6.0", note="use imfset_finsuppS instead")]
-Notation imfset_suppS := imfset_finsuppS (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use imfset_finsuppfp instead")]
+Notation imfset_supp := imfset_finsuppfp (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use imfset_finsuppfpS instead")]
+Notation imfset_suppS := imfset_finsuppfpS (only parsing).
 #[deprecated(since="extructures 0.6.0", note="use fperm_finsupp instead")]
 Notation fperm_supp := fperm_finsupp (only parsing).
-#[deprecated(since="extructures 0.6.0", note="use imfset_finsupp_sub instead")]
-Notation imfset_supp_sub := imfset_finsupp_sub (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use imfset_finsuppfpS instead")]
+Notation imfset_supp_sub := imfset_finsuppfpS (only parsing).
 #[deprecated(since="extructures 0.6.0", note="use finsupp1 instead")]
 Notation supp1 := finsupp1 (only parsing).
-#[deprecated(since="extructures 0.6.0", note="use finsupp_eq0 instead")]
-Notation supp_eq0 := finsupp_eq0 (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use finsuppfp_eq0 instead")]
+Notation supp_eq0 := finsuppfp_eq0 (only parsing).
 #[deprecated(since="extructures 0.6.0", note="use finsupp_fperm instead")]
 Notation supp_fperm := finsupp_fperm (only parsing).
 #[deprecated(since="extructures 0.6.0", note="use finsupp_inv instead")]
@@ -596,3 +583,18 @@ Notation suppJ := finsuppJ (only parsing).
 Notation supp_fperm2 := finsupp_fperm2 (only parsing).
 #[deprecated(since="extructures 0.6.0", note="use fsubset_finsupp_fperm2 instead")]
 Notation fsubset_supp_fperm2 := fsubset_finsupp_fperm2 (only parsing).
+
+#[deprecated(since="extructures 0.6.0", note="use fpermP instead")]
+Notation eq_fperm := fpermP (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use imfset_finsuppfp instead")]
+Notation imfset_finsupp := imfset_finsuppfp (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use imfset_finsuppfpS instead")]
+Notation imfset_finsuppS := imfset_finsuppfpS (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use imfset_finsuppfpS instead")]
+Notation imfset_finsupp_sub := imfset_finsuppfpS (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use finsuppfp_eq0 instead")]
+Notation finsupp_eq0 := finsuppfp_eq0 (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use fperm_on instead")]
+Notation enum_fperm := fperm_on (only parsing).
+#[deprecated(since="extructures 0.6.0", note="use in_fperm_on instead")]
+Notation enum_fpermE := in_fperm_on (only parsing).

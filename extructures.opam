@@ -12,14 +12,14 @@ build: [
   [make "-j" "%{jobs}%"]
 ]
 run-test: [
-  [make "-j" "%{jobs}%" "test"]
+  [make "-j" "%{jobs}%" "check"]
 ]
 install: [
   [make "install"]
 ]
 depends: [
   "ocaml"
-  "coq" {(>= "9.0") | (= "dev")}
+  "coq" {(>= "9.0" & < "9.3~") | (= "dev")}
   "coq-mathcomp-ssreflect" {(>= "2.5.0") | (= "dev")}
   "coq-deriving" {(>= "0.2.3") | (= "dev")}
 ]

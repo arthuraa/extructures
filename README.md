@@ -1,5 +1,11 @@
 # Extensional Structures
 
+**Warning** Starting with version v0.6.0, the Extructures library is being
+phased out in favor of the MathComp [finmap][4] library.  Future versions will
+not contain new features and will focus on porting the library to newer versions
+of Rocq. To port an existing development, please consult our [migration
+guide](./MIGRATION.md).
+
 This package provides Coq data structures that support extensional reasoning,
 for which the notion of equality coincides with exhibiting the same _observable
 behavior_: sets are equal when they contain the same elements; functions are
@@ -53,7 +59,7 @@ Extensional reasoning is provided by the following lemmas:
     eq_fmap  : forall T S (f g : {fmap T -> S}), f =1 g <-> f = g
     eq_ffun  : forall T S (def : T -> S) (f g : ffun def),
                                                  f =1 g <-> f = g
-    eq_fperm : forall T   (f g : {fperm T}),     f =1 g <-> f = g
+    fpermP   : forall T   (f g : {fperm T}),     f =1 g <-> f = g
 
 Documentation for the libraries is currently scarce, but will be progressively
 added as comments in the headers of the files.  Once the package is installed,
@@ -92,8 +98,6 @@ Other packages with similar goals are available out there.
 - Mathematical Components also includes implementations of sets and functions
   with extensional equality, but they only work for finite types.  In contrast,
   the above definitions work with infinite types as well.
-
-- Cyril Cohen's `finmap` library, [available here][4].
 
 - Pierre-Yves Strub's library, [available here][5].
 
